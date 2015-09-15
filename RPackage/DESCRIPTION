@@ -1,0 +1,13 @@
+Package: chordalSubgraph
+Type: Package
+Title: Monte Carlo methods for determining the number of chordal subgraphs
+Version: 0.1
+Date: 2015-05-14
+Author: Rohan Shah
+Maintainer: Rohan Shah <cran@bookshah.com>
+Description: This package provides Monte Carlo methods for estimating the number of chordal subgraphs with a given number of vertices
+License: GPL v3
+LazyData: No
+Suggests: graph, igraph
+Collate:
+   'isChordalIterative.R'
