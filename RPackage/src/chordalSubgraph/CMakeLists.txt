@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.1)
-set(CppFiles register.cpp)
-set(HeaderFiles)
+set(CppFiles register.cpp isChordalIterative.cpp convertGraph.cpp convertGraphAM.cpp convertGraphNEL.cpp convertGraphIGraph.cpp)
+set(HeaderFiles isChordalIterative.h convertGraph.h)
 add_library(chordalSubgraphRPackage SHARED ${CppFiles} ${HeaderFiles})
 target_link_libraries(chordalSubgraphRPackage PUBLIC chordalSubgraphCommon Rcpp)
 set_target_properties(chordalSubgraphRPackage PROPERTIES OUTPUT_NAME "chordalSubgraph")

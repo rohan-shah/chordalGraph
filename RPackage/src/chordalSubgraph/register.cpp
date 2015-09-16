@@ -1,4 +1,5 @@
 #include <Rcpp.h>
+#include "isChordalIterative.h"
 #ifdef _MSC_VER
 	#undef RcppExport
 	#define RcppExport extern "C" __declspec(dllexport)
@@ -6,7 +7,9 @@
 extern "C" const char* package_name = "chordalSubgraph";
 R_CallMethodDef callMethods[] = 
 {
-	//{"createHexagonalLattice", (DL_FUNC)&createHexagonalLattice, 2},
+	{"isChordalIterative_igraph", (DL_FUNC)&isChordalIterative_igraph, 1},
+	{"isChordalIterative_graphNEL", (DL_FUNC)&isChordalIterative_graphNEL, 1},
+	{"isChordalIterative_graphAM", (DL_FUNC)&isChordalIterative_graphAM, 1},
 	{NULL, NULL, 0}
 };
 extern "C" void R_init_Rcpp(DllInfo* info);

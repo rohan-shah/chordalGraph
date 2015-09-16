@@ -49,7 +49,7 @@ namespace chordalSubgraph
 		}
 		const cliqueTreeGraphType& getCliqueGraph() const;
 		const graphType& getGraph() const;
-		void addVertexWithEdges(const bitsetType& involvedEdges);
+		bool tryAddVertexWithEdges(const bitsetType& involvedEdges);
 		void addVertex();
 		int getNVertices();
 		void unionMinimalSeparators(int u, int v, bitsetType& vertices, std::list<cliqueTreeGraphType::vertex_descriptor>& vertexSequence, std::list<cliqueTreeGraphType::edge_descriptor>& edgeSequence);

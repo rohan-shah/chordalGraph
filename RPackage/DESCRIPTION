@@ -11,3 +11,5 @@ LazyData: No
 Suggests: graph, igraph
 Collate:
    'isChordalIterative.R'
+   'Rcpp_exceptions.R'
+   'onLoad.R'

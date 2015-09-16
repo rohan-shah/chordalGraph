@@ -25,7 +25,7 @@ namespace chordalSubgraph
 		componentIDs.push_back(previousVertexCount);
 		verticesToCliqueVertices.push_back(newCliqueVertexId);
 	}
-	void cliqueTree::addVertexWithEdges(const bitsetType& involvedEdges)
+	bool cliqueTree::tryAddVertexWithEdges(const bitsetType& involvedEdges)
 	{
 		bitsetType copiedInvolvedEdges = involvedEdges;
 
@@ -41,37 +41,18 @@ namespace chordalSubgraph
 			verticesToCliqueVertices.push_back(0);
 
 			componentIDs.push_back(0);
-			return;
+			return true;
 		}
-		//We begin by adding the vertex to the clique graph
-		cliqueVertex newCliqueVertex;
-		newCliqueVertex.contents[nVertices] = true;
-		boost::add_vertex(newCliqueVertex, cliqueGraph);
-
-		//and to the graph
-		boost::add_vertex(graph);
-
-		//Initially the added vertex is in its own connected component
-		componentIDs.push_back(nVertices);
-
-		//It's represented by the new clique vertex in the clique graph
-		verticesToCliqueVertices.push_back(nCliqueVertices);
+		addVertex();
 
 		//If the new vertex isn't connected to anything else, take a short-cut
-		if (copiedInvolvedEdges.none())	return;
+		if (copiedInvolvedEdges.none())	return true;
 
 		//Now the general case
-
-		//So now we have one more clique vertex and one more graph vertex
-		nCliqueVertices++;
-		nVertices++;
-
 		bitsetType unionMinimalSeparatorBitset;
 		std::list<cliqueTreeGraphType::vertex_descriptor> vertexSequence;
 		std::list<cliqueTreeGraphType::edge_descriptor> edgeSequence;
-		//This is nVertices-1 because we the new vertex can only have edges with the other
-		//pre-existing vertices
-		for (int i = 0; i < nVertices-1; i++)
+		for (int i = 0; i < nVertices; i++)
 		{
 			if (copiedInvolvedEdges[i])
 			{
@@ -79,16 +60,18 @@ namespace chordalSubgraph
 				unionMinimalSeparators(nVertices, i, unionMinimalSeparatorBitset, vertexSequence, edgeSequence);
 				//If we need to add something that we weren't going to, then we don't
 				//have a chordal graph. So throw an error. 
-				if ((unionMinimalSeparatorBitset & (~copiedInvolvedEdges)).any())
+				if ((unionMinimalSeparatorBitset & (~involvedEdges)).any())
 				{
-					throw std::runtime_error("Trying to construct a clique tree for a non-chordal graph");
+					return false;
 				}
 				addEdge(nVertices, i, unionMinimalSeparatorBitset, vertexSequence, edgeSequence, true);
 				//We can now safely ignore the edges in unionMinimalSeparatorBitset
 				//That is, they've been added so don't try and add them again
 				copiedInvolvedEdges = copiedInvolvedEdges & (~unionMinimalSeparatorBitset);
+				copiedInvolvedEdges[i] = false;
 			}
 		}
+		return true;
 	}
 	void cliqueTree::addEdge(int vertexForExtraEdges, int v, bitsetType& unionMinimalSeparatorBitset, std::list<cliqueTreeGraphType::vertex_descriptor>& vertexSequence, std::list<cliqueTreeGraphType::edge_descriptor>& edgeSequence, bool hasPrecomputedUnionMinimalSeparator)
 	{
@@ -180,8 +163,9 @@ namespace chordalSubgraph
 				boost::add_edge(verticesToCliqueVertices[v], newVertexId, newEdge1, cliqueGraph);
 				boost::add_edge(verticesToCliqueVertices[vertexForExtraEdges], newVertexId, newEdge2, cliqueGraph);
 
-				//Update componentIDs. Slightly more complicated this time
-				std::replace(componentIDs.begin(), componentIDs.end(), componentIDs[v], componentIDs[vertexForExtraEdges]);
+				//Update componentIDs. Slightly more complicated this time. Note that std::replace takes inputs by reference.
+				int oldValue = componentIDs[v], newValue = componentIDs[vertexForExtraEdges];
+				std::replace(componentIDs.begin(), componentIDs.end(), oldValue, newValue);
 				//No change to verticesToCliqueVertices
 				//add corresponding edge to the graph is deferred to end of function
 			}
@@ -275,12 +259,14 @@ namespace chordalSubgraph
 					//This addition of a vertex may invalidate the references firstVertex and secondVertex. So 
 					//make a copy of their contents.
 					bitsetType firstVertexContents = firstVertex.contents;
+					bitsetType secondVertexContents = secondVertex.contents;
 					int newVertexId = (int)boost::add_vertex(newVertex, cliqueGraph);
 
 					//New edges
 					cliqueEdge newEdge;
 					newEdge.contents = firstVertexContents & newVertex.contents;
 					boost::add_edge(firstVertexId, newVertexId, newEdge, cliqueGraph);
+					newEdge.contents = secondVertexContents & newVertex.contents;
 					cliqueTreeGraphType::edge_descriptor newEdgeDescriptor = boost::add_edge(secondVertexId, newVertexId, newEdge, cliqueGraph).first;
 					
 					//Update path
@@ -301,14 +287,16 @@ namespace chordalSubgraph
 					cliqueVertex newVertex;
 					newVertex.contents = lastVertex.contents & unionMinimalSeparatorBitsetCopy;
 					newVertex.contents[vertexForExtraEdges] = true;
-					lastVertex.contents[vertexForExtraEdges] = false;
+					//lastVertex.contents[vertexForExtraEdges] = false;
 					bitsetType lastVertexContents = lastVertex.contents;
+					bitsetType secondLastVertexContents = secondLastVertex.contents;
 					int newVertexId = (int)boost::add_vertex(newVertex, cliqueGraph);
 
 					//New edges
 					cliqueEdge newEdge;
 					newEdge.contents = lastVertexContents & newVertex.contents;
 					boost::add_edge(lastVertexId, newVertexId, newEdge, cliqueGraph);
+					newEdge.contents = secondLastVertexContents & newVertex.contents;
 					cliqueTreeGraphType::edge_descriptor newEdgeDescriptor = boost::add_edge(secondLastVertexId, newVertexId, newEdge, cliqueGraph).first;
 
 					//Update path
@@ -413,7 +401,7 @@ namespace chordalSubgraph
 		}
 		//Work out edges that are on the path from uVertex to vVertex, by doing a breadth first search. 
 		//Added +1 to ensure we don't try and access an entry of a zero-length vector later on
-		std::vector<cliqueTreeGraphType::edge_descriptor> predecessorEdges(nCliqueEdges+1);
+		std::vector<cliqueTreeGraphType::edge_descriptor> predecessorEdges(nCliqueVertices+1);
 		//This represents the vertices of the path
 		//Added +1 to ensure we don't try and access an entry of a zero-length vector later on
 		std::vector<cliqueTreeGraphType::vertex_descriptor> predecessorVertices(nCliqueVertices+1);
@@ -504,7 +492,7 @@ namespace chordalSubgraph
 						boost::remove_edge(currentEdge, cliqueGraph);
 						//Add an edge which skips over
 						cliqueTreeGraphType::edge_descriptor newlyAddedEdge = boost::add_edge(*std::prev(vertexSequenceIterator), *std::next(vertexSequenceIterator), cliqueGraph).first;
-						boost::get(boost::edge_name, cliqueGraph, newlyAddedEdge).contents = currentEdgeSet;
+						boost::get(boost::edge_name, cliqueGraph, newlyAddedEdge).contents = currentEdgeSet & nextEdgeSet;
 
 						vertexSequence.erase(vertexSequenceIterator);
 						edgeSequence.insert(edgeSequenceIterator, newlyAddedEdge);
@@ -520,9 +508,11 @@ namespace chordalSubgraph
 						boost::remove_edge(nextEdge, cliqueGraph);
 						//Add an edge which skips over
 						cliqueTreeGraphType::edge_descriptor newlyAddedEdge = boost::add_edge(*std::prev(vertexSequenceIterator), *std::next(vertexSequenceIterator), cliqueGraph).first;
-						boost::get(boost::edge_name, cliqueGraph, newlyAddedEdge).contents = currentEdgeSet;
+						boost::get(boost::edge_name, cliqueGraph, newlyAddedEdge).contents = currentEdgeSet & nextEdgeSet;
 
 						vertexSequence.erase(vertexSequenceIterator);
+						edgeSequence.insert(edgeSequenceIterator, newlyAddedEdge);
+						edgeSequence.erase(std::next(edgeSequenceIterator));
 						edgeSequence.erase(edgeSequenceIterator);
 						rearranged = true;
 						break;
@@ -615,7 +605,7 @@ namespace chordalSubgraph
 						}
 						if (!foundMissingEdge)
 						{
-							throw std::runtime_error("Clique graph node was maximal");
+							throw std::runtime_error("Clique graph node was not maximal");
 						}
 					}
 				}
@@ -673,7 +663,7 @@ namespace chordalSubgraph
 			cliqueTreeGraphType::vertex_iterator firstVertex, end;
 			boost::tie(firstVertex, end) = boost::vertices(cliqueGraph);
 
-			std::vector<cliqueTreeGraphType::edge_descriptor> predecessorEdges(nCliqueEdges + 1);
+			std::vector<cliqueTreeGraphType::edge_descriptor> predecessorEdges(nCliqueVertices + 1);
 			std::vector<cliqueTreeGraphType::vertex_descriptor> predecessorVertices(nCliqueVertices + 1);
 
 			typedef boost::color_traits<boost::default_color_type> Color;
@@ -694,29 +684,33 @@ namespace chordalSubgraph
 				);
 				for (cliqueTreeGraphType::vertex_iterator secondVertex = firstVertex + 1; secondVertex != end; secondVertex++)
 				{
-					bitsetType firstVertexSet = boost::get(boost::vertex_name, cliqueGraph, *firstVertex).contents;
-					bitsetType secondVertexSet = boost::get(boost::vertex_name, cliqueGraph, *secondVertex).contents;
-					bitsetType intersectionSet = firstVertexSet & secondVertexSet;
-
-					cliqueTreeGraphType::vertex_descriptor currentVertex = *secondVertex;
-					while (true)
+					//There is only a path if they're in the same connected component
+					if (colorMap[*secondVertex] == Color::black())
 					{
-						cliqueTreeGraphType::edge_descriptor existingEdge;
-						bool hasExistingEdge;
+						bitsetType firstVertexSet = boost::get(boost::vertex_name, cliqueGraph, *firstVertex).contents;
+						bitsetType secondVertexSet = boost::get(boost::vertex_name, cliqueGraph, *secondVertex).contents;
+						bitsetType intersectionSet = firstVertexSet & secondVertexSet;
 
-						boost::tie(existingEdge, hasExistingEdge) = boost::edge(currentVertex, predecessorVertices[currentVertex], cliqueGraph);
-						//If there is no path between them, break
-						if (!hasExistingEdge) break;
-						
-						bitsetType existingEdgeSet = boost::get(boost::edge_name, cliqueGraph, existingEdge).contents;
-						if ((existingEdgeSet & intersectionSet) != intersectionSet)
+						cliqueTreeGraphType::vertex_descriptor currentVertex = *secondVertex;
+						while (true)
 						{
-							throw std::runtime_error("There was a pair of vertices so that the path between them did not contain the intersection");
-						}
-						currentVertex = predecessorVertices[currentVertex];
-						if (currentVertex == *firstVertex)
-						{
-							break;
+							cliqueTreeGraphType::edge_descriptor existingEdge;
+							bool hasExistingEdge;
+
+							boost::tie(existingEdge, hasExistingEdge) = boost::edge(currentVertex, predecessorVertices[currentVertex], cliqueGraph);
+							//If there is no path between them, break
+							if (!hasExistingEdge) break;
+
+							bitsetType existingEdgeSet = boost::get(boost::edge_name, cliqueGraph, existingEdge).contents;
+							if ((existingEdgeSet & intersectionSet) != intersectionSet)
+							{
+								throw std::runtime_error("There was a pair of vertices so that the path between them did not contain the intersection");
+							}
+							currentVertex = predecessorVertices[currentVertex];
+							if (currentVertex == *firstVertex)
+							{
+								break;
+							}
 						}
 					}
 				}

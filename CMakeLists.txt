@@ -17,6 +17,7 @@ find_package(Boost 1.53.0 COMPONENTS graph program_options system serialization 
 
 add_subdirectory(chordalSubgraphCommon)
 add_subdirectory(berry2006Test)
+add_subdirectory(copyText)
 if(BUILD_R_PACKAGE)
 	add_subdirectory(RPackage)
 	find_package(R REQUIRED)
