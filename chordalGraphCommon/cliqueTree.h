@@ -3,7 +3,7 @@
 #include <bitset>
 #include <boost/graph/adjacency_list.hpp>
 #define MAX_STORAGE_VERTICES 32
-namespace chordalSubgraph
+namespace chordalGraph
 {
 	typedef std::bitset<MAX_STORAGE_VERTICES> bitsetType;
 	class cliqueVertex

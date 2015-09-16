@@ -1,6 +1,6 @@
 #include "convertGraph.h"
 #include "cliqueTree.h"
-void convertGraphAM(SEXP graph_sexp, ::chordalSubgraph::cliqueTree::graphType& graphRef)
+void convertGraphAM(SEXP graph_sexp, ::chordalGraph::cliqueTree::graphType& graphRef)
 {
 	Rcpp::S4 graph_s4;
 	try
@@ -42,7 +42,7 @@ void convertGraphAM(SEXP graph_sexp, ::chordalSubgraph::cliqueTree::graphType& g
 		throw std::runtime_error("Slot adjMat of input graph must be a square matrix");
 	}
 
-	graphRef = ::chordalSubgraph::cliqueTree::graphType(nVertices);
+	graphRef = ::chordalGraph::cliqueTree::graphType(nVertices);
 	for(int i = 0; i < nVertices; i++)
 	{
 		for(int j = 0; j < nVertices; j++)

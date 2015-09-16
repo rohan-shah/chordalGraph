@@ -1,5 +1,5 @@
 #include "convertGraph.h"
-void convertGraphNEL(SEXP graph_sexp, ::chordalSubgraph::cliqueTree::graphType& graphRef)
+void convertGraphNEL(SEXP graph_sexp, ::chordalGraph::cliqueTree::graphType& graphRef)
 {
 	Rcpp::S4 graph_s4;
 	try
@@ -66,7 +66,7 @@ void convertGraphNEL(SEXP graph_sexp, ::chordalSubgraph::cliqueTree::graphType& 
 	}
 	Rcpp::CharacterVector edges_list_names = Rcpp::as<Rcpp::CharacterVector>(edges_list.attr("names"));
 
-	graphRef =  ::chordalSubgraph::cliqueTree::graphType(nVertices);
+	graphRef =  ::chordalGraph::cliqueTree::graphType(nVertices);
 	for(int i = 0; i < edges_list.size(); i++)
 	{
 		int nodeIndex = std::distance(nodeNames.begin(), std::find(nodeNames.begin(), nodeNames.end(), edges_list_names(i)));

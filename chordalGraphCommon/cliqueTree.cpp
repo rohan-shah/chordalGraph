@@ -2,7 +2,7 @@
 #include <boost/graph/breadth_first_search.hpp>
 #include <boost/graph/connected_components.hpp>
 #include <boost/graph/filtered_graph.hpp>
-namespace chordalSubgraph
+namespace chordalGraph
 {
 	const cliqueTree::graphType& cliqueTree::getGraph() const
 	{

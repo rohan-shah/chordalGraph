@@ -6,8 +6,8 @@ enum R_GRAPH_TYPE
 {
 	IGRAPH, GRAPHNEL, GRAPHAM
 };
-void convertGraph(SEXP graph_sexp, ::chordalSubgraph::cliqueTree::graphType& graphRef, R_GRAPH_TYPE graphType);
-void convertGraphIGraph(SEXP graph_sexp, ::chordalSubgraph::cliqueTree::graphType& graphRef);
-void convertGraphAM(SEXP graph_sexp, ::chordalSubgraph::cliqueTree::graphType& graphRef);
-void convertGraphNEL(SEXP graph_sexp, ::chordalSubgraph::cliqueTree::graphType& graphRef);
+void convertGraph(SEXP graph_sexp, ::chordalGraph::cliqueTree::graphType& graphRef, R_GRAPH_TYPE graphType);
+void convertGraphIGraph(SEXP graph_sexp, ::chordalGraph::cliqueTree::graphType& graphRef);
+void convertGraphAM(SEXP graph_sexp, ::chordalGraph::cliqueTree::graphType& graphRef);
+void convertGraphNEL(SEXP graph_sexp, ::chordalGraph::cliqueTree::graphType& graphRef);
 #endif

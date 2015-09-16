@@ -3,14 +3,14 @@
 SEXP isChordalIterative(SEXP graph_sexp, R_GRAPH_TYPE type)
 {
 BEGIN_RCPP
-	::chordalSubgraph::cliqueTree::graphType graph;
+	::chordalGraph::cliqueTree::graphType graph;
 	convertGraph(graph_sexp, graph, type);
 
 	int nVertices = (int)boost::num_vertices(graph);
-	::chordalSubgraph::cliqueTree iterativeTree(nVertices);
+	::chordalGraph::cliqueTree iterativeTree(nVertices);
 	for (int i = 0; i < nVertices; i++)
 	{
-		::chordalSubgraph::bitsetType edges;
+		::chordalGraph::bitsetType edges;
 		for (int j = 0; j < i; j++)
 		{
 			if (boost::edge(i, j, graph).second)

@@ -1,5 +1,5 @@
 #include "convertGraph.h"
-void convertGraphIGraph(SEXP graph_sexp, ::chordalSubgraph::cliqueTree::graphType& graphRef)
+void convertGraphIGraph(SEXP graph_sexp, ::chordalGraph::cliqueTree::graphType& graphRef)
 {
 	//Convert graph object
 	Rcpp::List graph;
@@ -25,7 +25,7 @@ void convertGraphIGraph(SEXP graph_sexp, ::chordalSubgraph::cliqueTree::graphTyp
 	}
 
 	//Construct graph
-	graphRef = ::chordalSubgraph::cliqueTree::graphType(nVertices);
+	graphRef = ::chordalGraph::cliqueTree::graphType(nVertices);
 	for(int i = 0; i < edgesVertex1.size(); i++)
 	{
 		boost::add_edge(edgesVertex1(i), edgesVertex2(i), graphRef);

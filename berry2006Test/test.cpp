@@ -1,5 +1,5 @@
 #include "cliqueTree.h"
-namespace chordalSubgraph
+namespace chordalGraph
 {
 	void main()
 	{
@@ -57,6 +57,6 @@ namespace chordalSubgraph
 }
 int main(int argc, char** argv)
 {
-	chordalSubgraph::main();
+	chordalGraph::main();
 	return 0;
 }

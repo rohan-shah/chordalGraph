@@ -15,7 +15,7 @@ endif()
 #Find boost packages
 find_package(Boost 1.53.0 COMPONENTS graph program_options system serialization filesystem regex REQUIRED)
 
-add_subdirectory(chordalSubgraphCommon)
+add_subdirectory(chordalGraphCommon)
 add_subdirectory(berry2006Test)
 add_subdirectory(copyText)
 if(BUILD_R_PACKAGE)
