@@ -1,4 +1,4 @@
-Package: chordalSubgraph
+Package: chordalGraph
 Type: Package
 Title: Monte Carlo methods for determining the number of chordal subgraphs
 Version: 0.1

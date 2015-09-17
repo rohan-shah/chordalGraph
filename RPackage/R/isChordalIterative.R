@@ -6,15 +6,15 @@ isChordalIterative <- function(graph)
 		{
 			stop("Input `graph' must be undirected")
 		}
-		estimate <- .Call("isChordalIterative_igraph", graph, PACKAGE="chordalSubgraph")
+		estimate <- .Call("isChordalIterative_igraph", graph, PACKAGE="chordalGraph")
 	}
 	else if(class(graph) == "graphNEL")
 	{
-		estimate <- .Call("isChordalIterative_graphNEL", graph, PACKAGE="chordalSubgraph")
+		estimate <- .Call("isChordalIterative_graphNEL", graph, PACKAGE="chordalGraph")
 	}
 	else if(class(graph) == "graphAM")
 	{
-		estimate <- .Call("isChordalIterative_graphAM", graph, PACKAGE="chordalSubgraph")
+		estimate <- .Call("isChordalIterative_graphAM", graph, PACKAGE="chordalGraph")
 	}
 	else 
 	{

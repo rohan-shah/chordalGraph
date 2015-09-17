@@ -65,4 +65,4 @@ if(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
 endif()
 
 #Ok, configuration is mostly done. Now actually building the shared library
-add_subdirectory(chordalSubgraph)
+add_subdirectory(chordalGraph)

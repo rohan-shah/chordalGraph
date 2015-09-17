@@ -24,6 +24,9 @@ namespace chordalGraph
 	class cliqueEdge
 	{
 	public:
+		cliqueEdge(bitsetType contents)
+			:contents(contents)
+		{}
 		cliqueEdge()
 			:contents(0)
 		{}
@@ -39,6 +42,15 @@ namespace chordalGraph
 	public:
 		typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, boost::property<boost::vertex_name_t, cliqueVertex>, boost::property<boost::edge_name_t, cliqueEdge> > cliqueTreeGraphType;
 		typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS> graphType;
+		struct externalEdge
+		{
+		public:
+			externalEdge(int source, int target, bitsetType contents)
+				:source(source), target(target), contents(contents)
+			{}
+			int source, target;
+			bitsetType contents;
+		};
 	public:
 		cliqueTree(int maximumVertices)
 		{
@@ -52,8 +64,8 @@ namespace chordalGraph
 		bool tryAddVertexWithEdges(const bitsetType& involvedEdges);
 		void addVertex();
 		int getNVertices();
-		void unionMinimalSeparators(int u, int v, bitsetType& vertices, std::list<cliqueTreeGraphType::vertex_descriptor>& vertexSequence, std::list<cliqueTreeGraphType::edge_descriptor>& edgeSequence);
-		void addEdge(int vertexForExtraEdges, int v, bitsetType& unionMinimalSeparatorBitset, std::list<cliqueTreeGraphType::vertex_descriptor>& vertexSequence, std::list<cliqueTreeGraphType::edge_descriptor>& edgeSequence, bool hasPrecomputedUnionMinimalSeparator);
+		void unionMinimalSeparators(int u, int v, bitsetType& vertices, std::list<cliqueTreeGraphType::vertex_descriptor>& vertexSequence, std::list<externalEdge>& edgeSequence, std::vector<externalEdge>& addEdges, std::vector<externalEdge>& removeEdges);
+		void addEdge(int vertexForExtraEdges, int v, bitsetType& unionMinimalSeparatorBitset, std::list<cliqueTreeGraphType::vertex_descriptor>& vertexSequence, std::list<externalEdge>& edgeSequence, std::vector<externalEdge>& addEdges, std::vector<externalEdge>& removeEdges, bool hasPrecomputedUnionMinimalSeparator);
 		void check() const;
 	private:
 		cliqueTreeGraphType cliqueGraph;

@@ -18,8 +18,10 @@ namespace chordalGraph
 		cliqueTree maximalChordalSubgraph(7);
 		cliqueTree minimalTriangulation(7);
 		bitsetType vertices;
-		std::list<cliqueTree::cliqueTreeGraphType::edge_descriptor> edgeSequence;
+		std::list<cliqueTree::externalEdge> edgeSequence;
 		std::list<cliqueTree::cliqueTreeGraphType::vertex_descriptor> vertexSequence;
+		std::vector<cliqueTree::externalEdge> addEdges;
+		std::vector<cliqueTree::externalEdge> removeEdges;
 		for (int i = 0; i < 7; i++)
 		{
 			maximalChordalSubgraph.addVertex();
@@ -33,20 +35,20 @@ namespace chordalGraph
 				int targetVertex = (int)boost::target(*current, baseGraph);
 				if (targetVertex < i)
 				{
-					maximalChordalSubgraph.unionMinimalSeparators(i, targetVertex, vertices, vertexSequence, edgeSequence);
+					maximalChordalSubgraph.unionMinimalSeparators(i, targetVertex, vertices, vertexSequence, edgeSequence, addEdges, removeEdges);
 					//vertices contains vertices on chordless paths between the two. 
 					//We can only proceed if there are no vertices on the path (different components), 
 					//or the set forms a complete graph / edges to those vertices already exist
 					if (vertices.none() || vertices.count() == 1)
 					{
-						maximalChordalSubgraph.addEdge(targetVertex, i, vertices, vertexSequence, edgeSequence, true);
+						maximalChordalSubgraph.addEdge(targetVertex, i, vertices, vertexSequence, edgeSequence, addEdges, removeEdges, true);
 						maximalChordalSubgraph.check();
 					}
 					//Don't try and add an edge that's already been added into the triangulation
 					if (!boost::edge(i, targetVertex, minimalTriangulation.getGraph()).second)
 					{
-						minimalTriangulation.unionMinimalSeparators(i, targetVertex, vertices, vertexSequence, edgeSequence);
-						minimalTriangulation.addEdge(i, targetVertex, vertices, vertexSequence, edgeSequence, true);
+						minimalTriangulation.unionMinimalSeparators(i, targetVertex, vertices, vertexSequence, edgeSequence, addEdges, removeEdges);
+						minimalTriangulation.addEdge(i, targetVertex, vertices, vertexSequence, edgeSequence, addEdges, removeEdges, true);
 					}
 					minimalTriangulation.check();
 				}
