@@ -2,7 +2,7 @@
 #define CLIQUE_TREE_HEADER_GUARD
 #include <bitset>
 #include <boost/graph/adjacency_list.hpp>
-#define MAX_STORAGE_VERTICES 32
+#define MAX_STORAGE_VERTICES 64
 namespace chordalGraph
 {
 	typedef std::bitset<MAX_STORAGE_VERTICES> bitsetType;
@@ -52,6 +52,9 @@ namespace chordalGraph
 			bitsetType contents;
 		};
 	public:
+		cliqueTree(cliqueTree&& other)
+			:cliqueGraph(std::move(other.cliqueGraph)), graph(std::move(other.graph)), verticesToCliqueVertices(std::move(other.verticesToCliqueVertices)), componentIDs(std::move(other.componentIDs))
+		{}
 		cliqueTree(int maximumVertices)
 		{
 			if(maximumVertices > MAX_STORAGE_VERTICES)
