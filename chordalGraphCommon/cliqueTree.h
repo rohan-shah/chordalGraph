@@ -40,29 +40,31 @@ namespace chordalGraph
 }
 namespace chordalGraph
 {
-	template <class VertexProperty = boost::no_property, class EdgeProperty = boost::no_property, class GraphProperty = boost::no_property, class EdgeListS = boost::listS>
-	class moveable_adjacency_list : public boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, VertexProperty, EdgeProperty, GraphProperty, EdgeListS>
+	template <class VertexProperty = boost::no_property, class EdgeProperty = boost::no_property, class EdgeListS = boost::listS>
+	class moveable_adjacency_list : public boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, VertexProperty, EdgeProperty, boost::no_property, EdgeListS>
 	{
 	public:
-		typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, VertexProperty,	EdgeProperty, GraphProperty, EdgeListS> base;
-		typedef typename boost::detail::adj_list_gen<base, boost::vecS, boost::vecS, boost::undirectedS, VertexProperty, EdgeProperty, GraphProperty, EdgeListS>::type detailType;
-		typedef moveable_adjacency_list<VertexProperty, EdgeProperty, GraphProperty, EdgeListS> type;
+		typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, VertexProperty, EdgeProperty, boost::no_property, EdgeListS> base;
+		typedef typename boost::detail::adj_list_gen<base, boost::vecS, boost::vecS, boost::undirectedS, VertexProperty, EdgeProperty, boost::no_property, EdgeListS>::type detailType;
+		typedef moveable_adjacency_list<VertexProperty, EdgeProperty, EdgeListS> type;
 		moveable_adjacency_list()
 		{}
-		moveable_adjacency_list(vertices_size_type num_vertices)
+		moveable_adjacency_list(typename type::base::vertices_size_type num_vertices)
 			:base(num_vertices)
 		{}
+		moveable_adjacency_list(const type& other)
+			:base(other)
+		{
+		}
 		moveable_adjacency_list(type&& other)
 		{
 			detailType::m_vertices.swap(other.detailType::m_vertices);
 			detailType::m_edges.swap(other.detailType::m_edges);
-			base::m_property.swap(other.base::m_property);
 		}
 		type& operator=(type&& other)
 		{
-			this->detailType::m_vertices = other.detailType::m_vertices;
-			this->detailType::m_edges = other.detailType::m_edges;
-			this->base::m_property.swap(other.base::m_property);
+			this->detailType::m_vertices.swap(other.detailType::m_vertices);
+			this->detailType::m_edges.swap(other.detailType::m_edges);
 			return *this;
 		}
 	};
@@ -99,6 +101,9 @@ namespace chordalGraph
 				throw std::runtime_error("Requested number of vertices exceeded amount of storage available");
 			}
 		}
+		cliqueTree(const cliqueTree& other)
+			:cliqueGraph(other.cliqueGraph), graph(other.graph), verticesToCliqueVertices(other.verticesToCliqueVertices), componentIDs(other.componentIDs)
+		{}
 		const cliqueTreeGraphType& getCliqueGraph() const;
 		const graphType& getGraph() const;
 		bool tryAddVertexWithEdges(const bitsetType& involvedEdges, unionMinimalSeparatorsTemporaries& temp);

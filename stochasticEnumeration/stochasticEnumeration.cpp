@@ -1,6 +1,7 @@
 #include "cliqueTree.h"
 #include "stochasticEnumeration.h"
 #include <boost/program_options.hpp>
+#include <iostream>
 namespace chordalGraph
 {
 	int main(int argc, char** argv)

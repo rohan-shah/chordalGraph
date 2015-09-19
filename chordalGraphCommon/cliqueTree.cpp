@@ -30,7 +30,6 @@ namespace chordalGraph
 		bitsetType copiedInvolvedEdges = involvedEdges;
 
 		int nVertices = (int)boost::num_vertices(graph);
-		int nCliqueVertices = (int)boost::num_vertices(cliqueGraph);
 		if (nVertices == 0)
 		{
 			cliqueVertex newVertex;
@@ -357,7 +356,7 @@ namespace chordalGraph
 					boost::tie(currentEdgeIterator, endEdgeIterator) = boost::out_edges(smallerVertexIndex, cliqueGraph);
 					while (currentEdgeIterator != endEdgeIterator)
 					{
-						if (currentEdgeIterator->m_target != biggerVertexIndex)
+						if ((int)currentEdgeIterator->m_target != biggerVertexIndex)
 						{
 							cliqueEdge newEdge;
 							newEdge.contents = boost::get(boost::vertex_name, cliqueGraph, currentEdgeIterator->m_target).contents & boost::get(boost::vertex_name, cliqueGraph, biggerVertexIndex).contents;
@@ -401,8 +400,13 @@ namespace chordalGraph
 			throw std::runtime_error("Cannot have u == v in call to unionMinimalSeparators");
 		}
 		vertices.reset();
-		int nCliqueVertices = (int)boost::num_vertices(cliqueGraph), nCliqueEdges = (int)boost::num_edges(cliqueGraph);
+		addEdges.clear();
+		removeEdges.clear();
+		edgeSequence.clear();
+		vertexSequence.clear();
+		int nCliqueVertices = (int)boost::num_vertices(cliqueGraph);
 		cliqueTreeGraphType::vertex_descriptor uVertex = verticesToCliqueVertices[u], vVertex = verticesToCliqueVertices[v];
+		if(uVertex == vVertex) return;
 		//Work out edges that are on the path from uVertex to vVertex, by doing a breadth first search. 
 		//Added +1 to ensure we don't try and access an entry of a zero-length vector later on
 		//replaced with temp.predecessorEdges
@@ -427,10 +431,6 @@ namespace chordalGraph
 					)
 				), colorMap
 		);
-		addEdges.clear();
-		removeEdges.clear();
-		edgeSequence.clear();
-		vertexSequence.clear();
 		if (temp.colorMap[vVertex] == Color::black())
 		{
 			//Same connected component, so there is a minimal separator
@@ -455,7 +455,6 @@ namespace chordalGraph
 			{
 				if (vertexSequence.size() > 1)
 				{
-					int firstCliqueVertex = (int)*vertexSequence.begin();
 					int secondCliqueVertex = (int)*std::next(vertexSequence.begin());
 					if (boost::get(boost::vertex_name, cliqueGraph, secondCliqueVertex).contents[v])
 					{
@@ -472,7 +471,6 @@ namespace chordalGraph
 			{
 				if (vertexSequence.size() > 1)
 				{
-					int firstCliqueVertex = (int)*vertexSequence.rbegin();
 					int secondCliqueVertex = (int)*std::next(vertexSequence.rbegin());
 					if (boost::get(boost::vertex_name, cliqueGraph, secondCliqueVertex).contents[u])
 					{
@@ -575,7 +573,6 @@ namespace chordalGraph
 	{
 		std::size_t nVertices = boost::num_vertices(graph);
 		std::size_t nCliqueVertices = boost::num_vertices(cliqueGraph);
-		std::size_t nCliqueEdges = boost::num_edges(cliqueGraph);
 		{
 			cliqueTreeGraphType::vertex_iterator current, end;
 			boost::tie(current, end) = boost::vertices(cliqueGraph);
@@ -584,12 +581,12 @@ namespace chordalGraph
 			{
 				bitsetType contents = boost::get(boost::vertex_name, cliqueGraph, *current).contents;
 				unionCliqueVertices |= contents;
-				for (int i = 0; i < nVertices; i++)
+				for (int i = 0; i < (int)nVertices; i++)
 				{
 					//Check that every clique is in fact a clique
 					if (contents[i])
 					{
-						for (int j = 0; j < nVertices; j++)
+						for (int j = 0; j < (int)nVertices; j++)
 						{
 							if (contents[j] & (i != j))
 							{
@@ -604,7 +601,7 @@ namespace chordalGraph
 					if (!contents[i])
 					{
 						bool foundMissingEdge = false;
-						for (int j = 0; j < nVertices; j++)
+						for (int j = 0; j < (int)nVertices; j++)
 						{
 							if (contents[j])
 							{
@@ -623,7 +620,7 @@ namespace chordalGraph
 				}
 			}
 			//Every vertex appears in at least one clique vertex
-			for (int i = 0; i < nVertices; i++)
+			for (int i = 0; i < (int)nVertices; i++)
 			{
 				if (!unionCliqueVertices[i])
 				{
@@ -634,7 +631,7 @@ namespace chordalGraph
 		
 		//Check that vertices induce connected subtrees.
 		std::vector<int> connectedComponents(nCliqueVertices);
-		for (int i = 0; i < nVertices; i++)
+		for (int i = 0; i < (int)nVertices; i++)
 		{
 			filterByVertex filterObject(&cliqueGraph);
 			filterObject.vertex = i;
