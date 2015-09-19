@@ -402,21 +402,7 @@ namespace chordalGraph
 		}
 		vertices.reset();
 		int nCliqueVertices = (int)boost::num_vertices(cliqueGraph), nCliqueEdges = (int)boost::num_edges(cliqueGraph);
-		cliqueTreeGraphType::vertex_descriptor uVertex, vVertex;
-		cliqueTreeGraphType::vertex_iterator current, end;
-		boost::tie(current, end) = boost::vertices(cliqueGraph);
-		while (current != end)
-		{
-			if (boost::get(boost::vertex_name, cliqueGraph, *current).contents[u])
-			{
-				uVertex = *current;
-			}
-			if (boost::get(boost::vertex_name, cliqueGraph, *current).contents[v])
-			{
-				vVertex = *current;
-			}
-			current++;
-		}
+		cliqueTreeGraphType::vertex_descriptor uVertex = verticesToCliqueVertices[u], vVertex = verticesToCliqueVertices[v];
 		//Work out edges that are on the path from uVertex to vVertex, by doing a breadth first search. 
 		//Added +1 to ensure we don't try and access an entry of a zero-length vector later on
 		std::vector<cliqueTreeGraphType::edge_descriptor> predecessorEdges(nCliqueVertices+1);

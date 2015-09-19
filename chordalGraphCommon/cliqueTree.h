@@ -35,13 +35,44 @@ namespace chordalGraph
 			contents = other.contents;
 			return *this;
 		}
-		 bitsetType contents;
+		bitsetType contents;
+	};
+}
+namespace chordalGraph
+{
+	template <class VertexProperty = boost::no_property, class EdgeProperty = boost::no_property, class GraphProperty = boost::no_property, class EdgeListS = boost::listS>
+	class moveable_adjacency_list : public boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, VertexProperty, EdgeProperty, GraphProperty, EdgeListS>
+	{
+	public:
+		typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, VertexProperty,	EdgeProperty, GraphProperty, EdgeListS> base;
+		typedef typename boost::detail::adj_list_gen<base, boost::vecS, boost::vecS, boost::undirectedS, VertexProperty, EdgeProperty, GraphProperty, EdgeListS>::type detailType;
+		typedef moveable_adjacency_list<VertexProperty, EdgeProperty, GraphProperty, EdgeListS> type;
+		moveable_adjacency_list()
+		{}
+		moveable_adjacency_list(vertices_size_type num_vertices)
+			:base(num_vertices)
+		{}
+		moveable_adjacency_list(type&& other)
+		{
+			detailType::m_vertices.swap(other.detailType::m_vertices);
+			detailType::m_edges.swap(other.detailType::m_edges);
+			base::m_property.swap(other.base::m_property);
+		}
+		type& operator=(type&& other)
+		{
+			this->detailType::m_vertices = other.detailType::m_vertices;
+			this->detailType::m_edges = other.detailType::m_edges;
+			this->base::m_property.swap(other.base::m_property);
+			return *this;
+		}
 	};
 	class cliqueTree
 	{
 	public:
-		typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, boost::property<boost::vertex_name_t, cliqueVertex>, boost::property<boost::edge_name_t, cliqueEdge> > cliqueTreeGraphType;
-		typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS> graphType;
+		//typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, boost::property<boost::vertex_name_t, cliqueVertex>, boost::property<boost::edge_name_t, cliqueEdge> > cliqueTreeGraphType;
+		//typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS> graphType;
+		typedef moveable_adjacency_list<boost::property<boost::vertex_name_t, cliqueVertex>, boost::property<boost::edge_name_t, cliqueEdge> > cliqueTreeGraphType;
+		typedef moveable_adjacency_list<> graphType;
 		struct externalEdge
 		{
 		public:

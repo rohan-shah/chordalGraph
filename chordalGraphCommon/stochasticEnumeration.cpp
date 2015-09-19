@@ -7,7 +7,8 @@ namespace chordalGraph
 {
 	void stochasticEnumeration(stochasticEnumerationArgs& args)
 	{
-		args.estimate = 1;
+		args.estimate = 0;
+		mpfr_class multiple = 1;
 
 		boost::random_number_generator<boost::mt19937> generator(args.randomSource);
 		//Number of edges either present (or to be added later)
@@ -91,11 +92,25 @@ namespace chordalGraph
 				//Clear vector of indices of possibilities
 				shuffleVector.clear();
 				//Make a list of all the possibiltiies
+				int knownToBeChordal = 0;
 				for (std::vector<cliqueTree>::iterator i = cliqueTrees.begin(); i != cliqueTrees.end(); i++)
 				{
 					int index = (int)std::distance(cliqueTrees.begin(), i);
 					bitsetType copiedConditions = conditions[index];
-					if (copiedConditions[currentEdge])
+					//maximum possible number of edges
+					int maxEdges = nEdges[index] + nRemainingEdges - (int)(copiedConditions & ~bitsetType((1ULL << (currentEdge)) - 1)).count();
+					//Do we need this edge to make up the numbers?
+					bool requiresEdge = maxEdges == args.nEdges;
+					if (maxEdges < args.nEdges)
+					{
+						//Too few edges to reach the target number
+					}
+					else if ((currentEdge == 0 && requiresEdge) || nEdges[index] == args.nEdges)
+					{
+						//Already known to be chordal
+						knownToBeChordal++;
+					}
+					else if (copiedConditions[currentEdge])
 					{
 						//The case where this edge being off is not allowed.
 						//Note that in this case we add an edge without calling unionMinimalSeparator, so we need to be careful later on
@@ -103,10 +118,6 @@ namespace chordalGraph
 
 						//Add correct index to possibilities vector
 						shuffleVector.push_back(2 * index + 1);
-					}
-					else if (nEdges[index] + nRemainingEdges < args.nEdges)
-					{
-						//Too few edges to reach the target number
 					}
 					//This edge could be either present or absent, without further information
 					else
@@ -116,8 +127,11 @@ namespace chordalGraph
 						//Of course *one* vertex of the minimal separator must correspond to an already added edge, and that's ok. 
 						if ((unionMinimalSeparators[index] & ~existingEdges[index] & bitsetType((1ULL << currentEdge) - 1)).any())
 						{
-							//Add correct index to possibilities vector
-							shuffleVector.push_back(2 * index);
+							if (!requiresEdge)
+							{
+								//Add correct index to possibilities vector
+								shuffleVector.push_back(2 * index);
+							}
 						}
 						else
 						{
@@ -132,6 +146,12 @@ namespace chordalGraph
 								//Add correct index to possibilities vector
 								shuffleVector.push_back(2 * index);
 							}
+							else if (requiresEdge)
+							{
+								//If we need this edge to make up the numbers, don't consider the case where it's missing. 
+								possibilityEdges[index] = nEdges[index] + 1 + nAdditionalEdges;
+								shuffleVector.push_back(2 * index + 1);
+							}
 							else
 							{
 								//Here both present and absent are allowed.
@@ -145,11 +165,12 @@ namespace chordalGraph
 						}
 					}
 				}
+				args.estimate += multiple * knownToBeChordal;
 				boost::range::random_shuffle(shuffleVector, generator);
 				int toTake = std::min((int)shuffleVector.size(), args.budget);
 
 				//Ratio of vertices examined to not examined
-				args.estimate *= (double)shuffleVector.size() / (double)toTake;
+				multiple *= (double)shuffleVector.size() / (double)toTake;
 
 				std::fill(copyCounts.begin(), copyCounts.end(), 0);
 				//Now work out how many copies (0, 1, 2) are taken of each sample
@@ -193,7 +214,7 @@ namespace chordalGraph
 						else
 						{
 							newCliqueTrees[i].addEdge(currentVertex, currentEdge, unionMinimalSeparators[originalIndex], vertexSequence[originalIndex], edgeSequence[originalIndex], addEdges[originalIndex], removeEdges[originalIndex], true);
-							newConditions[i] = conditions[originalIndex] | (unionMinimalSeparators[originalIndex] & ~bitsetType((1ULL << currentEdge) - 1));
+							newConditions[i] = conditions[originalIndex] | (unionMinimalSeparators[originalIndex] & (~bitsetType((1ULL << (currentEdge+1)) - 1)) & (~newExistingEdges[i]));
 						}
 					}
 					else
@@ -207,16 +228,16 @@ namespace chordalGraph
 				conditions.swap(newConditions);
 				existingEdges.swap(newExistingEdges);
 				currentEdge++;
+				//If we've reached the end prematurely, break. 
+				if (cliqueTrees.size() == 0) return;
+				//If nRemainingEdges == 1 then everything in shuffleVector represents a valid chordal graph. So
+				//Count these final ones and then return. 
+				if (nRemainingEdges == 1)
+				{
+					args.estimate += multiple * shuffleVector.size();
+					return;
+				}
 			}
 		}
-		int count = 0;
-		for (int i = 0; i < cliqueTrees.size(); i++)
-		{
-			if (boost::num_edges(cliqueTrees[i].getGraph()) == args.nEdges)
-			{
-				count++;
-			}
-		}
-		args.estimate = count;
 	}
 }

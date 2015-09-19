@@ -9,7 +9,9 @@ Description: This package provides Monte Carlo methods for estimating the number
 License: GPL v3
 LazyData: No
 Suggests: graph, igraph
+Depends: Rmpfr
 Collate:
    'isChordalIterative.R'
    'Rcpp_exceptions.R'
    'onLoad.R'
+   'stochasticEnumeration.R'
