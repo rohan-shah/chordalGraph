@@ -1,5 +1,5 @@
 #include "cliqueTree.h"
-#include <boost/graph/breadth_first_search.hpp>
+#include <boost/graph/depth_first_search.hpp>
 #include <boost/graph/connected_components.hpp>
 #include <boost/graph/filtered_graph.hpp>
 namespace chordalGraph
@@ -25,7 +25,7 @@ namespace chordalGraph
 		componentIDs.push_back(previousVertexCount);
 		verticesToCliqueVertices.push_back(newCliqueVertexId);
 	}
-	bool cliqueTree::tryAddVertexWithEdges(const bitsetType& involvedEdges)
+	bool cliqueTree::tryAddVertexWithEdges(const bitsetType& involvedEdges, unionMinimalSeparatorsTemporaries& temp)
 	{
 		bitsetType copiedInvolvedEdges = involvedEdges;
 
@@ -59,14 +59,14 @@ namespace chordalGraph
 			if (copiedInvolvedEdges[i])
 			{
 				unionMinimalSeparatorBitset.reset();
-				unionMinimalSeparators(nVertices, i, unionMinimalSeparatorBitset, vertexSequence, edgeSequence, addEdges, removeEdges);
+				unionMinimalSeparators(nVertices, i, unionMinimalSeparatorBitset, vertexSequence, edgeSequence, addEdges, removeEdges, temp);
 				//If we need to add something that we weren't going to, then we don't
 				//have a chordal graph. So throw an error. 
 				if ((unionMinimalSeparatorBitset & (~involvedEdges)).any())
 				{
 					return false;
 				}
-				addEdge(nVertices, i, unionMinimalSeparatorBitset, vertexSequence, edgeSequence, addEdges, removeEdges, true);
+				addEdge(nVertices, i, unionMinimalSeparatorBitset, vertexSequence, edgeSequence, addEdges, removeEdges, temp, true);
 				//We can now safely ignore the edges in unionMinimalSeparatorBitset
 				//That is, they've been added so don't try and add them again
 				copiedInvolvedEdges = copiedInvolvedEdges & (~unionMinimalSeparatorBitset);
@@ -76,14 +76,14 @@ namespace chordalGraph
 		}
 		return true;
 	}
-	void cliqueTree::addEdge(int vertexForExtraEdges, int v, bitsetType& unionMinimalSeparatorBitset, std::list<cliqueTreeGraphType::vertex_descriptor>& vertexSequence, std::list<externalEdge>& edgeSequence, std::vector<externalEdge>& addEdges, std::vector<externalEdge>& removeEdges, bool hasPrecomputedUnionMinimalSeparator)
+	void cliqueTree::addEdge(int vertexForExtraEdges, int v, bitsetType& unionMinimalSeparatorBitset, std::list<cliqueTreeGraphType::vertex_descriptor>& vertexSequence, std::list<externalEdge>& edgeSequence, std::vector<externalEdge>& addEdges, std::vector<externalEdge>& removeEdges, unionMinimalSeparatorsTemporaries& temp, bool hasPrecomputedUnionMinimalSeparator)
 	{
 		if (!hasPrecomputedUnionMinimalSeparator)
 		{
 			unionMinimalSeparatorBitset.reset();
 			vertexSequence.clear();
 			edgeSequence.clear();
-			unionMinimalSeparators(vertexForExtraEdges, v, unionMinimalSeparatorBitset, vertexSequence, edgeSequence, addEdges, removeEdges);
+			unionMinimalSeparators(vertexForExtraEdges, v, unionMinimalSeparatorBitset, vertexSequence, edgeSequence, addEdges, removeEdges, temp);
 		}
 		cliqueVertex& extraEdgesCliqueVertex = boost::get(boost::vertex_name, cliqueGraph, verticesToCliqueVertices[vertexForExtraEdges]);
 		cliqueVertex& vCliqueVertex = boost::get(boost::vertex_name, cliqueGraph, verticesToCliqueVertices[v]);
@@ -394,7 +394,7 @@ namespace chordalGraph
 		}
 		boost::add_edge(vertexForExtraEdges, v, graph);
 	}
-	void cliqueTree::unionMinimalSeparators(int u, int v, bitsetType& vertices, std::list<cliqueTreeGraphType::vertex_descriptor>& vertexSequence, std::list<externalEdge>& edgeSequence, std::vector<externalEdge>& addEdges, std::vector<externalEdge>& removeEdges)
+	void cliqueTree::unionMinimalSeparators(int u, int v, bitsetType& vertices, std::list<cliqueTreeGraphType::vertex_descriptor>& vertexSequence, std::list<externalEdge>& edgeSequence, std::vector<externalEdge>& addEdges, std::vector<externalEdge>& removeEdges, unionMinimalSeparatorsTemporaries& temp)
 	{
 		if (u == v)
 		{
@@ -405,29 +405,33 @@ namespace chordalGraph
 		cliqueTreeGraphType::vertex_descriptor uVertex = verticesToCliqueVertices[u], vVertex = verticesToCliqueVertices[v];
 		//Work out edges that are on the path from uVertex to vVertex, by doing a breadth first search. 
 		//Added +1 to ensure we don't try and access an entry of a zero-length vector later on
-		std::vector<cliqueTreeGraphType::edge_descriptor> predecessorEdges(nCliqueVertices+1);
+		//replaced with temp.predecessorEdges
+		//std::vector<cliqueTreeGraphType::edge_descriptor> predecessorEdges(nCliqueVertices+1);
+		temp.predecessorEdges.resize(nCliqueVertices + 1);
 		//This represents the vertices of the path
 		//Added +1 to ensure we don't try and access an entry of a zero-length vector later on
-		std::vector<cliqueTreeGraphType::vertex_descriptor> predecessorVertices(nCliqueVertices+1);
+		//replaced with temp.predecessorVertices
+		//std::vector<cliqueTreeGraphType::vertex_descriptor> predecessorVertices(nCliqueVertices+1);
+		temp.predecessorVertices.resize(nCliqueVertices + 1);
 		
+		temp.colorMap.resize(nCliqueVertices);
 		typedef boost::color_traits<boost::default_color_type> Color;
-		std::vector<boost::default_color_type> colorMap(nCliqueVertices, Color::white());
+		std::fill(temp.colorMap.begin(), temp.colorMap.end(), Color::white());
+		boost::iterator_property_map<std::vector<boost::default_color_type>::iterator, boost::identity_property_map> colorMap(temp.colorMap.begin());
 		//start from vertex u, go to vertex v
-		boost::breadth_first_search(cliqueGraph, uVertex,
-			boost::visitor(
-				boost::make_bfs_visitor(
+		boost::depth_first_visit(cliqueGraph, uVertex,
+			boost::make_dfs_visitor(
 					std::make_pair(
-						boost::record_edge_predecessors(&predecessorEdges[0], boost::on_tree_edge()),
-						boost::record_predecessors(&predecessorVertices[0], boost::on_tree_edge())
+						boost::record_edge_predecessors(&temp.predecessorEdges[0], boost::on_tree_edge()),
+						boost::record_predecessors(&temp.predecessorVertices[0], boost::on_tree_edge())
 					)
-				)
-				).color_map(&colorMap[0])
+				), colorMap
 		);
 		addEdges.clear();
 		removeEdges.clear();
 		edgeSequence.clear();
 		vertexSequence.clear();
-		if (colorMap[vVertex] == Color::black())
+		if (temp.colorMap[vVertex] == Color::black())
 		{
 			//Same connected component, so there is a minimal separator
 			//Now we can get out the sequence of edges / vertices, starting at v and going through to u
@@ -436,15 +440,15 @@ namespace chordalGraph
 			cliqueTreeGraphType::vertex_descriptor currentVertex = vVertex;
 			while (true)
 			{
-				cliqueTreeGraphType::edge_descriptor internalEdge = predecessorEdges[currentVertex];
+				cliqueTreeGraphType::edge_descriptor internalEdge = temp.predecessorEdges[currentVertex];
 				externalEdge internalToExternal((int)boost::source(internalEdge, cliqueGraph), (int)boost::target(internalEdge, cliqueGraph), boost::get(boost::edge_name, cliqueGraph, internalEdge).contents);
 				edgeSequence.push_back(internalToExternal);
-				vertexSequence.push_back(predecessorVertices[currentVertex]);
-				if (predecessorVertices[currentVertex] == uVertex)
+				vertexSequence.push_back(temp.predecessorVertices[currentVertex]);
+				if (temp.predecessorVertices[currentVertex] == uVertex)
 				{
 					break;
 				}
-				currentVertex = predecessorVertices[currentVertex];
+				currentVertex = temp.predecessorVertices[currentVertex];
 			}
 			//We need to go from the start to the *last* element in the sequence that contains v. 
 			while (true)
@@ -675,20 +679,20 @@ namespace chordalGraph
 			std::vector<cliqueTreeGraphType::vertex_descriptor> predecessorVertices(nCliqueVertices + 1);
 
 			typedef boost::color_traits<boost::default_color_type> Color;
-			std::vector<boost::default_color_type> colorMap(nCliqueVertices, Color::white());
+			std::vector<boost::default_color_type> colorVector(nCliqueVertices, Color::white());
+
+			boost::iterator_property_map<std::vector<boost::default_color_type>::iterator, boost::identity_property_map> colorMap(colorVector.begin());
 			for (; firstVertex != end; firstVertex++)
 			{
-				std::fill(colorMap.begin(), colorMap.end(), Color::white());
+				std::fill(colorVector.begin(), colorVector.end(), Color::white());
 				//start from vertex u, go to vertex v
-				boost::breadth_first_search(cliqueGraph, *firstVertex,
-					boost::visitor(
-						boost::make_bfs_visitor(
+				boost::depth_first_visit(cliqueGraph, *firstVertex,
+						boost::make_dfs_visitor(
 							std::make_pair(
 								boost::record_edge_predecessors(&predecessorEdges[0], boost::on_tree_edge()),
 								boost::record_predecessors(&predecessorVertices[0], boost::on_tree_edge())
 							)
-						)
-					).color_map(&colorMap[0])
+					), colorMap
 				);
 				for (cliqueTreeGraphType::vertex_iterator secondVertex = firstVertex + 1; secondVertex != end; secondVertex++)
 				{

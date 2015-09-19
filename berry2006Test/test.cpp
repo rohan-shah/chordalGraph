@@ -3,6 +3,7 @@ namespace chordalGraph
 {
 	void main()
 	{
+		cliqueTree::unionMinimalSeparatorsTemporaries temp;
 		cliqueTree::graphType baseGraph(7);
 		boost::add_edge(1, 0, baseGraph);
 		boost::add_edge(2, 1, baseGraph);
@@ -35,20 +36,20 @@ namespace chordalGraph
 				int targetVertex = (int)boost::target(*current, baseGraph);
 				if (targetVertex < i)
 				{
-					maximalChordalSubgraph.unionMinimalSeparators(i, targetVertex, vertices, vertexSequence, edgeSequence, addEdges, removeEdges);
+					maximalChordalSubgraph.unionMinimalSeparators(i, targetVertex, vertices, vertexSequence, edgeSequence, addEdges, removeEdges, temp);
 					//vertices contains vertices on chordless paths between the two. 
 					//We can only proceed if there are no vertices on the path (different components), 
 					//or the set forms a complete graph / edges to those vertices already exist
 					if (vertices.none() || vertices.count() == 1)
 					{
-						maximalChordalSubgraph.addEdge(targetVertex, i, vertices, vertexSequence, edgeSequence, addEdges, removeEdges, true);
+						maximalChordalSubgraph.addEdge(targetVertex, i, vertices, vertexSequence, edgeSequence, addEdges, removeEdges, temp, true);
 						maximalChordalSubgraph.check();
 					}
 					//Don't try and add an edge that's already been added into the triangulation
 					if (!boost::edge(i, targetVertex, minimalTriangulation.getGraph()).second)
 					{
-						minimalTriangulation.unionMinimalSeparators(i, targetVertex, vertices, vertexSequence, edgeSequence, addEdges, removeEdges);
-						minimalTriangulation.addEdge(i, targetVertex, vertices, vertexSequence, edgeSequence, addEdges, removeEdges, true);
+						minimalTriangulation.unionMinimalSeparators(i, targetVertex, vertices, vertexSequence, edgeSequence, addEdges, removeEdges, temp);
+						minimalTriangulation.addEdge(i, targetVertex, vertices, vertexSequence, edgeSequence, addEdges, removeEdges, temp, true);
 					}
 					minimalTriangulation.check();
 				}

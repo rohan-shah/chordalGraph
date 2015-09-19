@@ -10,6 +10,9 @@ namespace chordalGraph
 		args.estimate = 0;
 		mpfr_class multiple = 1;
 
+		//Temporary data that's used in cliqueTree calls
+		cliqueTree::unionMinimalSeparatorsTemporaries temp;
+
 		boost::random_number_generator<boost::mt19937> generator(args.randomSource);
 		//Number of edges either present (or to be added later)
 		std::vector<int> nEdges(args.budget);
@@ -122,7 +125,7 @@ namespace chordalGraph
 					//This edge could be either present or absent, without further information
 					else
 					{
-						cliqueTrees[index].unionMinimalSeparators(currentVertex, currentEdge, unionMinimalSeparators[index], vertexSequence[index], edgeSequence[index], addEdges[index], removeEdges[index]);
+						cliqueTrees[index].unionMinimalSeparators(currentVertex, currentEdge, unionMinimalSeparators[index], vertexSequence[index], edgeSequence[index], addEdges[index], removeEdges[index], temp);
 						//If we need to add edges that were already considered (and therefore, must have already been rejected), then this edge CANNOT be present
 						//Of course *one* vertex of the minimal separator must correspond to an already added edge, and that's ok. 
 						if ((unionMinimalSeparators[index] & ~existingEdges[index] & bitsetType((1ULL << currentEdge) - 1)).any())
@@ -213,7 +216,7 @@ namespace chordalGraph
 						}
 						else
 						{
-							newCliqueTrees[i].addEdge(currentVertex, currentEdge, unionMinimalSeparators[originalIndex], vertexSequence[originalIndex], edgeSequence[originalIndex], addEdges[originalIndex], removeEdges[originalIndex], true);
+							newCliqueTrees[i].addEdge(currentVertex, currentEdge, unionMinimalSeparators[originalIndex], vertexSequence[originalIndex], edgeSequence[originalIndex], addEdges[originalIndex], removeEdges[originalIndex], temp, true);
 							newConditions[i] = conditions[originalIndex] | (unionMinimalSeparators[originalIndex] & (~bitsetType((1ULL << (currentEdge+1)) - 1)) & (~newExistingEdges[i]));
 						}
 					}

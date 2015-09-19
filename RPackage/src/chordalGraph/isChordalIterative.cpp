@@ -2,7 +2,10 @@
 #include "convertGraph.h"
 SEXP isChordalIterative(SEXP graph_sexp, R_GRAPH_TYPE type)
 {
-BEGIN_RCPP
+	BEGIN_RCPP
+	//temporary data
+	::chordalGraph::cliqueTree::unionMinimalSeparatorsTemporaries temp;
+
 	::chordalGraph::cliqueTree::graphType graph;
 	convertGraph(graph_sexp, graph, type);
 
@@ -18,7 +21,7 @@ BEGIN_RCPP
 				edges[j] = true;
 			}
 		}
-		bool isChordal = iterativeTree.tryAddVertexWithEdges(edges);
+		bool isChordal = iterativeTree.tryAddVertexWithEdges(edges, temp);
 		if (!isChordal) return Rcpp::wrap(false);
 	}
 	return Rcpp::wrap(true);

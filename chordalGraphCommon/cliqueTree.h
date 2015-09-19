@@ -73,6 +73,12 @@ namespace chordalGraph
 		//typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS> graphType;
 		typedef moveable_adjacency_list<boost::property<boost::vertex_name_t, cliqueVertex>, boost::property<boost::edge_name_t, cliqueEdge> > cliqueTreeGraphType;
 		typedef moveable_adjacency_list<> graphType;
+		struct unionMinimalSeparatorsTemporaries
+		{
+			std::vector<boost::default_color_type> colorMap;
+			std::vector<cliqueTreeGraphType::edge_descriptor> predecessorEdges;
+			std::vector<cliqueTreeGraphType::vertex_descriptor> predecessorVertices;
+		};
 		struct externalEdge
 		{
 		public:
@@ -95,11 +101,11 @@ namespace chordalGraph
 		}
 		const cliqueTreeGraphType& getCliqueGraph() const;
 		const graphType& getGraph() const;
-		bool tryAddVertexWithEdges(const bitsetType& involvedEdges);
+		bool tryAddVertexWithEdges(const bitsetType& involvedEdges, unionMinimalSeparatorsTemporaries& temp);
 		void addVertex();
 		int getNVertices();
-		void unionMinimalSeparators(int u, int v, bitsetType& vertices, std::list<cliqueTreeGraphType::vertex_descriptor>& vertexSequence, std::list<externalEdge>& edgeSequence, std::vector<externalEdge>& addEdges, std::vector<externalEdge>& removeEdges);
-		void addEdge(int vertexForExtraEdges, int v, bitsetType& unionMinimalSeparatorBitset, std::list<cliqueTreeGraphType::vertex_descriptor>& vertexSequence, std::list<externalEdge>& edgeSequence, std::vector<externalEdge>& addEdges, std::vector<externalEdge>& removeEdges, bool hasPrecomputedUnionMinimalSeparator);
+		void unionMinimalSeparators(int u, int v, bitsetType& vertices, std::list<cliqueTreeGraphType::vertex_descriptor>& vertexSequence, std::list<externalEdge>& edgeSequence, std::vector<externalEdge>& addEdges, std::vector<externalEdge>& removeEdges, unionMinimalSeparatorsTemporaries& temp);
+		void addEdge(int vertexForExtraEdges, int v, bitsetType& unionMinimalSeparatorBitset, std::list<cliqueTreeGraphType::vertex_descriptor>& vertexSequence, std::list<externalEdge>& edgeSequence, std::vector<externalEdge>& addEdges, std::vector<externalEdge>& removeEdges, unionMinimalSeparatorsTemporaries& temp, bool hasPrecomputedUnionMinimalSeparator);
 		void check() const;
 	private:
 		cliqueTreeGraphType cliqueGraph;
