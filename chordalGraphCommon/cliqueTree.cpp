@@ -12,6 +12,16 @@ namespace chordalGraph
 	{
 		return cliqueGraph;
 	}
+	cliqueTree::cliqueTree(int maximumVertices)
+	{
+		if (maximumVertices > MAX_STORAGE_VERTICES)
+		{
+			throw std::runtime_error("Requested number of vertices exceeded the amount of storage available");
+		}
+#ifdef USE_ADJACENCY_MATRIX_FOR_GRAPH
+		graph = graphType(maximumVertices);
+#endif
+	}
 	void cliqueTree::addVertex()
 	{
 		int previousVertexCount = (int)boost::num_vertices(graph);

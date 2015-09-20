@@ -2,7 +2,9 @@
 #define CLIQUE_TREE_HEADER_GUARD
 #include <bitset>
 #include <boost/graph/adjacency_list.hpp>
+#include <boost/graph/adjacency_matrix.hpp>
 #define MAX_STORAGE_VERTICES 64
+#define USE_ADJACENCY_MATRIX_FOR_GRAPH
 namespace chordalGraph
 {
 	typedef std::bitset<MAX_STORAGE_VERTICES> bitsetType;
@@ -68,13 +70,68 @@ namespace chordalGraph
 			return *this;
 		}
 	};
+	template <typename VertexProperty = boost::no_property, typename EdgeProperty = boost::no_property, typename Allocator = std::allocator<bool> >
+	class moveable_adjacency_matrix : public boost::adjacency_matrix<boost::undirectedS, VertexProperty, EdgeProperty, boost::no_property, Allocator>
+	{
+	public:
+		typedef boost::adjacency_matrix<boost::undirectedS, VertexProperty, EdgeProperty, boost::no_property, Allocator> base;
+		typedef moveable_adjacency_matrix<VertexProperty, EdgeProperty, Allocator> type;
+		moveable_adjacency_matrix()
+			:base(0), num_vertices(0)
+		{}
+		moveable_adjacency_matrix(typename type::base::vertices_size_type maxVertices)
+			:base(maxVertices), num_vertices(0)
+		{}
+		moveable_adjacency_matrix(const type& other)
+			:base(other), num_vertices(other.num_vertices)
+		{}
+		moveable_adjacency_matrix(type&& other)
+			: base(0)
+		{
+			type::base::m_matrix.swap(other.m_matrix);
+			type::base::m_vertex_set = other.m_vertex_set;
+			type::base::m_vertex_properties.swap(other.m_vertex_properties);
+			m_num_edges = other.m_num_edges;
+			num_vertices = other.num_vertices;
+		}
+		type& operator=(type&& other)
+		{
+			type::base::m_matrix.swap(other.m_matrix);
+			type::base::m_vertex_set = other.m_vertex_set;
+			type::base::m_vertex_properties.swap(other.m_vertex_properties);
+			m_num_edges = other.m_num_edges;
+			num_vertices = other.num_vertices;
+			return *this;
+		}
+		int num_vertices;
+	};
+}
+namespace boost
+{
+	template <typename VertexProperty, typename EdgeProperty, typename EdgeListS> typename ::chordalGraph::moveable_adjacency_matrix<VertexProperty, EdgeProperty, EdgeListS>::vertices_size_type num_vertices(const ::chordalGraph::moveable_adjacency_matrix<VertexProperty, EdgeProperty, EdgeListS>& g_)
+	{
+		return g_.num_vertices;
+	}
+	template <typename VertexProperty, typename EdgeProperty, typename EdgeListS> typename ::chordalGraph::moveable_adjacency_matrix<VertexProperty, EdgeProperty, EdgeListS>::vertex_descriptor add_vertex(::chordalGraph::moveable_adjacency_matrix<VertexProperty, EdgeProperty, EdgeListS>& g_)
+	{
+		typename ::chordalGraph::moveable_adjacency_matrix<VertexProperty, EdgeProperty, EdgeListS>::vertex_descriptor ret = g_.num_vertices;
+		g_.num_vertices++;
+		return ret;
+	}
+}
+namespace chordalGraph
+{
 	class cliqueTree
 	{
 	public:
 		//typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, boost::property<boost::vertex_name_t, cliqueVertex>, boost::property<boost::edge_name_t, cliqueEdge> > cliqueTreeGraphType;
 		//typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS> graphType;
 		typedef moveable_adjacency_list<boost::property<boost::vertex_name_t, cliqueVertex>, boost::property<boost::edge_name_t, cliqueEdge> > cliqueTreeGraphType;
+#ifdef USE_ADJACENCY_MATRIX_FOR_GRAPH
+		typedef moveable_adjacency_matrix<> graphType;
+#else
 		typedef moveable_adjacency_list<> graphType;
+#endif
 		struct unionMinimalSeparatorsTemporaries
 		{
 			std::vector<boost::default_color_type> colorMap;
@@ -94,13 +151,7 @@ namespace chordalGraph
 		cliqueTree(cliqueTree&& other)
 			:cliqueGraph(std::move(other.cliqueGraph)), graph(std::move(other.graph)), verticesToCliqueVertices(std::move(other.verticesToCliqueVertices)), componentIDs(std::move(other.componentIDs))
 		{}
-		cliqueTree(int maximumVertices)
-		{
-			if(maximumVertices > MAX_STORAGE_VERTICES)
-			{
-				throw std::runtime_error("Requested number of vertices exceeded amount of storage available");
-			}
-		}
+		cliqueTree(int maximumVertices);
 		cliqueTree(const cliqueTree& other)
 			:cliqueGraph(other.cliqueGraph), graph(other.graph), verticesToCliqueVertices(other.verticesToCliqueVertices), componentIDs(other.componentIDs)
 		{}

@@ -17,6 +17,7 @@ find_package(Boost 1.53.0 COMPONENTS graph program_options system serialization 
 
 if(WIN32)
 	find_package(mpfr)
+	find_package(mpir)
 else()
 	#mpfr needs to be listed as an imported target so that we can use target_link_librarie later on. If we don't have this then it just adds a -lmpfr which probably picks up the wrong thing. 
 	find_library(mpfr_LIBRARY mpfr)
