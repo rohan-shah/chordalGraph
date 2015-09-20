@@ -149,14 +149,28 @@ namespace chordalGraph
 		};
 	public:
 		cliqueTree(cliqueTree&& other)
-			:cliqueGraph(std::move(other.cliqueGraph)), graph(std::move(other.graph)), verticesToCliqueVertices(std::move(other.verticesToCliqueVertices)), componentIDs(std::move(other.componentIDs))
+			:cliqueGraph(std::move(other.cliqueGraph)), 
+#ifdef TRACK_GRAPH
+			graph(std::move(other.graph)), 
+#else
+			nVertices(other.nVertices),
+#endif
+			verticesToCliqueVertices(std::move(other.verticesToCliqueVertices)), componentIDs(std::move(other.componentIDs))
 		{}
 		cliqueTree(int maximumVertices);
 		cliqueTree(const cliqueTree& other)
-			:cliqueGraph(other.cliqueGraph), graph(other.graph), verticesToCliqueVertices(other.verticesToCliqueVertices), componentIDs(other.componentIDs)
+			:cliqueGraph(other.cliqueGraph), 
+#ifdef TRACK_GRAPH
+			graph(other.graph), 
+#else
+			nVertices(other.nVertices),
+#endif
+			verticesToCliqueVertices(other.verticesToCliqueVertices), componentIDs(other.componentIDs)
 		{}
 		const cliqueTreeGraphType& getCliqueGraph() const;
+#ifdef TRACK_GRAPH
 		const graphType& getGraph() const;
+#endif
 		bool tryAddVertexWithEdges(const bitsetType& involvedEdges, unionMinimalSeparatorsTemporaries& temp);
 		void addVertex();
 		int getNVertices();
@@ -165,7 +179,11 @@ namespace chordalGraph
 		void check() const;
 	private:
 		cliqueTreeGraphType cliqueGraph;
+#ifdef TRACK_GRAPH
 		graphType graph;
+#else
+		int nVertices;
+#endif
 		//A vector that converts any vertex of the graph to a vertex of the clique tree
 		//which contains that vertex in the relevant subset. 
 		std::vector<int> verticesToCliqueVertices;

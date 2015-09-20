@@ -4,28 +4,38 @@
 #include <boost/graph/filtered_graph.hpp>
 namespace chordalGraph
 {
+#ifdef TRACK_GRAPH
 	const cliqueTree::graphType& cliqueTree::getGraph() const
 	{
 		return graph;
 	}
+#endif
 	const cliqueTree::cliqueTreeGraphType& cliqueTree::getCliqueGraph() const
 	{
 		return cliqueGraph;
 	}
 	cliqueTree::cliqueTree(int maximumVertices)
+		:nVertices(0)
 	{
 		if (maximumVertices > MAX_STORAGE_VERTICES)
 		{
 			throw std::runtime_error("Requested number of vertices exceeded the amount of storage available");
 		}
+#ifdef TRACK_GRAPH
 #ifdef USE_ADJACENCY_MATRIX_FOR_GRAPH
 		graph = graphType(maximumVertices);
+#endif
 #endif
 	}
 	void cliqueTree::addVertex()
 	{
+#ifdef TRACK_GRAPH
 		int previousVertexCount = (int)boost::num_vertices(graph);
 		boost::add_vertex(graph);
+#else
+		int previousVertexCount = nVertices;
+		nVertices++;
+#endif
 
 		bitsetType newBitset(0);
 		newBitset[previousVertexCount] = true;
@@ -39,14 +49,20 @@ namespace chordalGraph
 	{
 		bitsetType copiedInvolvedEdges = involvedEdges;
 
+#ifdef TRACK_GRAPH
 		int nVertices = (int)boost::num_vertices(graph);
+#endif
 		if (nVertices == 0)
 		{
 			cliqueVertex newVertex;
 			newVertex.contents[0] = true;
 			boost::add_vertex(newVertex, cliqueGraph);
 
+#ifdef TRACK_GRAPH
 			boost::add_vertex(graph);
+#else
+			nVertices = 1;
+#endif
 			verticesToCliqueVertices.push_back(0);
 
 			componentIDs.push_back(0);
@@ -107,7 +123,9 @@ namespace chordalGraph
 			//are contained in cliques of size 1 in the clique tree. 
 			if (extraEdgesCliqueVertex.contents.count() == 1 && vCliqueVertex.contents.count() == 1)
 			{
+#ifdef TRACK_GRAPH
 				std::size_t nVertices = boost::num_vertices(graph);
+#endif
 				//If so we delete one clique vertex. This may invalidate references.
 				boost::remove_vertex(verticesToCliqueVertices[v], cliqueGraph);
 				//Compensate for removing the vertex by decreasing by 1 some of the entries
@@ -185,7 +203,9 @@ namespace chordalGraph
 		//Now the case where the pair of vertices were already in the same connected component
 		else
 		{
+#ifdef TRACK_GRAPH
 			int nVertices = (int)boost::num_vertices(graph);
+#endif
 			//Add every edge that is marked to be added.
 			for (std::vector<externalEdge>::iterator i = addEdges.begin(); i != addEdges.end(); i++)
 			{
@@ -395,13 +415,17 @@ namespace chordalGraph
 					currentPathEdge++;
 				}
 			}
+#ifdef TRACK_GRAPH
 			//Add all the other required edges
 			for (int i = 0; i < nVertices; i++)
 			{
 				if(unionMinimalSeparatorBitset[i] && !boost::edge(vertexForExtraEdges, i, graph).second) boost::add_edge(vertexForExtraEdges, i, graph);
 			}
+#endif
 		}
+#ifdef TRACK_GRAPH
 		boost::add_edge(vertexForExtraEdges, v, graph);
+#endif
 	}
 	void cliqueTree::unionMinimalSeparators(int u, int v, bitsetType& vertices, std::list<cliqueTreeGraphType::vertex_descriptor>& vertexSequence, std::list<externalEdge>& edgeSequence, std::vector<externalEdge>& addEdges, std::vector<externalEdge>& removeEdges, unionMinimalSeparatorsTemporaries& temp)
 	{
@@ -581,7 +605,9 @@ namespace chordalGraph
 	};
 	void cliqueTree::check() const
 	{
+#ifdef TRACK_GRAPH
 		std::size_t nVertices = boost::num_vertices(graph);
+#endif
 		std::size_t nCliqueVertices = boost::num_vertices(cliqueGraph);
 		{
 			cliqueTreeGraphType::vertex_iterator current, end;
@@ -591,6 +617,7 @@ namespace chordalGraph
 			{
 				bitsetType contents = boost::get(boost::vertex_name, cliqueGraph, *current).contents;
 				unionCliqueVertices |= contents;
+#ifdef TRACK_GRAPH
 				for (int i = 0; i < (int)nVertices; i++)
 				{
 					//Check that every clique is in fact a clique
@@ -628,6 +655,7 @@ namespace chordalGraph
 						}
 					}
 				}
+#endif
 			}
 			//Every vertex appears in at least one clique vertex
 			for (int i = 0; i < (int)nVertices; i++)
