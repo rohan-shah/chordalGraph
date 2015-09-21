@@ -2,3 +2,5 @@
 /cmakeCommand
 /release
 /debug
+/build32/
+/build64/
