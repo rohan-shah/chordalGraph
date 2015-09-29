@@ -1,16 +1,20 @@
-stochasticEnumeration <- function(nVertices, budget, seed, nEdges)
+stochasticEnumeration <- function(nVertices, budget, seed, nEdges, reduceChains = FALSE)
 {
 	if(missing(nVertices) || missing(budget) || missing(seed))
 	{
 		stop("Inputs nVertices, budget and seed are required")
 	}
-	if(length(nVertices) != 1 || length(budget) != 1 || length(seed) != 1)
+	if(length(nVertices) != 1 || length(budget) != 1 || length(seed) != 1 || length(reduceChains) != 1)
 	{
 		stop("Inputs nVertices, budget and seed must be single integers")
 	}
 	if(!is.numeric(nVertices) || !is.numeric(budget) || !is.numeric(seed))
 	{
 		stop("Inputs nVertices, budget and seed must be single integers")
+	}
+	if(!is.logical(reduceChains))
+	{
+		stop("Input reduceChains must be a logical variable")
 	}
 	if(abs(nVertices - as.integer(nVertices)) > 1e-3 || abs(budget - as.integer(budget)) > 1e-3 || abs(seed - as.integer(seed)) > 1e-3)
 	{
@@ -23,7 +27,7 @@ stochasticEnumeration <- function(nVertices, budget, seed, nEdges)
 	if(missing(nEdges))
 	{
 		start <- Sys.time()
-		result <- .Call("stochasticEnumeration", nVertices, budget, seed, PACKAGE="chordalGraph")
+		result <- .Call("stochasticEnumeration", nVertices, budget, seed, reduceChains, PACKAGE="chordalGraph")
 		end <- Sys.time()
 		s4Result <- new("estimatedChordalCounts", data = result, call = match.call(), start = start, end = end)
 		return(s4Result)
@@ -39,7 +43,7 @@ stochasticEnumeration <- function(nVertices, budget, seed, nEdges)
 			stop("Input nEdges must be in range [0, ((nVertices-1)*nVertices/2)+1]")
 		}
 		start <- Sys.time()
-		result <- .Call("stochasticEnumerationSpecificEdges", nVertices, nEdges, budget, seed, PACKAGE="chordalGraph")
+		result <- .Call("stochasticEnumerationSpecificEdges", nVertices, nEdges, budget, seed, reduceChains, PACKAGE="chordalGraph")
 		end <- Sys.time()
 		s4Result <- new("estimatedChordalCount", data = result, call = match.call(), start = start, end = end)
 		return(s4Result)

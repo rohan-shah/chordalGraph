@@ -1,11 +1,12 @@
 #include "stochasticEnumeration.h"
 #include <Rcpp.h>
-SEXP stochasticEnumeration(SEXP nVertices_sexp, SEXP budget_sexp, SEXP seed_sexp)
+SEXP stochasticEnumeration(SEXP nVertices_sexp, SEXP budget_sexp, SEXP seed_sexp, SEXP reduceChains_sexp)
 {
 BEGIN_RCPP
 	int seed = Rcpp::as<int>(seed_sexp);
 	int nVertices = Rcpp::as<int>(nVertices_sexp);
 	int budget = Rcpp::as<int>(budget_sexp);
+	bool reduceChains = Rcpp::as<bool>(reduceChains_sexp);
 
 	boost::mt19937 randomSource;
 	randomSource.seed(seed);
@@ -26,7 +27,14 @@ BEGIN_RCPP
 	{
 		setTxtProgressBar(barHandle, nEdges);
 		args.nEdges = nEdges;
-		chordalGraph::stochasticEnumeration(args);
+		if(reduceChains)
+		{
+			chordalGraph::stochasticEnumeration2(args);
+		}
+		else
+		{
+			chordalGraph::stochasticEnumeration(args);
+		}
 		estimatesAsStrings.push_back(args.estimate.str());
 	}
 	close(barHandle);
@@ -37,13 +45,14 @@ BEGIN_RCPP
 	return result;
 END_RCPP
 }
-SEXP stochasticEnumerationSpecificEdges(SEXP nVertices_sexp, SEXP nEdges_sexp, SEXP budget_sexp, SEXP seed_sexp)
+SEXP stochasticEnumerationSpecificEdges(SEXP nVertices_sexp, SEXP nEdges_sexp, SEXP budget_sexp, SEXP seed_sexp, SEXP reduceChains_sexp)
 {
 BEGIN_RCPP
 	int seed = Rcpp::as<int>(seed_sexp);
 	int nVertices = Rcpp::as<int>(nVertices_sexp);
 	int nEdges = Rcpp::as<int>(nEdges_sexp);
 	int budget = Rcpp::as<int>(budget_sexp);
+	bool reduceChains = Rcpp::as<bool>(reduceChains_sexp);
 
 	boost::mt19937 randomSource;
 	randomSource.seed(seed);
@@ -52,7 +61,14 @@ BEGIN_RCPP
 	args.nVertices = nVertices;
 	args.budget = budget;
 
-	chordalGraph::stochasticEnumeration(args);
+	if(reduceChains)
+	{
+		chordalGraph::stochasticEnumeration(args);
+	}
+	else
+	{
+		chordalGraph::stochasticEnumeration2(args);
+	}
 
 	std::string estimateAsString = args.estimate.str();
 	SEXP estimateAsString_sexp = Rcpp::wrap(estimateAsString);

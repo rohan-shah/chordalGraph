@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1)
-set(CppFiles cliqueTree.cpp stochasticEnumeration.cpp)
+set(CppFiles cliqueTree.cpp stochasticEnumeration.cpp stochasticEnumeration2.cpp)
 set(HeaderFiles cliqueTree.h stochasticEnumeration.h)
 
 add_library(chordalGraphCommon STATIC ${CppFiles} ${HeaderFiles})

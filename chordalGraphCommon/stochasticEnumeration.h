@@ -20,5 +20,6 @@ namespace chordalGraph
 		boost::mt19937& randomSource;
 	};
 	void stochasticEnumeration(stochasticEnumerationArgs& args);
+	void stochasticEnumeration2(stochasticEnumerationArgs& args);
 }
 #endif
