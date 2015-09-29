@@ -5,8 +5,8 @@
 	#define RcppExport extern "C" __declspec(dllexport)
 #endif
 extern "C" const char* package_name = "chordalGraph";
-SEXP stochasticEnumeration(SEXP nVertices_sexp, SEXP budget_sexp, SEXP seed_sexp, SEXP reduceChains_sexp);
-SEXP stochasticEnumerationSpecificEdges(SEXP nVertices_sexp, SEXP nEdges_sexp, SEXP budget_sexp, SEXP seed_sexp, SEXP reduceChains_sexp);
+SEXP stochasticEnumeration(SEXP nVertices_sexp, SEXP budget_sexp, SEXP seed_sexp, SEXP options_sexp);
+SEXP stochasticEnumerationSpecificEdges(SEXP nVertices_sexp, SEXP nEdges_sexp, SEXP budget_sexp, SEXP seed_sexp, SEXP options_sexp);
 R_CallMethodDef callMethods[] = 
 {
 	{"isChordalIterative_igraph", (DL_FUNC)&isChordalIterative_igraph, 1},

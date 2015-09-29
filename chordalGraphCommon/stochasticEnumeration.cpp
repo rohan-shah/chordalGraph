@@ -110,6 +110,33 @@ namespace chordalGraph
 					}
 					else if ((currentEdge == 0 && requiresEdge) || nEdges[index] == args.nEdges)
 					{
+						if (args.outputSamples)
+						{
+							stochasticEnumerationArgs::matrixType currentSample(args.nVertices);
+							std::fill(currentSample.data().begin(), currentSample.data().end(), false);
+							for (int j = 0; j < args.nVertices; j++)
+							{
+								currentSample(j, j) = true;
+							}
+							const cliqueTree::cliqueTreeGraphType& currentSampleTree = i->getCliqueGraph();
+							cliqueTree::cliqueTreeGraphType::vertex_iterator current, end;
+							boost::tie(current, end) = boost::vertices(currentSampleTree);
+							for (; current != end; current++)
+							{
+								bitsetType currentVertexSet = boost::get(boost::vertex_name, currentSampleTree, *current).contents;
+								for (int j = 0; j < args.nVertices; j++)
+								{
+									for (int k = 0; k < args.nVertices; k++)
+									{
+										if (currentVertexSet[j] && currentVertexSet[k])
+										{
+											currentSample(j, k) = true;
+										}
+									}
+								}
+							}
+							args.samples.push_back(std::move(currentSample));
+						}
 						//Already known to be chordal
 						knownToBeChordal++;
 					}

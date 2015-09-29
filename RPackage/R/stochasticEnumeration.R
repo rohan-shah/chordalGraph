@@ -1,20 +1,16 @@
-stochasticEnumeration <- function(nVertices, budget, seed, nEdges, reduceChains = FALSE)
+stochasticEnumeration <- function(nVertices, budget, seed, nEdges, options)
 {
 	if(missing(nVertices) || missing(budget) || missing(seed))
 	{
 		stop("Inputs nVertices, budget and seed are required")
 	}
-	if(length(nVertices) != 1 || length(budget) != 1 || length(seed) != 1 || length(reduceChains) != 1)
+	if(length(nVertices) != 1 || length(budget) != 1 || length(seed) != 1)
 	{
 		stop("Inputs nVertices, budget and seed must be single integers")
 	}
 	if(!is.numeric(nVertices) || !is.numeric(budget) || !is.numeric(seed))
 	{
 		stop("Inputs nVertices, budget and seed must be single integers")
-	}
-	if(!is.logical(reduceChains))
-	{
-		stop("Input reduceChains must be a logical variable")
 	}
 	if(abs(nVertices - as.integer(nVertices)) > 1e-3 || abs(budget - as.integer(budget)) > 1e-3 || abs(seed - as.integer(seed)) > 1e-3)
 	{
@@ -24,12 +20,32 @@ stochasticEnumeration <- function(nVertices, budget, seed, nEdges, reduceChains 
 	{
 		stop("Inputs nVertices and budget must be positive")
 	}
+	outputSamples <- FALSE
+	if(!missing(options))
+	{
+		if(!is.list(options))
+		{
+			stop("Input options must be a list")
+		}
+		if(any(!(names(options) %in% c("reduceChains", "outputSamples"))))
+		{
+			stop("Input options contained invalid entries")
+		}
+		if("outputSamples" %in% names(options))
+		{
+			outputSamples <- options$outputSamples
+		}
+	}
 	if(missing(nEdges))
 	{
 		start <- Sys.time()
-		result <- .Call("stochasticEnumeration", nVertices, budget, seed, reduceChains, PACKAGE="chordalGraph")
+		result <- .Call("stochasticEnumeration", nVertices, budget, seed, options, PACKAGE="chordalGraph")
 		end <- Sys.time()
-		s4Result <- new("estimatedChordalCounts", data = result, call = match.call(), start = start, end = end)
+		s4Result <- new("estimatedChordalCounts", data = result$data, call = match.call(), start = start, end = end, options = options, samples = NULL)
+		if(outputSamples)
+		{
+			s4Result@samples <- result$samples
+		}
 		return(s4Result)
 	}
 	else
@@ -43,11 +59,16 @@ stochasticEnumeration <- function(nVertices, budget, seed, nEdges, reduceChains 
 			stop("Input nEdges must be in range [0, ((nVertices-1)*nVertices/2)+1]")
 		}
 		start <- Sys.time()
-		result <- .Call("stochasticEnumerationSpecificEdges", nVertices, nEdges, budget, seed, reduceChains, PACKAGE="chordalGraph")
+		result <- .Call("stochasticEnumerationSpecificEdges", nVertices, nEdges, budget, seed, options, PACKAGE="chordalGraph")
 		end <- Sys.time()
-		s4Result <- new("estimatedChordalCount", data = result, call = match.call(), start = start, end = end)
+		s4Result <- new("estimatedChordalCount", data = result$data, call = match.call(), start = start, end = end, options = options, samples = NULL)
+		if(outputSamples)
+		{
+			s4Result@samples <- result$samples
+		}
 		return(s4Result)
 	}
 }
-setClass("estimatedChordalCount", slots = list(data = "mpfr", call = "call", start = "POSIXct", end = "POSIXct"))
-setClass("estimatedChordalCounts", slots = list(data = "mpfr", call = "call", start = "POSIXct", end = "POSIXct"))
+setClassUnion("listOrNULL", c("list", "NULL"))
+setClass("estimatedChordalCount", slots = list(data = "mpfr", call = "call", start = "POSIXct", end = "POSIXct", options = "list", samples = "listOrNULL"))
+setClass("estimatedChordalCounts", slots = list(data = "mpfr", call = "call", start = "POSIXct", end = "POSIXct", options = "list", samples = "listOrNULL"))
