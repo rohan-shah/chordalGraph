@@ -5,6 +5,9 @@
 #include <boost/graph/adjacency_matrix.hpp>
 #define MAX_STORAGE_VERTICES 64
 #define USE_ADJACENCY_MATRIX_FOR_GRAPH
+#ifdef HAS_NAUTY
+#include "nauty.h"
+#endif
 namespace chordalGraph
 {
 	typedef std::bitset<MAX_STORAGE_VERTICES> bitsetType;
@@ -91,7 +94,7 @@ namespace chordalGraph
 			type::base::m_matrix.swap(other.m_matrix);
 			type::base::m_vertex_set = other.m_vertex_set;
 			type::base::m_vertex_properties.swap(other.m_vertex_properties);
-			m_num_edges = other.m_num_edges;
+			type::base::m_num_edges = other.m_num_edges;
 			num_vertices = other.num_vertices;
 		}
 		type& operator=(type&& other)
@@ -99,7 +102,7 @@ namespace chordalGraph
 			type::base::m_matrix.swap(other.m_matrix);
 			type::base::m_vertex_set = other.m_vertex_set;
 			type::base::m_vertex_properties.swap(other.m_vertex_properties);
-			m_num_edges = other.m_num_edges;
+			type::base::m_num_edges = other.m_num_edges;
 			num_vertices = other.num_vertices;
 			return *this;
 		}
@@ -177,6 +180,10 @@ namespace chordalGraph
 		void unionMinimalSeparators(int u, int v, bitsetType& vertices, std::list<cliqueTreeGraphType::vertex_descriptor>& vertexSequence, std::list<externalEdge>& edgeSequence, std::vector<externalEdge>& addEdges, std::vector<externalEdge>& removeEdges, unionMinimalSeparatorsTemporaries& temp);
 		void addEdge(int vertexForExtraEdges, int v, bitsetType& unionMinimalSeparatorBitset, std::list<cliqueTreeGraphType::vertex_descriptor>& vertexSequence, std::list<externalEdge>& edgeSequence, std::vector<externalEdge>& addEdges, std::vector<externalEdge>& removeEdges, unionMinimalSeparatorsTemporaries& temp, bool hasPrecomputedUnionMinimalSeparator);
 		void check() const;
+#ifdef HAS_NAUTY
+		void convertToNauty(std::vector<int>& lab, std::vector<int>& ptn, std::vector<int>& orbits, std::vector<graph>& nautyGraph, std::vector<graph>& cannonicalNautyGraph);
+#endif
+		int getNVertices() const;
 	private:
 		cliqueTreeGraphType cliqueGraph;
 #ifdef TRACK_GRAPH

@@ -603,6 +603,13 @@ namespace chordalGraph
 			return boost::get(boost::vertex_name, *cliqueGraph, v).contents[vertex];
 		}
 	};
+	int cliqueTree::getNVertices() const
+	{
+#ifdef TRACK_GRAPH
+		return (int)boost::num_vertices(graph);
+#endif
+		return nVertices;
+	}
 	void cliqueTree::check() const
 	{
 #ifdef TRACK_GRAPH
@@ -764,4 +771,42 @@ namespace chordalGraph
 			}
 		}
 	}
+#ifdef HAS_NAUTY
+	void cliqueTree::convertToNauty(std::vector<int>& lab, std::vector<int>& ptn, std::vector<int>& orbits, std::vector<graph>& nautyGraph, std::vector<graph>& cannonicalNautyGraph)
+	{
+#ifdef TRACK_GRAPH
+		std::size_t nVertices = boost::num_vertices(graph);
+#endif
+		static DEFAULTOPTIONS_GRAPH(options);
+		statsblk stats;
+		options.getcanon = true;
+
+		int n = nVertices;
+		int m = SETWORDSNEEDED(n);
+		nauty_check(WORDSIZE, m, n, NAUTYVERSIONID);
+		lab.resize(n);
+		ptn.resize(n);
+		orbits.resize(n);
+		nautyGraph.resize(n * m);
+		EMPTYGRAPH(&(nautyGraph[0]), m, n);
+		cliqueTree::cliqueTreeGraphType::vertex_iterator current, end;
+		boost::tie(current, end) = boost::vertices(cliqueGraph);
+		for(; current != end; current++)
+		{
+			bitsetType bitset = boost::get(boost::vertex_name, cliqueGraph, *current).contents;
+			for(int i = 0; i < n; i++)
+			{
+				for(int j = 0; j < n; j++)
+				{
+					if(bitset[i] && bitset[j])
+					{
+						ADDONEEDGE(&(nautyGraph[0]), i, j, m);
+					}
+				}
+			}
+		}
+		cannonicalNautyGraph.resize(n * m);
+		densenauty(&(nautyGraph[0]), &(lab[0]), &(ptn[0]), &(orbits[0]), &options, &stats, m, n, &(cannonicalNautyGraph[0]));
+	}
+#endif
 }

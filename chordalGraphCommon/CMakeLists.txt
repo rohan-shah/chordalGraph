@@ -1,12 +1,21 @@
 cmake_minimum_required(VERSION 3.1)
 set(CppFiles cliqueTree.cpp stochasticEnumeration.cpp stochasticEnumeration2.cpp)
 set(HeaderFiles cliqueTree.h stochasticEnumeration.h)
+if(USE_NAUTY)
+	list(APPEND CppFiles stochasticEnumerationNauty.cpp)
+	list(APPEND HeaderFiles stochasticEnumerationNauty.h)
+endif()
 
 add_library(chordalGraphCommon STATIC ${CppFiles} ${HeaderFiles})
 target_include_directories(chordalGraphCommon PUBLIC ${Boost_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR}/chordalGraphCommon ${IGRAPH_INCLUDES} ${boostGraphExt_include})
 target_link_libraries(chordalGraphCommon PUBLIC ${Boost_LIBRARIES} mpfr)
 
 target_compile_definitions(chordalGraphCommon PUBLIC BOOST_ALL_NO_LIB BOOST_ALL_DYN_LINK)
+if(USE_NAUTY)
+	target_link_libraries(chordalGraphCommon PUBLIC nauty)
+	target_compile_definitions(chordalGraphCommon PUBLIC HAS_NAUTY)
+endif()
+
 if(WIN32)
 	set_target_properties(chordalGraphCommon PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} PDB_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 	target_link_libraries(chordalGraphCommon PUBLIC mpir)

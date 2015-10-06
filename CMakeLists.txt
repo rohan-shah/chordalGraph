@@ -6,10 +6,16 @@ set(Boost_USE_MULTITHREADED	ON)
 set(Boost_USE_STATIC_RUNTIME	OFF)
 
 option(BUILD_R_PACKAGE "Build R package" ON)
+option(USE_NAUTY "Use the Nauty package" ON)
 
 add_definitions("-DBOOST_NO_AUTO_PTR")
 if(CMAKE_COMPILER_IS_GNUCC)
 	add_definitions("-Wall -fPIC")
+endif()
+
+#Find nauty
+if(USE_NAUTY)
+	find_package(nauty)
 endif()
 
 #Find boost packages

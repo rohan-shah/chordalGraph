@@ -1,11 +1,27 @@
-#include "stochasticEnumeration.h"
+#include "stochasticEnumerationNauty.h"
 #include "cliqueTree.h"
 #include <boost/range/algorithm/random_shuffle.hpp>
 #include <boost/random/random_number_generator.hpp>
 #include <boost/math/special_functions.hpp>
+#include "nauty.h"
 namespace chordalGraph
 {
-	void stochasticEnumeration2(stochasticEnumerationArgs& args)
+	struct weightedCliqueTree
+	{
+	public:
+		weightedCliqueTree(weightedCliqueTree&& other)
+			: tree(std::move(other.tree)), weight(other.weight)
+		{} 
+		weightedCliqueTree(const weightedCliqueTree& other)
+			: tree(other.tree), weight(other.weight)
+		{}
+		weightedCliqueTree(int nVertices)
+			: tree(nVertices), weight(1)
+		{}
+		cliqueTree tree;
+		int weight;
+	};
+	void stochasticEnumerationNauty(stochasticEnumerationNautyArgs& args)
 	{
 		args.exact = true;
 		args.estimate = 0;
@@ -17,7 +33,7 @@ namespace chordalGraph
 		boost::random_number_generator<boost::mt19937> generator(args.randomSource);
 		//Number of edges either present (or to be added later)
 		std::vector<int> nEdges(args.budget);
-		std::vector<cliqueTree> cliqueTrees;
+		std::vector<weightedCliqueTree> cliqueTrees;
 		cliqueTrees.reserve(args.budget);
 
 		//At any point we will have a bunch of conditions on what other edges are required to be present (in order to maintain chordality)
@@ -32,9 +48,9 @@ namespace chordalGraph
 		std::vector<int> currentEdge;
 		//We start off with one sample
 		{
-			cliqueTree initialTree(args.nVertices);
-			initialTree.addVertex();
-			initialTree.addVertex();
+			weightedCliqueTree initialTree(args.nVertices);
+			initialTree.tree.addVertex();
+			initialTree.tree.addVertex();
 			cliqueTrees.push_back(initialTree);
 			nEdges[0] = 0;
 
@@ -61,7 +77,7 @@ namespace chordalGraph
 		std::vector<int> copyCounts(args.budget);
 
 
-		std::vector<cliqueTree> newCliqueTrees;
+		std::vector<weightedCliqueTree> newCliqueTrees;
 		newCliqueTrees.reserve(args.budget);
 		std::vector<int> newNEdges(args.budget);
 
@@ -74,15 +90,59 @@ namespace chordalGraph
 		//Vector used to shuffle indices
 		std::vector<int> shuffleVector;
 		shuffleVector.reserve(args.budget);
+
+		//Nauty variables
+		std::vector<int> lab, ptn, orbits;
+		lab.reserve(args.nVertices);
+		ptn.reserve(args.nVertices);
+		std::vector<graph> nautyGraph;
+		std::vector<std::vector<graph> > cannonicalNautyGraphs(args.budget);
+
+		//Used to count the number of distinct graphs (up to isomorphism)
+		std::vector<bool> alreadyConsidered(args.budget);
 		//Continue while there are samples left.
 		while (currentVertex.size() > 0)
 		{
+			//Work out how many different graphs we have, up to isomorphism
+			//To start with, get out cannonical representations
+			for (int sampleCounter = 0; sampleCounter < (int)currentVertex.size(); sampleCounter++)
+			{
+				if(currentEdge[sampleCounter] == 0)
+				{
+					cliqueTrees[sampleCounter].tree.convertToNauty(lab, ptn, orbits, nautyGraph, cannonicalNautyGraphs[sampleCounter]);
+				}
+			}
+			//Work out which graphs are isomorphic to a graph earlier on in the set of samples. The weight for those graphs are added to the earlier one. 
+			std::fill(alreadyConsidered.begin(), alreadyConsidered.end(), false);
+			for(int sampleCounter = 0; sampleCounter < (int)currentVertex.size(); sampleCounter++)
+			{
+				if(!alreadyConsidered[sampleCounter] && currentEdge[sampleCounter] == 0)
+				{
+					int weightOther = 0;
+					for(int sampleCounter2 = sampleCounter+1; sampleCounter2 < (int)currentVertex.size(); sampleCounter2++)
+					{
+						if(!alreadyConsidered[sampleCounter2] && currentEdge[sampleCounter2] == 0 && currentVertex[sampleCounter] == currentVertex[sampleCounter2])
+						{
+							int m = SETWORDSNEEDED(currentVertex[sampleCounter]);
+							int memcmpResult = memcmp(&(cannonicalNautyGraphs[sampleCounter][0]), &(cannonicalNautyGraphs[sampleCounter2][0]), m*currentVertex[sampleCounter]*sizeof(graph));
+							if(memcmpResult == 0)
+							{
+								weightOther+= cliqueTrees[sampleCounter2].weight;
+								alreadyConsidered[sampleCounter2] = true;
+							}
+						}
+					}
+					cliqueTrees[sampleCounter].weight += weightOther;
+				}
+			}
+
 			//Clear vector of indices of possibilities
 			shuffleVector.clear();
 			//count the number of nodes which have cost 1
-			int knownToBeChordal = 0;
+			int knownToBeChordalWeight = 0;
 			for (int sampleCounter = 0; sampleCounter < (int)currentVertex.size(); sampleCounter++)
 			{
+				if(alreadyConsidered[sampleCounter]) continue;
 				while (true)
 				{
 					//Clear data structures;
@@ -109,35 +169,7 @@ namespace chordalGraph
 					//The second corresponds to the case where we've already hit the target
 					else if ((sampleCurrentEdge == 0 && requiresEdge) || nEdges[sampleCounter] == args.nEdges)
 					{
-						//Already known to be chordal. It has cost 1 and no children.
-						if (args.outputSamples)
-						{
-							stochasticEnumerationArgs::matrixType currentSample(args.nVertices);
-							std::fill(currentSample.data().begin(), currentSample.data().end(), false);
-							for (int j = 0; j < args.nVertices; j++)
-							{
-								currentSample(j, j) = true;
-							}
-							const cliqueTree::cliqueTreeGraphType& currentSampleTree = cliqueTrees[sampleCounter].getCliqueGraph();
-							cliqueTree::cliqueTreeGraphType::vertex_iterator current, end;
-							boost::tie(current, end) = boost::vertices(currentSampleTree);
-							for (; current != end; current++)
-							{
-								bitsetType currentVertexSet = boost::get(boost::vertex_name, currentSampleTree, *current).contents;
-								for (int j = 0; j < args.nVertices; j++)
-								{
-									for (int k = 0; k < args.nVertices; k++)
-									{
-										if (currentVertexSet[j] && currentVertexSet[k])
-										{
-											currentSample(j, k) = true;
-										}
-									}
-								}
-							}
-							args.samples.push_back(std::move(currentSample));
-						}
-						knownToBeChordal++;
+						knownToBeChordalWeight += cliqueTrees[sampleCounter].weight;
 						break;
 					}
 					else if (sampleCurrentVertex == args.nVertices)
@@ -152,7 +184,7 @@ namespace chordalGraph
 					//This edge could be either present or absent, without further information
 					else
 					{
-						cliqueTrees[sampleCounter].unionMinimalSeparators(sampleCurrentVertex, sampleCurrentEdge, unionMinimalSeparators[sampleCounter], vertexSequence[sampleCounter], edgeSequence[sampleCounter], addEdges[sampleCounter], removeEdges[sampleCounter], temp);
+						cliqueTrees[sampleCounter].tree.unionMinimalSeparators(sampleCurrentVertex, sampleCurrentEdge, unionMinimalSeparators[sampleCounter], vertexSequence[sampleCounter], edgeSequence[sampleCounter], addEdges[sampleCounter], removeEdges[sampleCounter], temp);
 						//If we need to add edges that were already considered (and therefore, must have already been rejected), then this edge CANNOT be present
 						if ((unionMinimalSeparators[sampleCounter] & (~copiedConditions) & bitsetType((1ULL << sampleCurrentEdge) - 1)).any())
 						{
@@ -181,7 +213,7 @@ namespace chordalGraph
 							{
 								//If we need this edge to make up the numbers, don't consider the case where it's missing. 
 								nEdges[sampleCounter] = nEdges[sampleCounter] + 1 + nAdditionalEdges;
-								cliqueTrees[sampleCounter].addEdge(sampleCurrentVertex, sampleCurrentEdge, unionMinimalSeparators[sampleCounter], vertexSequence[sampleCounter], edgeSequence[sampleCounter], addEdges[sampleCounter], removeEdges[sampleCounter], temp, true);
+								cliqueTrees[sampleCounter].tree.addEdge(sampleCurrentVertex, sampleCurrentEdge, unionMinimalSeparators[sampleCounter], vertexSequence[sampleCounter], edgeSequence[sampleCounter], addEdges[sampleCounter], removeEdges[sampleCounter], temp, true);
 								conditions[sampleCounter][sampleCurrentEdge] = true;
 								conditions[sampleCounter] |= unionMinimalSeparators[sampleCounter];
 							}
@@ -204,11 +236,11 @@ namespace chordalGraph
 						sampleCurrentVertex++;
 						sampleCurrentEdge = 0;
 						conditions[sampleCounter] = 0;
-						cliqueTrees[sampleCounter].addVertex();
+						cliqueTrees[sampleCounter].tree.addVertex();
 					}
 				}
 			}
-			args.estimate += multiple * knownToBeChordal;
+			args.estimate += multiple * knownToBeChordalWeight;
 			boost::range::random_shuffle(shuffleVector, generator);
 			int toTake = std::min((int)shuffleVector.size(), args.budget);
 
@@ -252,7 +284,7 @@ namespace chordalGraph
 					newConditions[i][currentEdge[originalIndex]] = 1;
 					newConditions[i] |= unionMinimalSeparators[originalIndex];
 					newNEdges[i] = possibilityEdges[originalIndex];
-					newCliqueTrees[i].addEdge(currentVertex[originalIndex], currentEdge[originalIndex], unionMinimalSeparators[originalIndex], vertexSequence[originalIndex], edgeSequence[originalIndex], addEdges[originalIndex], removeEdges[originalIndex], temp, true);
+					newCliqueTrees[i].tree.addEdge(currentVertex[originalIndex], currentEdge[originalIndex], unionMinimalSeparators[originalIndex], vertexSequence[originalIndex], edgeSequence[originalIndex], addEdges[originalIndex], removeEdges[originalIndex], temp, true);
 				}
 				else
 				{
@@ -266,7 +298,7 @@ namespace chordalGraph
 				{
 					newCurrentEdge[i] = 0;
 					newCurrentVertex[i]++;
-					newCliqueTrees[i].addVertex();
+					newCliqueTrees[i].tree.addVertex();
 					newConditions[i] = 0;
 				}
 			}

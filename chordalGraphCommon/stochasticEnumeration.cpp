@@ -7,6 +7,7 @@ namespace chordalGraph
 {
 	void stochasticEnumeration(stochasticEnumerationArgs& args)
 	{
+		args.exact = true;
 		args.estimate = 0;
 		mpfr_class multiple = 1;
 
@@ -199,6 +200,7 @@ namespace chordalGraph
 				boost::range::random_shuffle(shuffleVector, generator);
 				int toTake = std::min((int)shuffleVector.size(), args.budget);
 
+				if(toTake != (int)shuffleVector.size()) args.exact = false;
 				//Ratio of vertices examined to not examined
 				multiple *= (double)shuffleVector.size() / (double)toTake;
 
