@@ -16,3 +16,4 @@ Collate:
    'onLoad.R'
    'stochasticEnumeration.R'
    'stochasticEnumerationNauty.R'
+   'horvitzThompson.R'

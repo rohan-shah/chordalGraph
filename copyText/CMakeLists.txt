@@ -8,7 +8,7 @@ endif()
 
 if(BUILD_R_PACKAGE)
 	find_package(Rcpp REQUIRED)
-	set(RFiles R/isChordalIterative.R R/onLoad.R R/stochasticEnumeration.R R/stochasticEnumerationNauty.R)
+	set(RFiles R/isChordalIterative.R R/onLoad.R R/stochasticEnumeration.R R/stochasticEnumerationNauty.R R/horvitzThompson.R)
 	set(RPackageFiles DESCRIPTION NAMESPACE ${RFiles})
 
 	#Find location of Rcpp_exceptions.R 

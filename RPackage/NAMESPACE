@@ -1,3 +1,4 @@
 export(isChordalIterative)
 export(stochasticEnumeration)
 export(stochasticEnumerationNauty)
+export(horvitzThompson)

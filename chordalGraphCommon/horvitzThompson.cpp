@@ -1,12 +1,14 @@
-#include "stochasticEnumerationNauty.h"
+#include "horvitzThompson.h"
 #include "cliqueTree.h"
-#include <boost/range/algorithm/random_shuffle.hpp>
 #include <boost/random/random_number_generator.hpp>
+#include <boost/random/bernoulli_distribution.hpp>
+#include <boost/random/uniform_real_distribution.hpp>
 #include <boost/math/special_functions.hpp>
 #include "nauty.h"
+#include "sampford.h"
 namespace chordalGraph
 {
-	namespace stochasticEnumeration
+	namespace horvitzThompsonPrivate
 	{
 		struct weightedCliqueTree
 		{
@@ -21,20 +23,20 @@ namespace chordalGraph
 				: tree(nVertices), weight(1)
 			{}
 			cliqueTree tree;
-			int weight;
+			double weight;
 		};
 	}
-	using stochasticEnumeration::weightedCliqueTree;
-	void stochasticEnumerationNauty(stochasticEnumerationNautyArgs& args)
+	using horvitzThompsonPrivate::weightedCliqueTree;
+	void horvitzThompson(horvitzThompsonArgs& args)
 	{
 		args.exact = true;
 		args.estimate = 0;
-		mpfr_class multiple = 1;
 
 		//Temporary data that's used in cliqueTree calls
 		cliqueTree::unionMinimalSeparatorsTemporaries temp;
 
 		boost::random_number_generator<boost::mt19937> generator(args.randomSource);
+		boost::random::bernoulli_distribution<> standardBernoulli(0.5);
 		//Number of edges either present (or to be added later)
 		std::vector<int> nEdges(args.budget);
 		std::vector<weightedCliqueTree> cliqueTrees;
@@ -80,7 +82,6 @@ namespace chordalGraph
 		//we can use the move constructor instead. 
 		std::vector<int> copyCounts(args.budget);
 
-
 		std::vector<weightedCliqueTree> newCliqueTrees;
 		newCliqueTrees.reserve(args.budget);
 		std::vector<int> newNEdges(args.budget);
@@ -92,8 +93,9 @@ namespace chordalGraph
 
 		std::vector<bitsetType> unionMinimalSeparators(args.budget);
 		//Vector used to shuffle indices
-		std::vector<int> shuffleVector;
-		shuffleVector.reserve(args.budget);
+		std::vector<int> hasChildren;
+		hasChildren.reserve(args.budget);
+		sampfordBruteForceArgs sampfordArgs(args.randomSource);
 
 		//Nauty variables
 		std::vector<int> lab, ptn, orbits;
@@ -122,7 +124,7 @@ namespace chordalGraph
 			{
 				if(!alreadyConsidered[sampleCounter] && currentEdge[sampleCounter] == 0)
 				{
-					int weightOther = 0;
+					double weightOther = 0;
 					for(int sampleCounter2 = sampleCounter+1; sampleCounter2 < (int)currentVertex.size(); sampleCounter2++)
 					{
 						if(!alreadyConsidered[sampleCounter2] && currentEdge[sampleCounter2] == 0 && currentVertex[sampleCounter] == currentVertex[sampleCounter2])
@@ -131,7 +133,8 @@ namespace chordalGraph
 							int memcmpResult = memcmp(&(cannonicalNautyGraphs[sampleCounter][0]), &(cannonicalNautyGraphs[sampleCounter2][0]), m*currentVertex[sampleCounter]*sizeof(graph));
 							if(memcmpResult == 0)
 							{
-								weightOther+= cliqueTrees[sampleCounter2].weight;
+								weightOther += cliqueTrees[sampleCounter2].weight;
+								cliqueTrees[sampleCounter2].weight = 0;
 								alreadyConsidered[sampleCounter2] = true;
 							}
 						}
@@ -141,9 +144,9 @@ namespace chordalGraph
 			}
 
 			//Clear vector of indices of possibilities
-			shuffleVector.clear();
-			//count the number of nodes which have cost 1
-			int knownToBeChordalWeight = 0;
+			hasChildren.clear();
+			sampfordArgs.weights.clear();
+			double sumHasChildrenWeights = 0;
 			for (int sampleCounter = 0; sampleCounter < (int)currentVertex.size(); sampleCounter++)
 			{
 				if(alreadyConsidered[sampleCounter]) continue;
@@ -173,7 +176,7 @@ namespace chordalGraph
 					//The second corresponds to the case where we've already hit the target
 					else if ((sampleCurrentEdge == 0 && requiresEdge) || nEdges[sampleCounter] == args.nEdges)
 					{
-						knownToBeChordalWeight += cliqueTrees[sampleCounter].weight;
+						args.estimate +=cliqueTrees[sampleCounter].weight;
 						break;
 					}
 					else if (sampleCurrentVertex == args.nVertices)
@@ -228,8 +231,10 @@ namespace chordalGraph
 								possibilityEdges[sampleCounter] = nEdges[sampleCounter] + 1 + nAdditionalEdges;
 
 								//Add correct indices to possibilities vector
-								shuffleVector.push_back(2 * sampleCounter);
-								shuffleVector.push_back(2 * sampleCounter + 1);
+								hasChildren.push_back(sampleCounter);
+								sampfordArgs.weights.push_back(cliqueTrees[sampleCounter].weight);
+								sampfordArgs.weights.push_back(cliqueTrees[sampleCounter].weight);
+								sumHasChildrenWeights += cliqueTrees[sampleCounter].weight;
 								break;
 							}
 						}
@@ -244,66 +249,103 @@ namespace chordalGraph
 					}
 				}
 			}
-			args.estimate += multiple * knownToBeChordalWeight;
-			boost::range::random_shuffle(shuffleVector, generator);
-			int toTake = std::min((int)shuffleVector.size(), args.budget);
-
-			if(toTake != (int)shuffleVector.size()) args.exact = false;
-			//Ratio of vertices examined to not examined
-			multiple *= (double)shuffleVector.size() / (double)toTake;
-
-			std::fill(copyCounts.begin(), copyCounts.end(), 0);
-			//Now work out how many copies (0, 1, 2) are taken of each sample
-			for (int i = 0; i < toTake; i++)
+			int toTake = std::min(2*(int)hasChildren.size(), args.budget);
+			if(toTake != 2*(int)hasChildren.size()) args.exact = false;
+			//If we're taking an exhaustive sample, then skip the resampling-without-replacement section. 
+			if(toTake == 2*(int)hasChildren.size())
 			{
-				copyCounts[shuffleVector[i]/2]++;
+				std::fill(copyCounts.begin(), copyCounts.end(), 2);
+				sampfordArgs.inclusionProbabilities.resize(toTake);
+				std::fill(sampfordArgs.inclusionProbabilities.begin(), sampfordArgs.inclusionProbabilities.end(), 1);
+			}
+			else
+			{
+				std::fill(copyCounts.begin(), copyCounts.end(), 0);
+				sampfordArgs.n = toTake;
+				sampfordBruteForce(sampfordArgs);
+				for(int i = 0; i < (int)toTake; i++)
+				{
+					copyCounts[sampfordArgs.indices[i]/2]++;
+				}
 			}
 
 			//Now actually start making copies
 			newCliqueTrees.clear();
 			newCurrentVertex.clear();
 			newCurrentEdge.clear();
-			for (int i = 0; i < toTake; i++)
+			for (int i = 0; i < (int)hasChildren.size(); i++)
 			{
-				int originalIndex = shuffleVector[i] / 2;
-				newConditions[i] = conditions[originalIndex];
+				int originalIndex = hasChildren[i];
+				int newIndex = newCliqueTrees.size();
 
-				if (copyCounts[originalIndex] == 1)
+				if (copyCounts[i] == 1)
 				{
 					newCliqueTrees.push_back(std::move(cliqueTrees[originalIndex]));
+					if(standardBernoulli(args.randomSource))
+					{
+						newConditions[newIndex] = conditions[originalIndex];
+						newConditions[newIndex][currentEdge[originalIndex]] = 1;
+						newConditions[newIndex] |= unionMinimalSeparators[originalIndex];
+						newNEdges[newIndex] = possibilityEdges[originalIndex];
+						newCliqueTrees[newIndex].tree.addEdge(currentVertex[originalIndex], currentEdge[originalIndex], unionMinimalSeparators[originalIndex], vertexSequence[originalIndex], edgeSequence[originalIndex], addEdges[originalIndex], removeEdges[originalIndex], temp, true);
+					}
+					else
+					{
+						newNEdges[newIndex] = nEdges[originalIndex];
+						newConditions[newIndex] = conditions[originalIndex];
+					}
+					newCurrentVertex.push_back(currentVertex[originalIndex]);
+					newCurrentEdge.push_back(currentEdge[originalIndex]);
+					newCurrentEdge[newIndex]++;
+					if (newCurrentEdge[newIndex] == newCurrentVertex[newIndex])
+					{
+						newCurrentEdge[newIndex] = 0;
+						newCurrentVertex[newIndex]++;
+						newCliqueTrees[newIndex].tree.addVertex();
+						newConditions[newIndex] = 0;
+					}
+					newCliqueTrees[newIndex].weight /= sampfordArgs.inclusionProbabilities[2*i];
 				}
-				else if (copyCounts[originalIndex] == 2)
+				else if (copyCounts[i] == 2)
 				{
-					copyCounts[originalIndex]--;
 					newCliqueTrees.push_back(cliqueTrees[originalIndex]);
+					newCliqueTrees.push_back(std::move(cliqueTrees[originalIndex]));
+					
+					newConditions[newIndex] = conditions[originalIndex];
+					newConditions[newIndex][currentEdge[originalIndex]] = 1;
+					newConditions[newIndex] |= unionMinimalSeparators[originalIndex];
+					newNEdges[newIndex] = possibilityEdges[originalIndex];
+					newCliqueTrees[newIndex].tree.addEdge(currentVertex[originalIndex], currentEdge[originalIndex], unionMinimalSeparators[originalIndex], vertexSequence[originalIndex], edgeSequence[originalIndex], addEdges[originalIndex], removeEdges[originalIndex], temp, true);
+					
+					newNEdges[newIndex+1] = nEdges[originalIndex];
+					newConditions[newIndex+1] = conditions[originalIndex];
+					
+					newCurrentVertex.push_back(currentVertex[originalIndex]);
+					newCurrentVertex.push_back(currentVertex[originalIndex]);
+					
+					newCurrentEdge.push_back(currentEdge[originalIndex]);
+					newCurrentEdge.push_back(currentEdge[originalIndex]);
+
+					newCurrentEdge[newIndex]++;
+					newCurrentEdge[newIndex+1]++;
+
+					if (newCurrentEdge[newIndex] == newCurrentVertex[newIndex])
+					{
+						newCurrentEdge[newIndex] = 0; newCurrentEdge[newIndex+1] = 0;
+						newCurrentVertex[newIndex]++; newCurrentVertex[newIndex+1]++;
+						newCliqueTrees[newIndex].tree.addVertex(); newCliqueTrees[newIndex+1].tree.addVertex();
+						newConditions[newIndex] = 0; newConditions[newIndex+1] = 0;
+					}
+					newCliqueTrees[newIndex].weight /= sampfordArgs.inclusionProbabilities[2*i];
+					newCliqueTrees[newIndex+1].weight = newCliqueTrees[newIndex].weight;
+				}
+				else if(copyCounts[i] == 0)
+				{
 				}
 				//This should never happen. 
 				else
 				{
 					throw std::runtime_error("Internal error");
-				}
-				//Did we take the case where we added an edge?
-				if (shuffleVector[i] % 2 == 1)
-				{
-					newConditions[i][currentEdge[originalIndex]] = 1;
-					newConditions[i] |= unionMinimalSeparators[originalIndex];
-					newNEdges[i] = possibilityEdges[originalIndex];
-					newCliqueTrees[i].tree.addEdge(currentVertex[originalIndex], currentEdge[originalIndex], unionMinimalSeparators[originalIndex], vertexSequence[originalIndex], edgeSequence[originalIndex], addEdges[originalIndex], removeEdges[originalIndex], temp, true);
-				}
-				else
-				{
-					newNEdges[i] = nEdges[originalIndex];
-					newConditions[i] = conditions[originalIndex];
-				}
-				newCurrentVertex.push_back(currentVertex[originalIndex]);
-				newCurrentEdge.push_back(currentEdge[originalIndex]);
-				newCurrentEdge[i]++;
-				if (newCurrentEdge[i] == newCurrentVertex[i])
-				{
-					newCurrentEdge[i] = 0;
-					newCurrentVertex[i]++;
-					newCliqueTrees[i].tree.addVertex();
-					newConditions[i] = 0;
 				}
 			}
 			newCliqueTrees.swap(cliqueTrees);
