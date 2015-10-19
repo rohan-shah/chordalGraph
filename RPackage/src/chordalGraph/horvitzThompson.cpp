@@ -1,18 +1,20 @@
 #include "horvitzThompson.h"
 #include <Rcpp.h>
-
-SEXP horvitzThompson(SEXP nVertices_sexp, SEXP budget_sexp, SEXP seed_sexp)
+SEXP horvitzThompson(SEXP nVertices_sexp, SEXP budget_sexp, SEXP seed_sexp, SEXP sampling_sexp)
 {
 BEGIN_RCPP
 	int seed = Rcpp::as<int>(seed_sexp);
 	int nVertices = Rcpp::as<int>(nVertices_sexp);
 	int budget = Rcpp::as<int>(budget_sexp);
+	std::string samplingString = Rcpp::as<std::string>(sampling_sexp);
+	chordalGraph::samplingType sampling = chordalGraph::toSamplingType(samplingString);
 
 	boost::mt19937 randomSource;
 	randomSource.seed(seed);
 	chordalGraph::horvitzThompsonArgs args(randomSource);
 	args.nVertices = nVertices;
 	args.budget = budget;
+	args.sampling = sampling;
 
 	int maxEdges = ((nVertices - 1)*nVertices / 2);
 
@@ -42,13 +44,15 @@ BEGIN_RCPP
 	return result;
 END_RCPP
 }
-SEXP horvitzThompsonSpecificEdges(SEXP nVertices_sexp, SEXP nEdges_sexp, SEXP budget_sexp, SEXP seed_sexp)
+SEXP horvitzThompsonSpecificEdges(SEXP nVertices_sexp, SEXP nEdges_sexp, SEXP budget_sexp, SEXP seed_sexp, SEXP sampling_sexp)
 {
 BEGIN_RCPP
 	int seed = Rcpp::as<int>(seed_sexp);
 	int nVertices = Rcpp::as<int>(nVertices_sexp);
 	int nEdges = Rcpp::as<int>(nEdges_sexp);
 	int budget = Rcpp::as<int>(budget_sexp);
+	std::string samplingString = Rcpp::as<std::string>(sampling_sexp);
+	chordalGraph::samplingType sampling = chordalGraph::toSamplingType(samplingString);
 
 	boost::mt19937 randomSource;
 	randomSource.seed(seed);
@@ -56,6 +60,7 @@ BEGIN_RCPP
 	args.nEdges = nEdges;
 	args.nVertices = nVertices;
 	args.budget = budget;
+	args.sampling = sampling;
 
 	chordalGraph::horvitzThompson(args);
 

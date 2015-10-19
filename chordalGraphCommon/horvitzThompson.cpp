@@ -6,6 +6,7 @@
 #include <boost/math/special_functions.hpp>
 #include "nauty.h"
 #include "sampford.h"
+#include "conditionalPoisson.h"
 namespace chordalGraph
 {
 	namespace horvitzThompsonPrivate
@@ -23,10 +24,29 @@ namespace chordalGraph
 				: tree(nVertices), weight(1)
 			{}
 			cliqueTree tree;
-			double weight;
+			numericType weight;
 		};
 	}
 	using horvitzThompsonPrivate::weightedCliqueTree;
+	samplingType toSamplingType(std::string samplingString)
+	{
+		if(samplingString == "sampford")
+		{
+			return sampfordSampling;
+		}
+		else if(samplingString == "conditionalPoisson")
+		{
+			return conditionalPoissonSampling;
+		}
+		else if(samplingString == "pareto")
+		{
+			return paretoSampling;
+		}
+		else
+		{
+			throw std::runtime_error("Sampling type must be \"sampford\", \"conditionalPoisson\" or \"pareto\"");
+		}
+	}
 	void horvitzThompson(horvitzThompsonArgs& args)
 	{
 		args.exact = true;
@@ -95,7 +115,15 @@ namespace chordalGraph
 		//Vector used to shuffle indices
 		std::vector<int> hasChildren;
 		hasChildren.reserve(args.budget);
+
+		//Arguments for calling the sampford sampling function
 		sampfordBruteForceArgs sampfordArgs(args.randomSource);
+		//Arguments for calling the conditional poisson sampling function
+		conditionalPoissonArgs conditionalArgs(args.randomSource);
+		//Inclusion probabilities and indices that result from calling one of the sampling functions. These are taken out of the relevant argument struct
+		std::vector<numericType> inclusionProbabilities;
+		std::vector<int> indices;
+		std::vector<numericType> weights;
 
 		//Nauty variables
 		std::vector<int> lab, ptn, orbits;
@@ -124,7 +152,7 @@ namespace chordalGraph
 			{
 				if(!alreadyConsidered[sampleCounter] && currentEdge[sampleCounter] == 0)
 				{
-					double weightOther = 0;
+					numericType weightOther = 0;
 					for(int sampleCounter2 = sampleCounter+1; sampleCounter2 < (int)currentVertex.size(); sampleCounter2++)
 					{
 						if(!alreadyConsidered[sampleCounter2] && currentEdge[sampleCounter2] == 0 && currentVertex[sampleCounter] == currentVertex[sampleCounter2])
@@ -145,8 +173,8 @@ namespace chordalGraph
 
 			//Clear vector of indices of possibilities
 			hasChildren.clear();
-			sampfordArgs.weights.clear();
-			double sumHasChildrenWeights = 0;
+			weights.clear();
+			numericType sumHasChildrenWeights = 0;
 			for (int sampleCounter = 0; sampleCounter < (int)currentVertex.size(); sampleCounter++)
 			{
 				if(alreadyConsidered[sampleCounter]) continue;
@@ -232,8 +260,8 @@ namespace chordalGraph
 
 								//Add correct indices to possibilities vector
 								hasChildren.push_back(sampleCounter);
-								sampfordArgs.weights.push_back(cliqueTrees[sampleCounter].weight);
-								sampfordArgs.weights.push_back(cliqueTrees[sampleCounter].weight);
+								weights.push_back(cliqueTrees[sampleCounter].weight);
+								weights.push_back(cliqueTrees[sampleCounter].weight);
 								sumHasChildrenWeights += cliqueTrees[sampleCounter].weight;
 								break;
 							}
@@ -255,17 +283,49 @@ namespace chordalGraph
 			if(toTake == 2*(int)hasChildren.size())
 			{
 				std::fill(copyCounts.begin(), copyCounts.end(), 2);
-				sampfordArgs.inclusionProbabilities.resize(toTake);
-				std::fill(sampfordArgs.inclusionProbabilities.begin(), sampfordArgs.inclusionProbabilities.end(), 1);
+				inclusionProbabilities.resize(toTake);
+				std::fill(inclusionProbabilities.begin(), inclusionProbabilities.end(), 1);
 			}
 			else
 			{
 				std::fill(copyCounts.begin(), copyCounts.end(), 0);
-				sampfordArgs.n = toTake;
-				sampfordBruteForce(sampfordArgs);
-				for(int i = 0; i < (int)toTake; i++)
+				if(args.sampling == sampfordSampling)
 				{
-					copyCounts[sampfordArgs.indices[i]/2]++;
+					//Swap in local storage
+					sampfordArgs.indices.swap(indices);
+					sampfordArgs.inclusionProbabilities.swap(inclusionProbabilities);
+					sampfordArgs.weights.swap(weights);
+
+					sampfordArgs.n = toTake;
+					sampfordBruteForce(sampfordArgs);
+					for(int i = 0; i < (int)toTake; i++)
+					{
+						copyCounts[sampfordArgs.indices[i]/2]++;
+					}
+					//Swap the local storage out again
+					sampfordArgs.indices.swap(indices);
+					sampfordArgs.inclusionProbabilities.swap(inclusionProbabilities);
+					sampfordArgs.weights.swap(weights);
+				}
+				else if(args.sampling == conditionalPoissonSampling)
+				{
+					conditionalArgs.indices.swap(indices);
+					conditionalArgs.inclusionProbabilities.swap(inclusionProbabilities);
+					conditionalArgs.weights.swap(weights);
+
+					conditionalArgs.n = toTake;
+					conditionalPoisson(conditionalArgs);
+					for(int i = 0; i < (int)toTake; i++)
+					{
+						copyCounts[conditionalArgs.indices[i]/2]++;
+					}
+					conditionalArgs.indices.swap(indices);
+					conditionalArgs.inclusionProbabilities.swap(inclusionProbabilities);
+					conditionalArgs.weights.swap(weights);
+				}
+				else
+				{
+					throw std::runtime_error("This type of sampling is still unsupported");
 				}
 			}
 
@@ -304,7 +364,7 @@ namespace chordalGraph
 						newCliqueTrees[newIndex].tree.addVertex();
 						newConditions[newIndex] = 0;
 					}
-					newCliqueTrees[newIndex].weight /= sampfordArgs.inclusionProbabilities[2*i];
+					newCliqueTrees[newIndex].weight /= inclusionProbabilities[2*i];
 				}
 				else if (copyCounts[i] == 2)
 				{
@@ -336,7 +396,7 @@ namespace chordalGraph
 						newCliqueTrees[newIndex].tree.addVertex(); newCliqueTrees[newIndex+1].tree.addVertex();
 						newConditions[newIndex] = 0; newConditions[newIndex+1] = 0;
 					}
-					newCliqueTrees[newIndex].weight /= sampfordArgs.inclusionProbabilities[2*i];
+					newCliqueTrees[newIndex].weight /= inclusionProbabilities[2*i];
 					newCliqueTrees[newIndex+1].weight = newCliqueTrees[newIndex].weight;
 				}
 				else if(copyCounts[i] == 0)

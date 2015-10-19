@@ -2,6 +2,7 @@
 #define SAMPFORD_SAMPLING_HEADER_GUARD
 #include <vector>
 #include <boost/random/mersenne_twister.hpp>
+#include "numericType.h"
 namespace chordalGraph
 {
 	struct sampfordBruteForceArgs
@@ -11,12 +12,12 @@ namespace chordalGraph
 			: randomSource(randomSource)
 		{}
 		boost::mt19937& randomSource;
-		std::vector<double> weights;
+		std::vector<numericType> weights;
 		std::vector<int> indices;
 		std::size_t n;
 		std::vector<double> accumulated1;
 		std::vector<double> accumulated2;
-		std::vector<double> inclusionProbabilities;
+		std::vector<numericType> inclusionProbabilities;
 		std::vector<bool> deterministicInclusion;
 		std::vector<int> deterministicIndices;
 	};

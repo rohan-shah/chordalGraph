@@ -5,16 +5,16 @@ namespace chordalGraph
 {
 	void sampfordBruteForce(sampfordBruteForceArgs& args)
 	{
-		std::size_t nUnits = args.weights.size();
-		if(args.n > nUnits)
+		int nUnits = (int)args.weights.size();
+		if((int)args.n > nUnits)
 		{
 			throw std::runtime_error("Input n was too big");
 		}
-		else if(args.n == nUnits)
+		else if((int)args.n == nUnits)
 		{
 			args.indices.clear();
 			args.indices.reserve(nUnits);
-			for(int i = 0; i < (int)nUnits; i++)
+			for(int i = 0; i < nUnits; i++)
 			{
 				args.indices.push_back(i);
 			}
@@ -30,20 +30,20 @@ namespace chordalGraph
 		args.deterministicIndices.clear();
 		args.deterministicInclusion.resize(nUnits);
 		std::fill(args.deterministicInclusion.begin(), args.deterministicInclusion.end(), false);
-		double cumulative;
+		numericType cumulative;
 		bool hasDeterministic = false;
 		do
 		{
 			hasDeterministic = false;
 			//Work out sum of weights
 			cumulative = 0;
-			for(int i = 0; i < (int)nUnits; i++)
+			for(int i = 0; i < nUnits; i++)
 			{
 				cumulative += args.weights[i];
 			}
-			double maxAllowed = (double)cumulative / (double)(args.n - args.deterministicIndices.size());
+			numericType maxAllowed = cumulative / numericType(args.n - args.deterministicIndices.size());
 			//Any weights that are too big are included with probability 1
-			for(int i = 0; i < (int)nUnits; i++)
+			for(int i = 0; i < nUnits; i++)
 			{
 				if(args.weights[i] >= maxAllowed)
 				{
@@ -57,42 +57,42 @@ namespace chordalGraph
 		} while(hasDeterministic);
 		int deterministicIndices = (int)args.deterministicIndices.size();
 		//Rescale weights so they sum to args.n. These are the weights used for the first sample
-		double rescaledCumulative = 0;
-		double factor = (double)(args.n - deterministicIndices)/ (double)cumulative;
-		for(int i = 0; i < (int)nUnits; i++)
+		numericType rescaledCumulative = 0;
+		numericType factor = numericType(args.n - deterministicIndices)/ cumulative;
+		if(cumulative == 0)
 		{
-			double prob;
+			throw std::runtime_error("Divide by zero encountered");
+		}
+		for(int i = 0; i < nUnits; i++)
+		{
+			numericType prob;
 			if(!args.deterministicInclusion[i])
 			{
 				prob = args.inclusionProbabilities[i] = args.weights[i]*factor;
 			}
 			else prob = 0;
 			rescaledCumulative += prob;
-			args.accumulated1[i] = rescaledCumulative;
-		}
-		if(rescaledCumulative == std::numeric_limits<double>::infinity())
-		{
-			throw std::runtime_error("Infinity encountered in sampford sampling");
+			args.accumulated1[i] = (double)rescaledCumulative;
 		}
 
 		//Accumulated weights for the other samples
-		double cumulativeOther = 0;
-		for(int i = 0; i < (int)nUnits; i++)
+		numericType cumulativeOther = 0;
+		for(int i = 0; i < nUnits; i++)
 		{
-			double rescaled = args.weights[i]*factor;
-			double asProb = rescaled / (1 - rescaled);
+			numericType rescaled = args.weights[i]*factor;
+			if(rescaled == 1)
+			{
+				throw std::runtime_error("Divide by zero encountered");
+			}
+			numericType asProb = rescaled / (1 - rescaled);
 			cumulativeOther += asProb;
-			args.accumulated2[i] = cumulativeOther;
-		}
-		if(cumulativeOther == std::numeric_limits<double>::infinity())
-		{
-			throw std::runtime_error("Infinity encountered in sampford sampling");
+			args.accumulated2[i] = (double)cumulativeOther;
 		}
 		if(args.deterministicIndices.size() >= args.n)
 		{
 			throw std::runtime_error("Deterministic sample taken");
 		}
-		boost::random::uniform_real_distribution<> firstSampleDist(0, rescaledCumulative);
+		boost::random::uniform_real_distribution<> firstSampleDist(0, (double)rescaledCumulative);
 getSample:
 		args.indices = args.deterministicIndices;
 		double firstSample = firstSampleDist(args.randomSource);
@@ -103,7 +103,7 @@ getSample:
 		}
 		args.indices.push_back(firstIndex);
 		{
-			boost::random::uniform_real_distribution<> otherSamplesDist(0, cumulativeOther);
+			boost::random::uniform_real_distribution<> otherSamplesDist(0, (double)cumulativeOther);
 			for(int i = 0; i < (int)args.n-deterministicIndices-1; i++)
 			{
 				double sampledWeight = otherSamplesDist(args.randomSource);

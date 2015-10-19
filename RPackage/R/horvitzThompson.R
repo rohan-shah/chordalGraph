@@ -1,4 +1,4 @@
-horvitzThompson <- function(nVertices, budget, seed, nEdges)
+horvitzThompson <- function(nVertices, budget, seed, sampling, nEdges)
 {
 	if(missing(nVertices) || missing(budget) || missing(seed))
 	{
@@ -20,10 +20,14 @@ horvitzThompson <- function(nVertices, budget, seed, nEdges)
 	{
 		stop("Inputs nVertices and budget must be positive")
 	}
+	if(!(sampling %in% c("sampford", "conditionalPoisson", "pareto")))
+	{
+		stop("Input sampling must be one of \"sampford\", \"conditionalPoisson\" or \"pareto\"")
+	}
 	if(missing(nEdges))
 	{
 		start <- Sys.time()
-		result <- .Call("horvitzThompson", nVertices, budget, seed, PACKAGE="chordalGraph")
+		result <- .Call("horvitzThompson", nVertices, budget, seed, sampling, PACKAGE="chordalGraph")
 		end <- Sys.time()
 		s4Result <- new("estimatedChordalCounts", data = result$data, call = match.call(), start = start, end = end, samples = NULL, options = list(), exact = result$exact)
 		return(s4Result)
@@ -39,7 +43,7 @@ horvitzThompson <- function(nVertices, budget, seed, nEdges)
 			stop("Input nEdges must be in range [0, ((nVertices-1)*nVertices/2)+1]")
 		}
 		start <- Sys.time()
-		result <- .Call("horvitzThompsonSpecificEdges", nVertices, nEdges, budget, seed, PACKAGE="chordalGraph")
+		result <- .Call("horvitzThompsonSpecificEdges", nVertices, nEdges, budget, seed, sampling, PACKAGE="chordalGraph")
 		end <- Sys.time()
 		s4Result <- new("estimatedChordalCount", data = result$data, call = match.call(), start = start, end = end, samples = NULL, options = list(), exact = result$exact)
 		return(s4Result)

@@ -4,11 +4,13 @@
 #include <boost/multiprecision/mpfr.hpp>
 #include <boost/multiprecision/gmp.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
-#include <boost/numeric/ublas/symmetric.hpp>
-typedef boost::multiprecision::static_mpfr_float_50 mpfr_class;
-typedef boost::multiprecision::mpz_int mpz_class;
+#include "numericType.h"
 namespace chordalGraph
 {
+	enum samplingType
+	{
+		sampfordSampling, conditionalPoissonSampling, paretoSampling
+	};
 	struct horvitzThompsonArgs
 	{
 	public:
@@ -21,7 +23,9 @@ namespace chordalGraph
 		mpfr_class estimate;
 		boost::mt19937& randomSource;
 		bool exact;
+		samplingType sampling;
 	};
+	samplingType toSamplingType(std::string samplingString);
 	void horvitzThompson(horvitzThompsonArgs& args);
 }
 #endif
