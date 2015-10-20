@@ -5,10 +5,10 @@
 #include "numericType.h"
 namespace chordalGraph
 {
-	struct sampfordBruteForceArgs
+	struct sampfordMultinomialRejectiveArgs
 	{
 	public:
-		sampfordBruteForceArgs(boost::mt19937& randomSource)
+		sampfordMultinomialRejectiveArgs(boost::mt19937& randomSource)
 			: randomSource(randomSource)
 		{}
 		boost::mt19937& randomSource;
@@ -21,6 +21,21 @@ namespace chordalGraph
 		std::vector<bool> deterministicInclusion;
 		std::vector<int> deterministicIndices;
 	};
-	void sampfordBruteForce(sampfordBruteForceArgs& args);
+	void sampfordMultinomialRejective(sampfordMultinomialRejectiveArgs& args);
+	struct sampfordConditionalPoissonRejectiveArgs
+	{
+	public:
+		sampfordConditionalPoissonRejectiveArgs(boost::mt19937& randomSource)
+			: randomSource(randomSource)
+		{}
+		boost::mt19937& randomSource;
+		std::vector<int> indices;
+		std::size_t n;
+		std::vector<numericType> weights;
+		std::vector<bool> deterministicInclusion;
+		std::vector<double> accumulated;
+		std::vector<numericType> inclusionProbabilities;
+	};
+	void sampfordConditionalPoissonRejective(sampfordConditionalPoissonRejectiveArgs& args);
 }
 #endif

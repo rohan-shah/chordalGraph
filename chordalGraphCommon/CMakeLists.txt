@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1)
-set(CppFiles cliqueTree.cpp stochasticEnumeration.cpp stochasticEnumeration2.cpp sampfordBruteForce.cpp conditionalPoisson.cpp)
+set(CppFiles cliqueTree.cpp stochasticEnumeration.cpp stochasticEnumeration2.cpp sampfordBruteForce.cpp conditionalPoisson.cpp sampfordConditionalPoissonRejective.cpp)
 set(HeaderFiles cliqueTree.h stochasticEnumeration.h sampford.h numericType.h conditionalPoisson.h)
 if(USE_NAUTY)
 	list(APPEND CppFiles stochasticEnumerationNauty.cpp horvitzThompson.cpp)

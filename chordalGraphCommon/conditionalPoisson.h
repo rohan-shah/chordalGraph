@@ -21,6 +21,7 @@ namespace chordalGraph
 		std::vector<numericType> exponentialParameters;
 		std::vector<numericType> expExponentialParameters;
 		boost::numeric::ublas::matrix<numericType> expNormalisingConstant;
+		bool calculateInclusionProbabilities;
 	};
 	void conditionalPoisson(conditionalPoissonArgs& args);
 	void calculateExpNormalisingConstants(std::vector<numericType>& expExponentialParameters, std::vector<numericType>& exponentialParameters, boost::numeric::ublas::matrix<numericType>& expNormalisingConstant, int n, int nUnits, std::vector<bool>& ignore);

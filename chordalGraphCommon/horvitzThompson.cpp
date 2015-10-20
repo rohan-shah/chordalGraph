@@ -117,9 +117,12 @@ namespace chordalGraph
 		hasChildren.reserve(args.budget);
 
 		//Arguments for calling the sampford sampling function
-		sampfordBruteForceArgs sampfordArgs(args.randomSource);
+		sampfordMultinomialRejectiveArgs sampfordMultinomialArgs(args.randomSource);
 		//Arguments for calling the conditional poisson sampling function
 		conditionalPoissonArgs conditionalArgs(args.randomSource);
+		conditionalArgs.calculateInclusionProbabilities = true;
+		//Arguments for calling the sampford conditional poisson rejective sampling
+		sampfordConditionalPoissonRejectiveArgs sampfordConditionalPoissonArgs(args.randomSource);
 		//Inclusion probabilities and indices that result from calling one of the sampling functions. These are taken out of the relevant argument struct
 		std::vector<numericType> inclusionProbabilities;
 		std::vector<int> indices;
@@ -291,22 +294,38 @@ namespace chordalGraph
 				std::fill(copyCounts.begin(), copyCounts.end(), 0);
 				if(args.sampling == sampfordSampling)
 				{
-					//Swap in local storage
-					sampfordArgs.indices.swap(indices);
-					sampfordArgs.inclusionProbabilities.swap(inclusionProbabilities);
-					sampfordArgs.weights.swap(weights);
+					sampfordConditionalPoissonArgs.indices.swap(indices);
+					sampfordConditionalPoissonArgs.inclusionProbabilities.swap(inclusionProbabilities);
+					sampfordConditionalPoissonArgs.weights.swap(weights);
 
-					sampfordArgs.n = toTake;
-					sampfordBruteForce(sampfordArgs);
+					sampfordConditionalPoissonArgs.n = toTake;
+					sampfordConditionalPoissonRejective(sampfordConditionalPoissonArgs);
 					for(int i = 0; i < (int)toTake; i++)
 					{
-						copyCounts[sampfordArgs.indices[i]/2]++;
+						copyCounts[sampfordConditionalPoissonArgs.indices[i]/2]++;
+					}
+
+					sampfordConditionalPoissonArgs.indices.swap(indices);
+					sampfordConditionalPoissonArgs.inclusionProbabilities.swap(inclusionProbabilities);
+					sampfordConditionalPoissonArgs.weights.swap(weights);
+				}
+				/*{
+					//Swap in local storage
+					sampfordMultinomialArgs.indices.swap(indices);
+					sampfordMultinomialArgs.inclusionProbabilities.swap(inclusionProbabilities);
+					sampfordMultinomialArgs.weights.swap(weights);
+
+					sampfordMultinomialArgs.n = toTake;
+					sampfordMultinomialRejective(sampfordMultinomialArgs);
+					for(int i = 0; i < (int)toTake; i++)
+					{
+						copyCounts[sampfordMultinomialArgs.indices[i]/2]++;
 					}
 					//Swap the local storage out again
-					sampfordArgs.indices.swap(indices);
-					sampfordArgs.inclusionProbabilities.swap(inclusionProbabilities);
-					sampfordArgs.weights.swap(weights);
-				}
+					sampfordMultinomialArgs.indices.swap(indices);
+					sampfordMultinomialArgs.inclusionProbabilities.swap(inclusionProbabilities);
+					sampfordMultinomialArgs.weights.swap(weights);
+				}*/
 				else if(args.sampling == conditionalPoissonSampling)
 				{
 					conditionalArgs.indices.swap(indices);

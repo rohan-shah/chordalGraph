@@ -3,7 +3,7 @@
 #include <functional>
 namespace chordalGraph
 {
-	void sampfordBruteForce(sampfordBruteForceArgs& args)
+	void sampfordMultinomialRejective(sampfordMultinomialRejectiveArgs& args)
 	{
 		int nUnits = (int)args.weights.size();
 		if((int)args.n > nUnits)
