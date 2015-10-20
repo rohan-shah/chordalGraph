@@ -355,7 +355,7 @@ namespace chordalGraph
 			for (int i = 0; i < (int)hasChildren.size(); i++)
 			{
 				int originalIndex = hasChildren[i];
-				int newIndex = newCliqueTrees.size();
+				int newIndex = (int)newCliqueTrees.size();
 
 				if (copyCounts[i] == 1)
 				{

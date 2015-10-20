@@ -96,7 +96,7 @@ namespace chordalGraph
 getSample:
 		args.indices = args.deterministicIndices;
 		double firstSample = firstSampleDist(args.randomSource);
-		int firstIndex = std::distance(args.accumulated1.begin(), std::upper_bound(args.accumulated1.begin(), args.accumulated1.end(), firstSample, std::less_equal<double>()));
+		int firstIndex = (int)std::distance(args.accumulated1.begin(), std::upper_bound(args.accumulated1.begin(), args.accumulated1.end(), firstSample, std::less_equal<double>()));
 		if(args.deterministicInclusion[firstIndex] || args.deterministicIndices.size() == args.n)
 		{
 			throw std::runtime_error("Internal error");
@@ -107,7 +107,7 @@ getSample:
 			for(int i = 0; i < (int)args.n-deterministicIndices-1; i++)
 			{
 				double sampledWeight = otherSamplesDist(args.randomSource);
-				int index = std::distance(args.accumulated2.begin(), std::upper_bound(args.accumulated2.begin(), args.accumulated2.end(), sampledWeight, std::less_equal<double>()));
+				int index = (int)std::distance(args.accumulated2.begin(), std::upper_bound(args.accumulated2.begin(), args.accumulated2.end(), sampledWeight, std::less_equal<double>()));
 				if(args.deterministicInclusion[index])
 				{
 					throw std::runtime_error("Internal error");

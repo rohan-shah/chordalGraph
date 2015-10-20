@@ -40,7 +40,9 @@ BEGIN_RCPP
 	SEXP estimatesAsStrings_sexp = Rcpp::wrap(estimatesAsStrings);
 
 	Rcpp::Function mpfrFunction("mpfr");
-	Rcpp::List result = Rcpp::List::create(Rcpp::Named("data") = mpfrFunction(estimatesAsStrings_sexp, Rcpp::Named("prec", 50)), Rcpp::Named("exact") = Rcpp::wrap(exactVector));
+	SEXP estimatesAsMPFR = mpfrFunction(estimatesAsStrings_sexp, Rcpp::Named("prec", 50));
+	SEXP exactVector_sexp = Rcpp::wrap(exactVector);
+	Rcpp::List result = Rcpp::List::create(Rcpp::Named("data") = estimatesAsMPFR, Rcpp::Named("exact") = exactVector_sexp);
 	return result;
 END_RCPP
 }
@@ -68,7 +70,9 @@ BEGIN_RCPP
 	SEXP estimateAsString_sexp = Rcpp::wrap(estimateAsString);
 
 	Rcpp::Function mpfrFunction("mpfr");
-	Rcpp::List result = Rcpp::List::create(Rcpp::Named("data") = mpfrFunction(estimateAsString_sexp, Rcpp::Named("prec", 50)), Rcpp::Named("exact") = args.exact);
+	SEXP estimatesAsMPFR = mpfrFunction(estimateAsString_sexp, Rcpp::Named("prec", 50));
+	SEXP exact_sexp = Rcpp::wrap(args.exact);
+	Rcpp::List result = Rcpp::List::create(Rcpp::Named("data") = estimatesAsMPFR, Rcpp::Named("exact") = exact_sexp);
 
 	return result;
 END_RCPP

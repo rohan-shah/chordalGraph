@@ -24,7 +24,7 @@ namespace chordalGraph
 		{
 			args.expExponentialParameters.push_back(exp(args.exponentialParameters[i]));
 		}
-		calculateExpNormalisingConstants(args.expExponentialParameters, args.exponentialParameters, args.expNormalisingConstant, args.exponentialParameters.size(), args.exponentialParameters.size(), args.deterministicInclusion);
+		calculateExpNormalisingConstants(args.expExponentialParameters, args.exponentialParameters, args.expNormalisingConstant, (int)args.exponentialParameters.size(), (int)args.exponentialParameters.size(), args.deterministicInclusion);
 		for(int i = 0; i < 6; i++)
 		{
 			for(int j = 0; j < 6; j++)

@@ -145,7 +145,7 @@ beginSample:
 		//We start by computing the normalising constants. First index is k, second is z. All indices in this loop are 1 indexed
 		expNormalisingConstant.resize(nUnits,n);
 		//This will skip over the *ignored* units (the ones that were deterministically included)
-		int k = expExponentialParameters.size();
+		int k = (int)expExponentialParameters.size();
 		for(int unitIndex = nUnits; unitIndex >= 1; unitIndex--)
 		{
 			while(ignore[k-1]) k--;
