@@ -6,6 +6,7 @@
 #include <boost/math/special_functions.hpp>
 #include "nauty.h"
 #include "sampford.h"
+#include "semiDeterministicSampling.h"
 #include "conditionalPoisson.h"
 namespace chordalGraph
 {
@@ -41,6 +42,10 @@ namespace chordalGraph
 		else if(samplingString == "pareto")
 		{
 			return paretoSampling;
+		}
+		else if(samplingString == "semiDeterministic")
+		{
+			return semiDeterministicSampling;
 		}
 		else
 		{
@@ -121,6 +126,8 @@ namespace chordalGraph
 		//Arguments for calling the conditional poisson sampling function
 		conditionalPoissonArgs conditionalArgs(args.randomSource);
 		conditionalArgs.calculateInclusionProbabilities = true;
+		//Arguments for semi-deterministic sampling
+		semiDeterministicSamplingArgs semiDetArgs(args.randomSource);
 		//Arguments for calling the sampford conditional poisson rejective sampling
 		sampfordConditionalPoissonRejectiveArgs sampfordConditionalPoissonArgs(args.randomSource);
 		//Inclusion probabilities and indices that result from calling one of the sampling functions. These are taken out of the relevant argument struct
@@ -309,6 +316,24 @@ namespace chordalGraph
 					sampfordConditionalPoissonArgs.inclusionProbabilities.swap(inclusionProbabilities);
 					sampfordConditionalPoissonArgs.weights.swap(weights);
 				}
+				else if(args.sampling == semiDeterministicSampling)
+				{
+					semiDetArgs.indices.swap(indices);
+					semiDetArgs.inclusionProbabilities.swap(inclusionProbabilities);
+					semiDetArgs.weights.swap(weights);
+
+					semiDetArgs.n = toTake;
+					semiDeterministic(semiDetArgs);
+					for(int i = 0; i < (int)toTake; i++)
+					{
+						copyCounts[semiDetArgs.indices[i]/2]++;
+					}
+
+					semiDetArgs.indices.swap(indices);
+					semiDetArgs.inclusionProbabilities.swap(inclusionProbabilities);
+					semiDetArgs.weights.swap(weights);
+				}
+				//The multinomial rejective version of sampford sampling
 				/*{
 					//Swap in local storage
 					sampfordMultinomialArgs.indices.swap(indices);

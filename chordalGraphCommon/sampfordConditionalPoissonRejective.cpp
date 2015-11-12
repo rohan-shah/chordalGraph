@@ -66,7 +66,6 @@ namespace chordalGraph
 			throw std::runtime_error("Divide by zero encountered");
 		}
 		//And also work out the exponential parameters
-		numericType sumExponentialParameters = 0;
 		for(int i = 0; i < nUnits; i++)
 		{
 			if(!args.deterministicInclusion[i])
