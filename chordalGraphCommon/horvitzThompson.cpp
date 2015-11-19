@@ -31,9 +31,13 @@ namespace chordalGraph
 	using horvitzThompsonPrivate::weightedCliqueTree;
 	samplingType toSamplingType(std::string samplingString)
 	{
-		if(samplingString == "sampford")
+		if(samplingString == "sampfordMultinomial")
 		{
-			return sampfordSampling;
+			return sampfordSamplingMultinomial;
+		}
+		else if(samplingString == "sampfordConditionalPoisson")
+		{
+			return sampfordSamplingConditionalPoisson;
 		}
 		else if(samplingString == "conditionalPoisson")
 		{
@@ -299,7 +303,7 @@ namespace chordalGraph
 			else
 			{
 				std::fill(copyCounts.begin(), copyCounts.end(), 0);
-				if(args.sampling == sampfordSampling)
+				if(args.sampling == sampfordSamplingConditionalPoisson)
 				{
 					sampfordConditionalPoissonArgs.indices.swap(indices);
 					sampfordConditionalPoissonArgs.inclusionProbabilities.swap(inclusionProbabilities);
@@ -334,7 +338,8 @@ namespace chordalGraph
 					semiDetArgs.weights.swap(weights);
 				}
 				//The multinomial rejective version of sampford sampling
-				/*{
+				else if(args.sampling == sampfordSamplingMultinomial)
+				{
 					//Swap in local storage
 					sampfordMultinomialArgs.indices.swap(indices);
 					sampfordMultinomialArgs.inclusionProbabilities.swap(inclusionProbabilities);
@@ -350,7 +355,7 @@ namespace chordalGraph
 					sampfordMultinomialArgs.indices.swap(indices);
 					sampfordMultinomialArgs.inclusionProbabilities.swap(inclusionProbabilities);
 					sampfordMultinomialArgs.weights.swap(weights);
-				}*/
+				}
 				else if(args.sampling == conditionalPoissonSampling)
 				{
 					conditionalArgs.indices.swap(indices);

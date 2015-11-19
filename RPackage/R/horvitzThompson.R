@@ -20,9 +20,9 @@ horvitzThompson <- function(nVertices, budget, seed, sampling, nEdges)
 	{
 		stop("Inputs nVertices and budget must be positive")
 	}
-	if(!(sampling %in% c("sampford", "conditionalPoisson", "pareto", "semiDeterministic")))
+	if(!(sampling %in% c("sampfordMultinomial", "sampfordConditionalPoisson", "conditionalPoisson", "pareto", "semiDeterministic")))
 	{
-		stop("Input sampling must be one of \"sampford\", \"conditionalPoisson\", \"semiDeterministic\" or \"pareto\"")
+		stop("Input sampling must be one of \"sampfordMultinomial\", \"sampfordConditionalPoisson\", \"conditionalPoisson\", \"semiDeterministic\" or \"pareto\"")
 	}
 	if(missing(nEdges))
 	{
