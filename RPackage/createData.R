@@ -1,5 +1,5 @@
 library(chordalGraph)
-for(i in 7:9)
+for(i in 3:9)
 {
 	if(!file.exists(file.path("data", paste0("exact", i, ".RData"))))
 	{
