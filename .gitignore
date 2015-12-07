@@ -2,5 +2,6 @@
 /cmakeCommand
 /release
 /debug
+/relWithDebInfo
 /build32/
 /build64/

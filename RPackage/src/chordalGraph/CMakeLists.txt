@@ -4,6 +4,7 @@ set(HeaderFiles isChordalIterative.h convertGraph.h)
 add_library(chordalGraphRPackage SHARED ${CppFiles} ${HeaderFiles})
 target_link_libraries(chordalGraphRPackage PUBLIC chordalGraphCommon Rcpp)
 set_target_properties(chordalGraphRPackage PROPERTIES OUTPUT_NAME "chordalGraph")
+target_compile_definitions(chordalGraphRPackage PRIVATE CUSTOM_STATIC_RCPP)
 
 if(WIN32)
 	target_compile_definitions(chordalGraphRPackage PUBLIC _CRT_SECURE_NO_WARNINGS)
