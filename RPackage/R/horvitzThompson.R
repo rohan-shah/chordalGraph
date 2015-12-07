@@ -1,3 +1,4 @@
+samplingMethods <- c("sampfordMultinomial", "sampfordConditionalPoisson", "conditionalPoisson", "pareto", "semiDeterministic")
 horvitzThompson <- function(nVertices, budget, seed, sampling, nEdges)
 {
 	if(missing(nVertices) || missing(budget) || missing(seed))
@@ -20,9 +21,9 @@ horvitzThompson <- function(nVertices, budget, seed, sampling, nEdges)
 	{
 		stop("Inputs nVertices and budget must be positive")
 	}
-	if(!(sampling %in% c("sampfordMultinomial", "sampfordConditionalPoisson", "conditionalPoisson", "pareto", "semiDeterministic")))
+	if(!(sampling %in% samplingMethods))
 	{
-		stop("Input sampling must be one of \"sampfordMultinomial\", \"sampfordConditionalPoisson\", \"conditionalPoisson\", \"semiDeterministic\" or \"pareto\"")
+		stop("Input sampling must be one of the values in samplingMethods")
 	}
 	if(missing(nEdges))
 	{
