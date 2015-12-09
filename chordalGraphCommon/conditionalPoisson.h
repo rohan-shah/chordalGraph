@@ -24,6 +24,7 @@ namespace chordalGraph
 		bool calculateInclusionProbabilities;
 	};
 	void conditionalPoisson(conditionalPoissonArgs& args);
+	void conditionalPoissonInclusionProbabilities(conditionalPoissonArgs& args);
 	void calculateExpNormalisingConstants(std::vector<numericType>& expExponentialParameters, std::vector<numericType>& exponentialParameters, boost::numeric::ublas::matrix<numericType>& expNormalisingConstant, int n, int nUnits, std::vector<bool>& ignore);
 }
 #endif

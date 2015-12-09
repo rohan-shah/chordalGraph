@@ -104,6 +104,16 @@ beginSample:
 		{
 			throw std::runtime_error("Internal error");
 		}
+		conditionalPoissonInclusionProbabilities(args);
+	}
+	void conditionalPoissonInclusionProbabilities(conditionalPoissonArgs& args)
+	{
+		int nUnits = (int)args.weights.size();
+		int deterministicIndices = 0;
+		for(std::vector<bool>::iterator i = args.deterministicInclusion.begin(); i != args.deterministicInclusion.end(); i++)
+		{
+			deterministicIndices += *i;
+		}
 		//Now compute the inclusion probabilities
 		args.inclusionProbabilities.resize(nUnits);
 		calculateExpNormalisingConstants(args.expExponentialParameters, args.exponentialParameters, args.expNormalisingConstant, (int)args.n - deterministicIndices, nUnits - deterministicIndices, args.deterministicInclusion);
