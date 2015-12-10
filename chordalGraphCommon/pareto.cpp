@@ -1,4 +1,4 @@
-#include "sampford.h"
+#include "pareto.h"
 #include <boost/random/bernoulli_distribution.hpp>
 #include <boost/random/uniform_real_distribution.hpp>
 #include <functional>
@@ -8,7 +8,7 @@ namespace chordalGraph
 	using std::log;
 	using boost::multiprecision::exp;
 	using std::exp;
-	void sampfordConditionalPoissonRejective(sampfordConditionalPoissonRejectiveArgs& args, std::vector<int>& indices, std::vector<numericType>& inclusionProbabilities, std::vector<numericType>& weights, boost::mt19937& randomSource)
+	void paretoSampling(paretoSamplingArgs& args, std::vector<int>& indices, std::vector<numericType>& inclusionProbabilities, std::vector<numericType>& weights, boost::mt19937& randomSource)
 	{
 		indices.clear();
 		int nUnits = (int)weights.size();
@@ -26,8 +26,6 @@ namespace chordalGraph
 			return;
 		}
 		args.deterministicInclusion.resize(nUnits);
-		inclusionProbabilities.resize(nUnits);
-		args.accumulated.resize(nUnits);
 		std::fill(args.deterministicInclusion.begin(), args.deterministicInclusion.end(), false);
 		//Work out which units are going to be deterministically selected. 
 		numericType cumulative;
@@ -40,7 +38,6 @@ namespace chordalGraph
 			for(int i = 0; i < nUnits; i++)
 			{
 				cumulative += weights[i];
-				args.accumulated[i] = double(cumulative);
 			}
 			//Make the maxAllowed value slightly smaller. This is because we don't want inclusion probabilities that are numerically close to 1, because in that case the alternating series used to compute the inclusion probabilities becomes unstable. 
 			numericType maxAllowed = 0.9999* cumulative / numericType(args.n - indices.size());
@@ -53,7 +50,6 @@ namespace chordalGraph
 					indices.push_back(i);
 					hasDeterministic = true;
 					weights[i] = 0;
-					inclusionProbabilities[i] = 1;
 				}
 			}
 		} while(hasDeterministic);
@@ -70,45 +66,34 @@ namespace chordalGraph
 		{
 			if(!args.deterministicInclusion[i])
 			{
-				inclusionProbabilities[i] = weights[i] = weights[i]*factor;
+				weights[i] = weights[i]*factor;
 			}
 		}
-		boost::random::uniform_real_distribution<> firstSampleDist(0, (double)cumulative);
-beginSample:
-		indices.resize(deterministicIndices);
-		double firstSample = firstSampleDist(randomSource);
-		int firstIndex = (int)std::distance(args.accumulated.begin(), std::upper_bound(args.accumulated.begin(), args.accumulated.end(), firstSample, std::less_equal<double>()));
-		if(args.deterministicInclusion[firstIndex] || indices.size() == args.n)
-		{
-			throw std::runtime_error("Internal error");
-		}
-
+		boost::random::uniform_real_distribution<> standardUniform(0, 1);
+		//Now compute the pareto statistics
+		args.paretoStatistics.clear();
 		for(int i = 0; i < nUnits; i++)
 		{
 			if(!args.deterministicInclusion[i])
 			{
-				boost::random::bernoulli_distribution<double> currentUnitDist((double)weights[i]);
-				if(currentUnitDist(randomSource))
-				{
-					indices.push_back(i);
-				}
+				double uniform = standardUniform(randomSource);
+				paretoSamplingArgs::paretoStatistic newStatistic;
+				mpfr_class value = ((uniform * (1 - weights[i]))/(weights[i]*(1-uniform)));
+				newStatistic.statistic = value.convert_to<double>();
+				newStatistic.order = i;
+				args.paretoStatistics.push_back(newStatistic);
 			}
-			//If we can't reach the target of n units, then start again. 
-			if(indices.size() > args.n-1 || indices.size() + (nUnits - i - 1) < args.n-1) goto beginSample;
 		}
-		if(indices.size() != args.n-1)
+		std::sort(args.paretoStatistics.begin(), args.paretoStatistics.end());
+		//Select so many smallest values
+		for(int i = 0; i < (int)(args.n - deterministicIndices); i++)
 		{
-			throw std::runtime_error("Internal error");
+			indices.push_back(args.paretoStatistics[i].order);
 		}
-		if(args.n > 1 && std::find(indices.begin(), indices.end(), firstIndex) != indices.end())
+		
+		if(args.calculateInclusionProbabilities)
 		{
-			goto beginSample;
-		}
-		indices.push_back(firstIndex);
-		std::sort(indices.begin(), indices.end());
-		if(std::unique(indices.begin(), indices.end()) != indices.end())
-		{
-			throw std::runtime_error("Internal error");
+			throw std::runtime_error("Calculation of Pareto inclusion probabilities not implemented yet");
 		}
 	}
 }

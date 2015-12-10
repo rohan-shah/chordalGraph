@@ -1,4 +1,4 @@
-samplingMethods <- c("sampfordMultinomial", "sampfordConditionalPoisson", "conditionalPoisson", "pareto", "semiDeterministic")
+samplingMethods <- c("sampfordMultinomial", "sampfordConditionalPoisson", "conditionalPoisson", "sampfordFromParetoNaive", "semiDeterministic")
 horvitzThompson <- function(nVertices, budget, seed, sampling, nEdges)
 {
 	if(missing(nVertices) || missing(budget) || missing(seed))

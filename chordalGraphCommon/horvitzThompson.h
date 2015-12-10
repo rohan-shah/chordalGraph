@@ -9,7 +9,7 @@ namespace chordalGraph
 {
 	enum samplingType
 	{
-		sampfordSamplingMultinomial, conditionalPoissonSampling, paretoSampling, semiDeterministicSampling, sampfordSamplingConditionalPoisson, sampfordFromParetoNaive
+		sampfordSamplingMultinomial, conditionalPoissonSampling, paretoSampling, semiDeterministicSampling, sampfordSamplingConditionalPoisson, sampfordSamplingFromParetoNaive
 	};
 	struct horvitzThompsonArgs
 	{

@@ -9,7 +9,8 @@ endif()
 if(BUILD_R_PACKAGE)
 	find_package(Rcpp REQUIRED)
 	set(RFiles R/isChordalIterative.R R/onLoad.R R/stochasticEnumeration.R R/stochasticEnumerationNauty.R R/horvitzThompson.R)
-	set(RPackageFiles DESCRIPTION NAMESPACE ${RFiles})
+	set(RTestFiles tests/testthat.R tests/testthat/test-exact.R tests/testthat/test-horvitzThompson.R tests/testthat/test-stochasticEnumerationNauty.R tests/testthat/test-stochasticEnumeration.R)
+	set(RPackageFiles DESCRIPTION NAMESPACE ${RFiles} ${RTestFiles})
 
 	#Find location of Rcpp_exceptions.R 
 	get_property(RCPP_INCLUDE_DIRECTORIES TARGET Rcpp PROPERTY INTERFACE_INCLUDE_DIRECTORIES)

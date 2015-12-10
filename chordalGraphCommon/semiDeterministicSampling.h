@@ -8,17 +8,12 @@ namespace chordalGraph
 	struct semiDeterministicSamplingArgs
 	{
 	public:
-		semiDeterministicSamplingArgs(boost::mt19937& randomSource)
-			: randomSource(randomSource)
+		semiDeterministicSamplingArgs()
 		{}
-		boost::mt19937& randomSource;
-		std::vector<numericType> weights;
-		std::vector<int> indices;
 		std::size_t n;
-		std::vector<numericType> inclusionProbabilities;
 		std::vector<bool> deterministicInclusion;
 		std::vector<int> deterministicIndices;
 	};
-	void semiDeterministic(semiDeterministicSamplingArgs& args);
+	void semiDeterministic(semiDeterministicSamplingArgs& args, std::vector<int>& indices, std::vector<numericType>& inclusionProbabilities, std::vector<numericType>& weights, boost::mt19937& randomSource);
 }
 #endif

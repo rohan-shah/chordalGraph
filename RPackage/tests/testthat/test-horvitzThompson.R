@@ -18,7 +18,7 @@ test_that("All methods except sampfordMultinomial, conditionalPoisson and pareto
 {
 	data(exact6, envir = environment())
 	nReps <- 400
-	methods <- setdiff(chordalGraph::samplingMethods, c("sampfordMultinomial", "conditionalPoisson", "pareto"))
+	methods <- setdiff(chordalGraph:::samplingMethods, c("sampfordMultinomial", "conditionalPoisson", "pareto"))
 	for(method in methods)
 	{
 		results <- matrix(data=NA, nrow = nReps, ncol = 16)

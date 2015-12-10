@@ -8,34 +8,33 @@ namespace chordalGraph
 	struct sampfordMultinomialRejectiveArgs
 	{
 	public:
-		sampfordMultinomialRejectiveArgs(boost::mt19937& randomSource)
-			: randomSource(randomSource)
+		sampfordMultinomialRejectiveArgs()
 		{}
-		boost::mt19937& randomSource;
-		std::vector<numericType> weights;
-		std::vector<int> indices;
 		std::size_t n;
 		std::vector<double> accumulated1;
 		std::vector<double> accumulated2;
-		std::vector<numericType> inclusionProbabilities;
 		std::vector<bool> deterministicInclusion;
 		std::vector<int> deterministicIndices;
 	};
-	void sampfordMultinomialRejective(sampfordMultinomialRejectiveArgs& args);
+	void sampfordMultinomialRejective(sampfordMultinomialRejectiveArgs& args, std::vector<int>& indices, std::vector<numericType>& inclusionProbabilities, std::vector<numericType>& weights, boost::mt19937& randomSource);
 	struct sampfordConditionalPoissonRejectiveArgs
 	{
 	public:
-		sampfordConditionalPoissonRejectiveArgs(boost::mt19937& randomSource)
-			: randomSource(randomSource)
+		sampfordConditionalPoissonRejectiveArgs()
 		{}
-		boost::mt19937& randomSource;
-		std::vector<int> indices;
 		std::size_t n;
-		std::vector<numericType> weights;
 		std::vector<bool> deterministicInclusion;
 		std::vector<double> accumulated;
-		std::vector<numericType> inclusionProbabilities;
 	};
-	void sampfordConditionalPoissonRejective(sampfordConditionalPoissonRejectiveArgs& args);
+	void sampfordConditionalPoissonRejective(sampfordConditionalPoissonRejectiveArgs& args, std::vector<int>& indices, std::vector<numericType>& inclusionProbabilities, std::vector<numericType>& weights, boost::mt19937& randomSource);
+	struct sampfordFromParetoNaiveArgs
+	{
+	public:
+		sampfordFromParetoNaiveArgs()
+		{}
+		std::size_t n;
+	};
+	void sampfordFromParetoNaive(sampfordFromParetoNaiveArgs& args, std::vector<int>& indices, std::vector<numericType>& inclusionProbabilities, std::vector<numericType>& weights, boost::mt19937& randomSource);
+
 }
 #endif

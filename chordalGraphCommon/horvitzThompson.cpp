@@ -43,6 +43,10 @@ namespace chordalGraph
 		{
 			return conditionalPoissonSampling;
 		}
+		else if(samplingString == "sampfordFromParetoNaive")
+		{
+			return sampfordSamplingFromParetoNaive;
+		}
 		else if(samplingString == "pareto")
 		{
 			return paretoSampling;
@@ -53,8 +57,62 @@ namespace chordalGraph
 		}
 		else
 		{
-			throw std::runtime_error("Sampling type must be \"sampford\", \"conditionalPoisson\" or \"pareto\"");
+			throw std::runtime_error("Sampling type must be one of \"sampfordMultinomial\", \"sampfordConditionalPoisson\", \"conditionalPoisson\", \"sampfordFromParetoNaive\", \"pareto\" or \"semiDeterministic\"");
 		}
+	}
+	struct performSamplingArgs
+	{
+		performSamplingArgs()
+		{
+			conditionalArgs.calculateInclusionProbabilities = true;
+		}
+		int toTake;
+		//Arguments for calling the sampford sampling function
+		sampfordMultinomialRejectiveArgs sampfordMultinomialArgs;
+		//Arguments for calling the conditional poisson sampling function
+		conditionalPoissonArgs conditionalArgs;
+		//Arguments for semi-deterministic sampling
+		semiDeterministicSamplingArgs semiDetArgs;
+		//Arguments for calling the sampford conditional poisson rejective sampling
+		sampfordConditionalPoissonRejectiveArgs sampfordConditionalPoissonArgs;
+		//Arguments for performing pareto sampling and pretending it's a sampford sample
+		sampfordFromParetoNaiveArgs sampfordFromParetoArgs;
+		samplingType sampling;
+
+	};
+	void performSampling(performSamplingArgs& args, std::vector<int>& indices, std::vector<numericType>& inclusionProbabilities, std::vector<numericType>& weights, boost::mt19937& randomSource)
+	{
+		if(args.sampling == sampfordSamplingConditionalPoisson)
+		{
+			args.sampfordConditionalPoissonArgs.n = args.toTake;
+			sampfordConditionalPoissonRejective(args.sampfordConditionalPoissonArgs, indices, inclusionProbabilities, weights, randomSource);
+		}
+		else if(args.sampling == semiDeterministicSampling)
+		{
+			args.semiDetArgs.n = args.toTake;
+			semiDeterministic(args.semiDetArgs, indices, inclusionProbabilities, weights, randomSource);
+		}
+		//The multinomial rejective version of sampford sampling
+		else if(args.sampling == sampfordSamplingMultinomial)
+		{
+			args.sampfordMultinomialArgs.n = args.toTake;
+			sampfordMultinomialRejective(args.sampfordMultinomialArgs, indices, inclusionProbabilities, weights, randomSource);
+		}
+		else if(args.sampling == conditionalPoissonSampling)
+		{
+			args.conditionalArgs.n = args.toTake;
+			conditionalPoisson(args.conditionalArgs, indices, inclusionProbabilities, weights, randomSource);
+		}
+		else if(args.sampling == sampfordSamplingFromParetoNaive)
+		{
+			args.sampfordFromParetoArgs.n = args.toTake;
+			sampfordFromParetoNaive(args.sampfordFromParetoArgs, indices, inclusionProbabilities, weights, randomSource);
+		}
+		else
+		{
+			throw std::runtime_error("This type of sampling is still unsupported");
+		}
+
 	}
 	void horvitzThompson(horvitzThompsonArgs& args)
 	{
@@ -125,15 +183,8 @@ namespace chordalGraph
 		std::vector<int> hasChildren;
 		hasChildren.reserve(args.budget);
 
-		//Arguments for calling the sampford sampling function
-		sampfordMultinomialRejectiveArgs sampfordMultinomialArgs(args.randomSource);
-		//Arguments for calling the conditional poisson sampling function
-		conditionalPoissonArgs conditionalArgs(args.randomSource);
-		conditionalArgs.calculateInclusionProbabilities = true;
-		//Arguments for semi-deterministic sampling
-		semiDeterministicSamplingArgs semiDetArgs(args.randomSource);
-		//Arguments for calling the sampford conditional poisson rejective sampling
-		sampfordConditionalPoissonRejectiveArgs sampfordConditionalPoissonArgs(args.randomSource);
+		performSamplingArgs samplingArgs;
+		samplingArgs.sampling = args.sampling;
 		//Inclusion probabilities and indices that result from calling one of the sampling functions. These are taken out of the relevant argument struct
 		std::vector<numericType> inclusionProbabilities;
 		std::vector<int> indices;
@@ -303,78 +354,11 @@ namespace chordalGraph
 			else
 			{
 				std::fill(copyCounts.begin(), copyCounts.end(), 0);
-				if(args.sampling == sampfordSamplingConditionalPoisson)
+				samplingArgs.toTake = toTake;
+				performSampling(samplingArgs, indices, inclusionProbabilities, weights, args.randomSource);
+				for(int i = 0; i < (int)toTake; i++)
 				{
-					sampfordConditionalPoissonArgs.indices.swap(indices);
-					sampfordConditionalPoissonArgs.inclusionProbabilities.swap(inclusionProbabilities);
-					sampfordConditionalPoissonArgs.weights.swap(weights);
-
-					sampfordConditionalPoissonArgs.n = toTake;
-					sampfordConditionalPoissonRejective(sampfordConditionalPoissonArgs);
-					for(int i = 0; i < (int)toTake; i++)
-					{
-						copyCounts[sampfordConditionalPoissonArgs.indices[i]/2]++;
-					}
-
-					sampfordConditionalPoissonArgs.indices.swap(indices);
-					sampfordConditionalPoissonArgs.inclusionProbabilities.swap(inclusionProbabilities);
-					sampfordConditionalPoissonArgs.weights.swap(weights);
-				}
-				else if(args.sampling == semiDeterministicSampling)
-				{
-					semiDetArgs.indices.swap(indices);
-					semiDetArgs.inclusionProbabilities.swap(inclusionProbabilities);
-					semiDetArgs.weights.swap(weights);
-
-					semiDetArgs.n = toTake;
-					semiDeterministic(semiDetArgs);
-					for(int i = 0; i < (int)toTake; i++)
-					{
-						copyCounts[semiDetArgs.indices[i]/2]++;
-					}
-
-					semiDetArgs.indices.swap(indices);
-					semiDetArgs.inclusionProbabilities.swap(inclusionProbabilities);
-					semiDetArgs.weights.swap(weights);
-				}
-				//The multinomial rejective version of sampford sampling
-				else if(args.sampling == sampfordSamplingMultinomial)
-				{
-					//Swap in local storage
-					sampfordMultinomialArgs.indices.swap(indices);
-					sampfordMultinomialArgs.inclusionProbabilities.swap(inclusionProbabilities);
-					sampfordMultinomialArgs.weights.swap(weights);
-
-					sampfordMultinomialArgs.n = toTake;
-					sampfordMultinomialRejective(sampfordMultinomialArgs);
-					for(int i = 0; i < (int)toTake; i++)
-					{
-						copyCounts[sampfordMultinomialArgs.indices[i]/2]++;
-					}
-					//Swap the local storage out again
-					sampfordMultinomialArgs.indices.swap(indices);
-					sampfordMultinomialArgs.inclusionProbabilities.swap(inclusionProbabilities);
-					sampfordMultinomialArgs.weights.swap(weights);
-				}
-				else if(args.sampling == conditionalPoissonSampling)
-				{
-					conditionalArgs.indices.swap(indices);
-					conditionalArgs.inclusionProbabilities.swap(inclusionProbabilities);
-					conditionalArgs.weights.swap(weights);
-
-					conditionalArgs.n = toTake;
-					conditionalPoisson(conditionalArgs);
-					for(int i = 0; i < (int)toTake; i++)
-					{
-						copyCounts[conditionalArgs.indices[i]/2]++;
-					}
-					conditionalArgs.indices.swap(indices);
-					conditionalArgs.inclusionProbabilities.swap(inclusionProbabilities);
-					conditionalArgs.weights.swap(weights);
-				}
-				else
-				{
-					throw std::runtime_error("This type of sampling is still unsupported");
+					copyCounts[indices[i]/2]++;
 				}
 			}
 

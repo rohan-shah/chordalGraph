@@ -6,25 +6,25 @@ namespace chordalGraph
 	using std::log;
 	using boost::multiprecision::exp;
 	using std::exp;
-	void conditionalPoisson(conditionalPoissonArgs& args)
+	void conditionalPoisson(conditionalPoissonArgs& args, std::vector<int>& indices, std::vector<numericType>& inclusionProbabilities, std::vector<numericType>& weights, boost::mt19937& randomSource)
 	{
-		args.indices.clear();
-		int nUnits = (int)args.weights.size();
+		indices.clear();
+		int nUnits = (int)weights.size();
 		if((int)args.n > nUnits)
 		{
 			throw std::runtime_error("Input n was too big");
 		}
 		else if((int)args.n == nUnits)
 		{
-			args.indices.reserve(nUnits);
+			indices.reserve(nUnits);
 			for(int i = 0; i < nUnits; i++)
 			{
-				args.indices.push_back(i);
+				indices.push_back(i);
 			}
 			return;
 		}
 		args.deterministicInclusion.resize(nUnits);
-		args.inclusionProbabilities.resize(nUnits);
+		inclusionProbabilities.resize(nUnits);
 		std::fill(args.deterministicInclusion.begin(), args.deterministicInclusion.end(), false);
 		//Work out which units are going to be deterministically selected. 
 		numericType cumulative;
@@ -36,24 +36,24 @@ namespace chordalGraph
 			cumulative = 0;
 			for(int i = 0; i < nUnits; i++)
 			{
-				cumulative += args.weights[i];
+				cumulative += weights[i];
 			}
 			//Make the maxAllowed value slightly smaller. This is because we don't want inclusion probabilities that are numerically close to 1, because in that case the alternating series used to compute the inclusion probabilities becomes unstable. 
-			numericType maxAllowed = 0.9999* cumulative / numericType(args.n - args.indices.size());
+			numericType maxAllowed = 0.9999* cumulative / numericType(args.n - indices.size());
 			//Any weights that are too big are included with probability 1
 			for(int i = 0; i < nUnits; i++)
 			{
-				if(args.weights[i] >= maxAllowed)
+				if(weights[i] >= maxAllowed)
 				{
 					args.deterministicInclusion[i] = true;
-					args.indices.push_back(i);
+					indices.push_back(i);
 					hasDeterministic = true;
-					args.weights[i] = 0;
-					args.inclusionProbabilities[i] = 1;
+					weights[i] = 0;
+					inclusionProbabilities[i] = 1;
 				}
 			}
 		} while(hasDeterministic);
-		int deterministicIndices = (int)args.indices.size();
+		int deterministicIndices = (int)indices.size();
 
 		//Rescale the weights so that they sum to n
 		numericType factor = numericType(args.n - deterministicIndices)/ cumulative;
@@ -69,8 +69,8 @@ namespace chordalGraph
 		{
 			if(!args.deterministicInclusion[i])
 			{
-				args.weights[i] = args.weights[i]*factor;
-				args.expExponentialParameters[i] = args.weights[i] / (1 - args.weights[i]);
+				weights[i] = weights[i]*factor;
+				args.expExponentialParameters[i] = weights[i] / (1 - weights[i]);
 				args.exponentialParameters[i] = log(args.expExponentialParameters[i]);
 				sumExponentialParameters += args.exponentialParameters[i];
 			}
@@ -86,36 +86,36 @@ namespace chordalGraph
 			}
 		}
 beginSample:
-		args.indices.resize(deterministicIndices);
+		indices.resize(deterministicIndices);
 		for(int i = 0; i < nUnits; i++)
 		{
 			if(!args.deterministicInclusion[i])
 			{
-				boost::random::bernoulli_distribution<double> currentUnitDist((double)args.weights[i]);
-				if(currentUnitDist(args.randomSource))
+				boost::random::bernoulli_distribution<double> currentUnitDist((double)weights[i]);
+				if(currentUnitDist(randomSource))
 				{
-					args.indices.push_back(i);
+					indices.push_back(i);
 				}
 			}
 			//If we can't reach the target of n units, then start again. 
-			if(args.indices.size() > args.n || args.indices.size() + (nUnits - i - 1) < args.n) goto beginSample;
+			if(indices.size() > args.n || indices.size() + (nUnits - i - 1) < args.n) goto beginSample;
 		}
-		if(args.indices.size() != args.n)
+		if(indices.size() != args.n)
 		{
 			throw std::runtime_error("Internal error");
 		}
-		conditionalPoissonInclusionProbabilities(args);
+		conditionalPoissonInclusionProbabilities(args, inclusionProbabilities, weights);
 	}
-	void conditionalPoissonInclusionProbabilities(conditionalPoissonArgs& args)
+	void conditionalPoissonInclusionProbabilities(conditionalPoissonArgs& args, std::vector<numericType>& inclusionProbabilities, std::vector<numericType>& weights)
 	{
-		int nUnits = (int)args.weights.size();
+		int nUnits = (int)weights.size();
 		int deterministicIndices = 0;
 		for(std::vector<bool>::iterator i = args.deterministicInclusion.begin(); i != args.deterministicInclusion.end(); i++)
 		{
 			deterministicIndices += *i;
 		}
 		//Now compute the inclusion probabilities
-		args.inclusionProbabilities.resize(nUnits);
+		inclusionProbabilities.resize(nUnits);
 		calculateExpNormalisingConstants(args.expExponentialParameters, args.exponentialParameters, args.expNormalisingConstant, (int)args.n - deterministicIndices, nUnits - deterministicIndices, args.deterministicInclusion);
 		numericType expNormalisingConstant = args.expNormalisingConstant(0, args.n - deterministicIndices - 1);
 		for(int unitCounter = 0; unitCounter < nUnits; unitCounter++)
@@ -124,28 +124,28 @@ beginSample:
 			//First term of the alternating sum
 			if((args.n-deterministicIndices)% 2 == 1)
 			{
-				args.inclusionProbabilities[unitCounter] = 1;
+				inclusionProbabilities[unitCounter] = 1;
 			}
 			else
 			{
-				args.inclusionProbabilities[unitCounter] = -1;
+				inclusionProbabilities[unitCounter] = -1;
 			}
 			for(int j = 2; j <= (int)args.n-deterministicIndices; j++)
 			{
 				if((args.n -deterministicIndices- j) % 2 == 1)
 				{
-					args.inclusionProbabilities[unitCounter] -= args.expNormalisingConstant(0, j-2) / exp((j - 1)*args.exponentialParameters[unitCounter]);
+					inclusionProbabilities[unitCounter] -= args.expNormalisingConstant(0, j-2) / exp((j - 1)*args.exponentialParameters[unitCounter]);
 				}
 				else
 				{
-					args.inclusionProbabilities[unitCounter] += args.expNormalisingConstant(0, j-2) / exp((j - 1)*args.exponentialParameters[unitCounter]);
+					inclusionProbabilities[unitCounter] += args.expNormalisingConstant(0, j-2) / exp((j - 1)*args.exponentialParameters[unitCounter]);
 				}
 			}
-			args.inclusionProbabilities[unitCounter] *= exp((args.n - deterministicIndices) * args.exponentialParameters[unitCounter]) / expNormalisingConstant;
-			if(args.inclusionProbabilities[unitCounter] <= 0)
+			inclusionProbabilities[unitCounter] *= exp((args.n - deterministicIndices) * args.exponentialParameters[unitCounter]) / expNormalisingConstant;
+			if(inclusionProbabilities[unitCounter] <= 0)
 			{
 				std::stringstream ss;
-				ss << "Inclusion probability had negative value " << args.inclusionProbabilities[unitCounter] << ", probably because of numerical instability";
+				ss << "Inclusion probability had negative value " << inclusionProbabilities[unitCounter] << ", probably because of numerical instability";
 				throw std::runtime_error(ss.str().c_str());
 			}
 		}

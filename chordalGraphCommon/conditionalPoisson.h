@@ -9,22 +9,17 @@ namespace chordalGraph
 	struct conditionalPoissonArgs
 	{
 	public:
-		conditionalPoissonArgs(boost::mt19937& randomSource)
-			: randomSource(randomSource)
+		conditionalPoissonArgs()
 		{}
-		boost::mt19937& randomSource;
-		std::vector<numericType> inclusionProbabilities;
-		std::vector<int> indices;
 		std::size_t n;
-		std::vector<numericType> weights;
 		std::vector<bool> deterministicInclusion;
 		std::vector<numericType> exponentialParameters;
 		std::vector<numericType> expExponentialParameters;
 		boost::numeric::ublas::matrix<numericType> expNormalisingConstant;
 		bool calculateInclusionProbabilities;
 	};
-	void conditionalPoisson(conditionalPoissonArgs& args);
-	void conditionalPoissonInclusionProbabilities(conditionalPoissonArgs& args);
+	void conditionalPoisson(conditionalPoissonArgs& args, std::vector<int>& indices, std::vector<numericType>& inclusionProbabilities, std::vector<numericType>& weights, boost::mt19937& randomSource);
+	void conditionalPoissonInclusionProbabilities(conditionalPoissonArgs& args, std::vector<numericType>& inclusionProbabilities, std::vector<numericType>& weights);
 	void calculateExpNormalisingConstants(std::vector<numericType>& expExponentialParameters, std::vector<numericType>& exponentialParameters, boost::numeric::ublas::matrix<numericType>& expNormalisingConstant, int n, int nUnits, std::vector<bool>& ignore);
 }
 #endif

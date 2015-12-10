@@ -7,7 +7,10 @@ namespace chordalGraph
 	int main(int argc, char** argv)
 	{
 		boost::mt19937 randomSource;
-		conditionalPoissonArgs args(randomSource);
+		std::vector<int> indices;
+		std::vector<numericType> inclusionProbabilities;
+		std::vector<numericType> weights;
+		conditionalPoissonArgs args;
 		randomSource.seed(1);
 
 		args.exponentialParameters.push_back(-2.151);
@@ -38,7 +41,7 @@ namespace chordalGraph
 
 
 		args.n = 3;
-		std::vector<numericType> weights;
+		weights.clear();
 		weights.push_back(1);
 		weights.push_back(1);
 		weights.push_back(2);
@@ -49,15 +52,15 @@ namespace chordalGraph
 		std::vector<int> counts(weights.size());
 		for(int i = 0; i < nSamples; i++)
 		{
-			args.weights = weights;
-			conditionalPoisson(args);
-			for(std::vector<int>::iterator j = args.indices.begin(); j != args.indices.end(); j++)
+			std::vector<numericType> weightsCopy = weights;
+			conditionalPoisson(args, indices, inclusionProbabilities, weightsCopy, randomSource);
+			for(std::vector<int>::iterator j = indices.begin(); j != indices.end(); j++)
 			{
 				counts[*j]++;
 			}
 		}
 		std::cout << "Inclusion probabilities:" << std::endl;
-		for(std::vector<numericType>::iterator j = args.inclusionProbabilities.begin(); j != args.inclusionProbabilities.end(); j++)
+		for(std::vector<numericType>::iterator j = inclusionProbabilities.begin(); j != inclusionProbabilities.end(); j++)
 		{
 			std::cout << *j << " ";
 		}

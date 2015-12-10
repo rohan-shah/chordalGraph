@@ -42,7 +42,7 @@ test_that("Exact data calculations are correct using stochastic enumeration naut
 	capture.output(exact6 <- stochasticEnumerationNauty(nVertices = 6, budget = 1000000, seed = 1))
 	expect_that(Rmpfr::all.equal(exact6@data, c(1,15,105,455,1320,2526,3085,3255,3000,2235,1206,615,260,60,15,1)), is_true())
 })
-test_that("Exact data calculations are correct using semi deterministic Horvitz Thompson estimation",
+test_that("Exact data calculations are correct using Horvitz Thompson estimation",
 {
 	for(method in chordalGraph:::samplingMethods)
 	{
