@@ -28,6 +28,7 @@ BEGIN_RCPP
 	Rcpp::List samples(maxEdges+1);
 	std::vector<std::string> estimatesAsStrings;
 	std::vector<bool> exactVector;
+	std::vector<int> minimumSizeForExactVector;
 	for (int nEdges = 0; nEdges < maxEdges+1; nEdges++)
 	{
 		setTxtProgressBar(barHandle, nEdges);
@@ -35,6 +36,11 @@ BEGIN_RCPP
 		chordalGraph::horvitzThompson(args);
 		estimatesAsStrings.push_back(args.estimate.str());
 		exactVector.push_back(args.exact);
+		if(args.minimumSizeForExact != -1)
+		{
+			minimumSizeForExactVector.push_back(args.minimumSizeForExact);
+		}
+		else minimumSizeForExactVector.push_back(NA_INTEGER);
 	}
 	close(barHandle);
 	SEXP estimatesAsStrings_sexp = Rcpp::wrap(estimatesAsStrings);
@@ -42,7 +48,8 @@ BEGIN_RCPP
 	Rcpp::Function mpfrFunction("mpfr");
 	SEXP estimatesAsMPFR = mpfrFunction(estimatesAsStrings_sexp, Rcpp::Named("prec", 50));
 	SEXP exactVector_sexp = Rcpp::wrap(exactVector);
-	Rcpp::List result = Rcpp::List::create(Rcpp::Named("data") = estimatesAsMPFR, Rcpp::Named("exact") = exactVector_sexp);
+	SEXP minimumSizeForExactVector_sexp = Rcpp::wrap(minimumSizeForExactVector);
+	Rcpp::List result = Rcpp::List::create(Rcpp::Named("data") = estimatesAsMPFR, Rcpp::Named("exact") = exactVector_sexp, Rcpp::Named("minimumSizeForExact") = minimumSizeForExactVector_sexp);
 	return result;
 END_RCPP
 }
@@ -72,8 +79,10 @@ BEGIN_RCPP
 	Rcpp::Function mpfrFunction("mpfr");
 	SEXP estimatesAsMPFR = mpfrFunction(estimateAsString_sexp, Rcpp::Named("prec", 50));
 	SEXP exact_sexp = Rcpp::wrap(args.exact);
-	Rcpp::List result = Rcpp::List::create(Rcpp::Named("data") = estimatesAsMPFR, Rcpp::Named("exact") = exact_sexp);
-
+	SEXP minimumSizeForExact_sexp;
+	if(args.minimumSizeForExact != -1) minimumSizeForExact_sexp = Rcpp::wrap(args.minimumSizeForExact);
+	else minimumSizeForExact_sexp = Rcpp::wrap(NA_INTEGER);
+	Rcpp::List result = Rcpp::List::create(Rcpp::Named("data") = estimatesAsMPFR, Rcpp::Named("exact") = exact_sexp, Rcpp::Named("minimumSizeForExact") = minimumSizeForExact_sexp);
 	return result;
 END_RCPP
 }

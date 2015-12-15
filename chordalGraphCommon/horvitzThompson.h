@@ -23,6 +23,7 @@ namespace chordalGraph
 		mpfr_class estimate;
 		boost::mt19937& randomSource;
 		bool exact;
+		int minimumSizeForExact;
 		samplingType sampling;
 	};
 	samplingType toSamplingType(std::string samplingString);

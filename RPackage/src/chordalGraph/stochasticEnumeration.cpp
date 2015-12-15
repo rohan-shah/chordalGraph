@@ -55,6 +55,7 @@ BEGIN_RCPP
 	//List for samples
 	Rcpp::List samples(maxEdges+1);
 	std::vector<bool> exactVector;
+	std::vector<int> minimumSizeForExactVector;
 	std::vector<std::string> estimatesAsStrings;
 	for (int nEdges = 0; nEdges < maxEdges+1; nEdges++)
 	{
@@ -77,12 +78,21 @@ BEGIN_RCPP
 			convert(currentEdgesSamples, args.samples);
 			samples[nEdges] = currentEdgesSamples;
 		}
+		if(args.minimumSizeForExact == -1)
+		{
+			minimumSizeForExactVector.push_back(NA_INTEGER);
+		}
+		else
+		{
+			minimumSizeForExactVector.push_back(args.minimumSizeForExact);
+		}
 	}
 	close(barHandle);
 	SEXP estimatesAsStrings_sexp = Rcpp::wrap(estimatesAsStrings);
+	SEXP minimumSizeForExactVector_sexp = Rcpp::wrap(minimumSizeForExactVector);
 
 	Rcpp::Function mpfrFunction("mpfr");
-	Rcpp::List listResult = Rcpp::List::create(Rcpp::Named("data") = mpfrFunction(estimatesAsStrings_sexp, Rcpp::Named("prec", 50)), Rcpp::Named("exact") = Rcpp::wrap(exactVector));
+	Rcpp::List listResult = Rcpp::List::create(Rcpp::Named("data") = mpfrFunction(estimatesAsStrings_sexp, Rcpp::Named("prec", 50)), Rcpp::Named("exact") = Rcpp::wrap(exactVector), Rcpp::Named("minimumSizeForExact") = minimumSizeForExactVector_sexp);
 	if (args.outputSamples)
 	{
 		listResult("samples") = samples;
@@ -128,9 +138,12 @@ BEGIN_RCPP
 
 	std::string estimateAsString = args.estimate.str();
 	SEXP estimateAsString_sexp = Rcpp::wrap(estimateAsString);
+	SEXP minimumSizeForExact_sexp;
+	if(args.minimumSizeForExact != -1) minimumSizeForExact_sexp = Rcpp::wrap(args.minimumSizeForExact);
+	else minimumSizeForExact_sexp = Rcpp::wrap(NA_INTEGER);
 
 	Rcpp::Function mpfrFunction("mpfr");
-	Rcpp::List listResult = Rcpp::List::create(Rcpp::Named("data") = mpfrFunction(estimateAsString_sexp, Rcpp::Named("prec", 50)), Rcpp::Named("exact") = Rcpp::wrap(args.exact));
+	Rcpp::List listResult = Rcpp::List::create(Rcpp::Named("data") = mpfrFunction(estimateAsString_sexp, Rcpp::Named("prec", 50)), Rcpp::Named("exact") = Rcpp::wrap(args.exact), Rcpp::Named("minimumSizeForExact") = minimumSizeForExact_sexp);
 
 	if (args.outputSamples)
 	{

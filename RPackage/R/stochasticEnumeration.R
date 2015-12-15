@@ -42,7 +42,7 @@ stochasticEnumeration <- function(nVertices, budget, seed, nEdges, options)
 		start <- Sys.time()
 		result <- .Call("stochasticEnumeration", nVertices, budget, seed, options, PACKAGE="chordalGraph")
 		end <- Sys.time()
-		s4Result <- new("estimatedChordalCounts", data = result$data, call = match.call(), start = start, end = end, options = options, samples = NULL, exact = result$exact)
+		s4Result <- new("estimatedChordalCounts", data = result$data, call = match.call(), start = start, end = end, options = options, samples = NULL, exact = result$exact, minimumSizeForExact = result$minimumSizeForExact)
 		if(outputSamples)
 		{
 			s4Result@samples <- result$samples
@@ -62,7 +62,7 @@ stochasticEnumeration <- function(nVertices, budget, seed, nEdges, options)
 		start <- Sys.time()
 		result <- .Call("stochasticEnumerationSpecificEdges", nVertices, nEdges, budget, seed, options, PACKAGE="chordalGraph")
 		end <- Sys.time()
-		s4Result <- new("estimatedChordalCount", data = result$data, call = match.call(), start = start, end = end, options = options, samples = NULL, exact = result$exact)
+		s4Result <- new("estimatedChordalCount", data = result$data, call = match.call(), start = start, end = end, options = options, samples = NULL, exact = result$exact, minimumSizeForExact = result$minimumSizeForExact)
 		if(outputSamples)
 		{
 			s4Result@samples <- result$samples
@@ -71,5 +71,5 @@ stochasticEnumeration <- function(nVertices, budget, seed, nEdges, options)
 	}
 }
 setClassUnion("listOrNULL", c("list", "NULL"))
-setClass("estimatedChordalCount", slots = list(data = "mpfr", call = "call", start = "POSIXct", end = "POSIXct", options = "list", exact = "logical", samples = "listOrNULL"))
-setClass("estimatedChordalCounts", slots = list(data = "mpfr", call = "call", start = "POSIXct", end = "POSIXct", options = "list", exact = "logical", samples = "listOrNULL"))
+setClass("estimatedChordalCount", slots = list(data = "mpfr", call = "call", start = "POSIXct", end = "POSIXct", options = "list", exact = "logical", samples = "listOrNULL", minimumSizeForExact = "integer"))
+setClass("estimatedChordalCounts", slots = list(data = "mpfr", call = "call", start = "POSIXct", end = "POSIXct", options = "list", exact = "logical", samples = "listOrNULL", minimumSizeForExact = "integer"))

@@ -19,6 +19,7 @@ namespace chordalGraph
 		mpfr_class estimate;
 		boost::mt19937& randomSource;
 		bool exact;
+		int minimumSizeForExact;
 	};
 	void stochasticEnumerationNauty(stochasticEnumerationNautyArgs& args);
 }

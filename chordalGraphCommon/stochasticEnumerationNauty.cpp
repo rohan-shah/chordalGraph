@@ -28,6 +28,7 @@ namespace chordalGraph
 	void stochasticEnumerationNauty(stochasticEnumerationNautyArgs& args)
 	{
 		args.exact = true;
+		args.minimumSizeForExact = -1;
 		args.estimate = 0;
 		mpfr_class multiple = 1;
 
@@ -248,7 +249,12 @@ namespace chordalGraph
 			boost::range::random_shuffle(shuffleVector, generator);
 			int toTake = std::min((int)shuffleVector.size(), args.budget);
 
-			if(toTake != (int)shuffleVector.size()) args.exact = false;
+			if(toTake != (int)shuffleVector.size() || !args.exact)
+			{
+				args.exact = false;
+				args.minimumSizeForExact = -1;
+			}
+			else args.minimumSizeForExact = std::max(args.minimumSizeForExact, toTake);
 			//Ratio of vertices examined to not examined
 			multiple *= (double)shuffleVector.size() / (double)toTake;
 

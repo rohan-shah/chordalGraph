@@ -117,6 +117,7 @@ namespace chordalGraph
 	void horvitzThompson(horvitzThompsonArgs& args)
 	{
 		args.exact = true;
+		args.minimumSizeForExact = -1;
 		args.estimate = 0;
 
 		//Temporary data that's used in cliqueTree calls
@@ -343,7 +344,12 @@ namespace chordalGraph
 				}
 			}
 			int toTake = std::min(2*(int)hasChildren.size(), args.budget);
-			if(toTake != 2*(int)hasChildren.size()) args.exact = false;
+			if(toTake != 2*(int)hasChildren.size() || !args.exact)
+			{
+				args.exact = false;
+				args.minimumSizeForExact = -1;
+			}
+			else args.minimumSizeForExact = std::max(args.minimumSizeForExact, toTake);
 			//If we're taking an exhaustive sample, then skip the resampling-without-replacement section. 
 			if(toTake == 2*(int)hasChildren.size())
 			{

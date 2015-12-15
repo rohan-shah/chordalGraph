@@ -30,7 +30,7 @@ horvitzThompson <- function(nVertices, budget, seed, sampling, nEdges)
 		start <- Sys.time()
 		result <- .Call("horvitzThompson", nVertices, budget, seed, sampling, PACKAGE="chordalGraph")
 		end <- Sys.time()
-		s4Result <- new("estimatedChordalCounts", data = result$data, call = match.call(), start = start, end = end, samples = NULL, options = list(), exact = result$exact)
+		s4Result <- new("estimatedChordalCounts", data = result$data, call = match.call(), start = start, end = end, samples = NULL, options = list(), exact = result$exact, minimumSizeForExact = result$minimumSizeForExact)
 		return(s4Result)
 	}
 	else
@@ -46,7 +46,7 @@ horvitzThompson <- function(nVertices, budget, seed, sampling, nEdges)
 		start <- Sys.time()
 		result <- .Call("horvitzThompsonSpecificEdges", nVertices, nEdges, budget, seed, sampling, PACKAGE="chordalGraph")
 		end <- Sys.time()
-		s4Result <- new("estimatedChordalCount", data = result$data, call = match.call(), start = start, end = end, samples = NULL, options = list(), exact = result$exact)
+		s4Result <- new("estimatedChordalCount", data = result$data, call = match.call(), start = start, end = end, samples = NULL, options = list(), exact = result$exact, minimumSizeForExact = result$minimumSizeForExact)
 		return(s4Result)
 	}
 }
