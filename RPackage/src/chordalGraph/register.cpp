@@ -10,8 +10,8 @@ SEXP stochasticEnumeration(SEXP nVertices_sexp, SEXP budget_sexp, SEXP seed_sexp
 SEXP stochasticEnumerationSpecificEdges(SEXP nVertices_sexp, SEXP nEdges_sexp, SEXP budget_sexp, SEXP seed_sexp, SEXP options_sexp);
 SEXP stochasticEnumerationNauty(SEXP nVertices_sexp, SEXP budget_sexp, SEXP seed_sexp);
 SEXP stochasticEnumerationNautySpecificEdges(SEXP nVertices_sexp, SEXP nEdges_sexp, SEXP budget_sexp, SEXP seed_sexp);
-SEXP horvitzThompson(SEXP nVertices_sexp, SEXP budget_sexp, SEXP seed_sexp, SEXP sampling_sexp);
-SEXP horvitzThompsonSpecificEdges(SEXP nVertices_sexp, SEXP nEdges_sexp, SEXP budget_sexp, SEXP seed_sexp, SEXP sampling_sexp);
+SEXP horvitzThompson(SEXP nVertices_sexp, SEXP budget_sexp, SEXP seed_sexp, SEXP sampling_sexp, SEXP weight_sexp);
+SEXP horvitzThompsonSpecificEdges(SEXP nVertices_sexp, SEXP nEdges_sexp, SEXP budget_sexp, SEXP seed_sexp, SEXP sampling_sexp, SEXP weight_sexp);
 R_CallMethodDef callMethods[] = 
 {
 	{"isChordalIterative_igraph", (DL_FUNC)&isChordalIterative_igraph, 1},
@@ -21,8 +21,8 @@ R_CallMethodDef callMethods[] =
 	{"stochasticEnumerationSpecificEdges", (DL_FUNC)&stochasticEnumerationSpecificEdges, 5},
 	{"stochasticEnumerationNauty", (DL_FUNC)&stochasticEnumerationNauty, 3},
 	{"stochasticEnumerationNautySpecificEdges", (DL_FUNC)&stochasticEnumerationNautySpecificEdges, 4},
-	{"horvitzThompson", (DL_FUNC)&horvitzThompson, 4},
-	{"horvitzThompsonSpecificEdges", (DL_FUNC)&horvitzThompsonSpecificEdges, 5},
+	{"horvitzThompson", (DL_FUNC)&horvitzThompson, 5},
+	{"horvitzThompsonSpecificEdges", (DL_FUNC)&horvitzThompsonSpecificEdges, 6},
 	{NULL, NULL, 0}
 };
 RcppExport void R_init_chordalGraph(DllInfo *info)

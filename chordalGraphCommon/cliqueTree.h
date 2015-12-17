@@ -8,6 +8,8 @@
 #ifdef HAS_NAUTY
 #include "nauty.h"
 #endif
+#include <boost/multiprecision/mpfr.hpp>
+typedef boost::multiprecision::mpz_int mpz_class;
 namespace chordalGraph
 {
 	typedef std::bitset<MAX_STORAGE_VERTICES> bitsetType;
@@ -182,6 +184,8 @@ namespace chordalGraph
 		void check() const;
 #ifdef HAS_NAUTY
 		void convertToNauty(std::vector<int>& lab, std::vector<int>& ptn, std::vector<int>& orbits, std::vector<graph>& nautyGraph, std::vector<graph>& cannonicalNautyGraph);
+		void convertToNautyAndCountAutomorphisms(std::vector<int>& lab, std::vector<int>& ptn, std::vector<int>& orbits, std::vector<graph>& nautyGraph, std::vector<graph>& cannonicalNautyGraph, mpz_class& automorphismCount);
+		static void userlevelproc(int* lab, int* ptn, int level, int* orbits, statsblk* stats, int tv, int index, int tcellsize, int numcells, int childcount, int n);
 #endif
 		int getNVertices() const;
 	private:

@@ -16,19 +16,35 @@ namespace chordalGraph
 		{
 		public:
 			weightedCliqueTree(weightedCliqueTree&& other)
-				: tree(std::move(other.tree)), weight(other.weight)
+				: tree(std::move(other.tree)), weight(other.weight), automorphismGroupSize(other.automorphismGroupSize)
 			{} 
 			weightedCliqueTree(const weightedCliqueTree& other)
-				: tree(other.tree), weight(other.weight)
+				: tree(other.tree), weight(other.weight), automorphismGroupSize(other.automorphismGroupSize)
 			{}
 			weightedCliqueTree(int nVertices)
-				: tree(nVertices), weight(1)
+				: tree(nVertices), weight(1), automorphismGroupSize(1)
 			{}
 			cliqueTree tree;
 			numericType weight;
+			mpz_class automorphismGroupSize;
 		};
 	}
 	using horvitzThompsonPrivate::weightedCliqueTree;
+	weightType toWeightType(std::string weightString)
+	{
+		if(weightString == "multiplicity")
+		{
+			return weightsMultiplicity;
+		}
+		else if(weightString == "automorphismGroup")
+		{
+			return weightsAutomorphismGroup;
+		}
+		else
+		{
+			throw std::runtime_error("Inpu weightString must be one of \"multiplicity\" or \"automorphismGroup\"");
+		}
+	}
 	samplingType toSamplingType(std::string samplingString)
 	{
 		if(samplingString == "sampfordMultinomial")
@@ -209,7 +225,11 @@ namespace chordalGraph
 			{
 				if(currentEdge[sampleCounter] == 0)
 				{
-					cliqueTrees[sampleCounter].tree.convertToNauty(lab, ptn, orbits, nautyGraph, cannonicalNautyGraphs[sampleCounter]);
+					if(args.weights == weightsMultiplicity) cliqueTrees[sampleCounter].tree.convertToNauty(lab, ptn, orbits, nautyGraph, cannonicalNautyGraphs[sampleCounter]);
+					else 
+					{
+						cliqueTrees[sampleCounter].tree.convertToNautyAndCountAutomorphisms(lab, ptn, orbits, nautyGraph, cannonicalNautyGraphs[sampleCounter], cliqueTrees[sampleCounter].automorphismGroupSize);
+					}
 				}
 			}
 			//Work out which graphs are isomorphic to a graph earlier on in the set of samples. The weight for those graphs are added to the earlier one. 
@@ -240,7 +260,6 @@ namespace chordalGraph
 			//Clear vector of indices of possibilities
 			hasChildren.clear();
 			weights.clear();
-			numericType sumHasChildrenWeights = 0;
 			for (int sampleCounter = 0; sampleCounter < (int)currentVertex.size(); sampleCounter++)
 			{
 				if(alreadyConsidered[sampleCounter]) continue;
@@ -326,9 +345,17 @@ namespace chordalGraph
 
 								//Add correct indices to possibilities vector
 								hasChildren.push_back(sampleCounter);
-								weights.push_back(cliqueTrees[sampleCounter].weight);
-								weights.push_back(cliqueTrees[sampleCounter].weight);
-								sumHasChildrenWeights += cliqueTrees[sampleCounter].weight;
+								if(args.weights == weightsMultiplicity)
+								{
+									weights.push_back(cliqueTrees[sampleCounter].weight);
+									weights.push_back(cliqueTrees[sampleCounter].weight);
+								}
+								else
+								{
+									mpfr_class tmp = 1/mpfr_class(cliqueTrees[sampleCounter].automorphismGroupSize);
+									weights.push_back(tmp);
+									weights.push_back(tmp);
+								}
 								break;
 							}
 						}

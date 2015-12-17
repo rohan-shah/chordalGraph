@@ -21,15 +21,18 @@ test_that("All methods except sampfordMultinomial, conditionalPoisson and pareto
 	methods <- setdiff(chordalGraph:::samplingMethods, c("sampfordMultinomial", "conditionalPoisson", "pareto"))
 	for(method in methods)
 	{
-		results <- matrix(data=NA, nrow = nReps, ncol = 16)
-		for(i in 1:nReps)
+		for(weightMethod in chordalGraph:::weightMethods)
 		{
-			capture.output(results[i,] <- as.numeric(horvitzThompson(nVertices = 6, seed = i, budget = 40, sampling = method)@data))
-		}
-		means <- apply(results, 2, mean)
-		for(edgeCount in 1:16)
-		{
-			expect_equal(means[edgeCount], as.numeric(exact6@data[edgeCount]), tolerance = 0.025)
+			results <- matrix(data=NA, nrow = nReps, ncol = 16)
+			for(i in 1:nReps)
+			{
+				capture.output(results[i,] <- as.numeric(horvitzThompson(nVertices = 6, seed = i, budget = 40, sampling = method, weight = weightMethod)@data))
+			}
+			means <- apply(results, 2, mean)
+			for(edgeCount in 1:16)
+			{
+				expect_equal(means[edgeCount], as.numeric(exact6@data[edgeCount]), tolerance = 0.025)
+			}
 		}
 	}
 })

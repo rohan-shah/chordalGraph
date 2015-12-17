@@ -3,7 +3,7 @@ context("Test stochasticEnumeration function")
 test_that("Gives unbiased results for 6 x 6 graph",
 {
 	data(exact6, envir = environment())
-	nReps <- 400
+	nReps <- 500
 	results <- matrix(data=NA, nrow = nReps, ncol = 16)
 	for(i in 1:nReps)
 	{

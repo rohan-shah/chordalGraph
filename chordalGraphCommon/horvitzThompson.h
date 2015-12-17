@@ -11,6 +11,10 @@ namespace chordalGraph
 	{
 		sampfordSamplingMultinomial, conditionalPoissonSampling, paretoSampling, semiDeterministicSampling, sampfordSamplingConditionalPoisson, sampfordSamplingFromParetoNaive
 	};
+	enum weightType
+	{
+		weightsMultiplicity, weightsAutomorphismGroup
+	};
 	struct horvitzThompsonArgs
 	{
 	public:
@@ -25,8 +29,10 @@ namespace chordalGraph
 		bool exact;
 		int minimumSizeForExact;
 		samplingType sampling;
+		weightType weights;
 	};
 	samplingType toSamplingType(std::string samplingString);
+	weightType toWeightType(std::string weightString);
 	void horvitzThompson(horvitzThompsonArgs& args);
 }
 #endif
