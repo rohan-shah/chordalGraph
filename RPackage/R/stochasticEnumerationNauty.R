@@ -1,4 +1,4 @@
-stochasticEnumerationNauty <- function(nVertices, budget, seed, nEdges)
+stochasticEnumerationNauty <- function(nVertices, budget, seed, nEdges, options = list())
 {
 	if(missing(nVertices) || missing(budget) || missing(seed))
 	{
@@ -20,10 +20,18 @@ stochasticEnumerationNauty <- function(nVertices, budget, seed, nEdges)
 	{
 		stop("Inputs nVertices and budget must be positive")
 	}
+	if(!is.list(options))
+	{
+		stop("Input options must be a list")
+	}
+	if(any(!(names(options) %in% c("reduceChains"))))
+	{
+		stop("Input options contained invalid entries")
+	}
 	if(missing(nEdges))
 	{
 		start <- Sys.time()
-		result <- .Call("stochasticEnumerationNauty", nVertices, budget, seed, PACKAGE="chordalGraph")
+		result <- .Call("stochasticEnumerationNauty", nVertices, budget, seed, options, PACKAGE="chordalGraph")
 		end <- Sys.time()
 		s4Result <- new("estimatedChordalCounts", data = result$data, call = match.call(), start = start, end = end, samples = NULL, options = list(), exact = result$exact, minimumSizeForExact = result$minimumSizeForExact)
 		return(s4Result)
@@ -39,7 +47,7 @@ stochasticEnumerationNauty <- function(nVertices, budget, seed, nEdges)
 			stop("Input nEdges must be in range [0, ((nVertices-1)*nVertices/2)+1]")
 		}
 		start <- Sys.time()
-		result <- .Call("stochasticEnumerationNautySpecificEdges", nVertices, nEdges, budget, seed, PACKAGE="chordalGraph")
+		result <- .Call("stochasticEnumerationNautySpecificEdges", nVertices, nEdges, budget, seed, options, PACKAGE="chordalGraph")
 		end <- Sys.time()
 		s4Result <- new("estimatedChordalCount", data = result$data, call = match.call(), start = start, end = end, samples = NULL, options = list(), exact = result$exact, minimumSizeForExact = result$minimumSizeForExact)
 		return(s4Result)

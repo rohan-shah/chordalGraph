@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.1)
 set(CppFiles cliqueTree.cpp stochasticEnumeration.cpp stochasticEnumerationReduceChains.cpp sampfordBruteForce.cpp conditionalPoisson.cpp sampfordConditionalPoissonRejective.cpp semiDeterministicSampling.cpp sampfordFromParetoNaive.cpp pareto.cpp performSampling.cpp)
 set(HeaderFiles cliqueTree.h stochasticEnumeration.h sampford.h numericType.h conditionalPoisson.h semiDeterministicSampling.h pareto.h performSampling.h)
 if(USE_NAUTY)
-	list(APPEND CppFiles stochasticEnumerationNauty.cpp horvitzThompson.cpp)
+	list(APPEND CppFiles stochasticEnumerationNauty.cpp stochasticEnumerationNautyReduceChains.cpp horvitzThompson.cpp)
 	list(APPEND HeaderFiles stochasticEnumerationNauty.h horvitzThompson.h)
 endif()
 

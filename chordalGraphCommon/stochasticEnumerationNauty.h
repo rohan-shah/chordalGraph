@@ -5,8 +5,27 @@
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/symmetric.hpp>
 #include "numericType.h"
+#include "cliqueTree.h"
 namespace chordalGraph
 {
+	namespace stochasticEnumeration
+	{
+		struct weightedCliqueTree
+		{
+		public:
+			weightedCliqueTree(weightedCliqueTree&& other)
+				: tree(std::move(other.tree)), weight(other.weight)
+			{} 
+			weightedCliqueTree(const weightedCliqueTree& other)
+				: tree(other.tree), weight(other.weight)
+			{}
+			weightedCliqueTree(int nVertices)
+				: tree(nVertices), weight(1)
+			{}
+			cliqueTree tree;
+			int weight;
+		};
+	}
 	struct stochasticEnumerationNautyArgs
 	{
 	public:
@@ -22,5 +41,6 @@ namespace chordalGraph
 		int minimumSizeForExact;
 	};
 	void stochasticEnumerationNauty(stochasticEnumerationNautyArgs& args);
+	void stochasticEnumerationNautyReduceChains(stochasticEnumerationNautyArgs& args);
 }
 #endif

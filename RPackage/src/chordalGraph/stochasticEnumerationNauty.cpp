@@ -1,12 +1,18 @@
 #include "stochasticEnumerationNauty.h"
 #include <Rcpp.h>
 
-SEXP stochasticEnumerationNauty(SEXP nVertices_sexp, SEXP budget_sexp, SEXP seed_sexp)
+SEXP stochasticEnumerationNauty(SEXP nVertices_sexp, SEXP budget_sexp, SEXP seed_sexp, SEXP options_sexp)
 {
 BEGIN_RCPP
 	int seed = Rcpp::as<int>(seed_sexp);
 	int nVertices = Rcpp::as<int>(nVertices_sexp);
 	int budget = Rcpp::as<int>(budget_sexp);
+	Rcpp::List options = options_sexp;
+	bool reduceChains = false;
+	if(options.containsElementNamed("reduceChains"))
+	{
+		reduceChains = Rcpp::as<bool>(options("reduceChains"));
+	}
 
 	boost::mt19937 randomSource;
 	randomSource.seed(seed);
@@ -31,7 +37,14 @@ BEGIN_RCPP
 	{
 		setTxtProgressBar(barHandle, nEdges);
 		args.nEdges = nEdges;
-		chordalGraph::stochasticEnumerationNauty(args);
+		if(reduceChains)
+		{
+			chordalGraph::stochasticEnumerationNautyReduceChains(args);
+		}
+		else 
+		{
+			chordalGraph::stochasticEnumerationNauty(args);
+		}
 		estimatesAsStrings.push_back(args.estimate.str());
 		exactVector.push_back(args.exact);
 		if(args.minimumSizeForExact == -1) minimumSizeForExactVector.push_back(NA_INTEGER);
@@ -46,13 +59,20 @@ BEGIN_RCPP
 	return result;
 END_RCPP
 }
-SEXP stochasticEnumerationNautySpecificEdges(SEXP nVertices_sexp, SEXP nEdges_sexp, SEXP budget_sexp, SEXP seed_sexp)
+SEXP stochasticEnumerationNautySpecificEdges(SEXP nVertices_sexp, SEXP nEdges_sexp, SEXP budget_sexp, SEXP seed_sexp, SEXP options_sexp)
 {
 BEGIN_RCPP
 	int seed = Rcpp::as<int>(seed_sexp);
 	int nVertices = Rcpp::as<int>(nVertices_sexp);
 	int nEdges = Rcpp::as<int>(nEdges_sexp);
 	int budget = Rcpp::as<int>(budget_sexp);
+	Rcpp::List options = options_sexp;
+	bool reduceChains = false;
+	if(options.containsElementNamed("reduceChains"))
+	{
+		reduceChains = Rcpp::as<bool>(options("reduceChains"));
+	}
+
 
 	boost::mt19937 randomSource;
 	randomSource.seed(seed);
@@ -61,7 +81,14 @@ BEGIN_RCPP
 	args.nVertices = nVertices;
 	args.budget = budget;
 
-	chordalGraph::stochasticEnumerationNauty(args);
+	if(reduceChains)
+	{
+		chordalGraph::stochasticEnumerationNautyReduceChains(args);
+	}
+	else
+	{
+		chordalGraph::stochasticEnumerationNauty(args);
+	}
 
 	std::string estimateAsString = args.estimate.str();
 	SEXP estimateAsString_sexp = Rcpp::wrap(estimateAsString);

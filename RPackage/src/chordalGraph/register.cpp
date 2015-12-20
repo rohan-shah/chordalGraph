@@ -8,8 +8,8 @@
 extern "C" const char* package_name = "chordalGraph";
 SEXP stochasticEnumeration(SEXP nVertices_sexp, SEXP budget_sexp, SEXP seed_sexp, SEXP options_sexp);
 SEXP stochasticEnumerationSpecificEdges(SEXP nVertices_sexp, SEXP nEdges_sexp, SEXP budget_sexp, SEXP seed_sexp, SEXP options_sexp);
-SEXP stochasticEnumerationNauty(SEXP nVertices_sexp, SEXP budget_sexp, SEXP seed_sexp);
-SEXP stochasticEnumerationNautySpecificEdges(SEXP nVertices_sexp, SEXP nEdges_sexp, SEXP budget_sexp, SEXP seed_sexp);
+SEXP stochasticEnumerationNauty(SEXP nVertices_sexp, SEXP budget_sexp, SEXP seed_sexp, SEXP options_sexp);
+SEXP stochasticEnumerationNautySpecificEdges(SEXP nVertices_sexp, SEXP nEdges_sexp, SEXP budget_sexp, SEXP seed_sexp, SEXP options_sexp);
 SEXP horvitzThompson(SEXP nVertices_sexp, SEXP budget_sexp, SEXP seed_sexp, SEXP sampling_sexp, SEXP weight_sexp);
 SEXP horvitzThompsonSpecificEdges(SEXP nVertices_sexp, SEXP nEdges_sexp, SEXP budget_sexp, SEXP seed_sexp, SEXP sampling_sexp, SEXP weight_sexp);
 R_CallMethodDef callMethods[] = 
@@ -19,8 +19,8 @@ R_CallMethodDef callMethods[] =
 	{"isChordalIterative_graphAM", (DL_FUNC)&isChordalIterative_graphAM, 1},
 	{"stochasticEnumeration", (DL_FUNC)&stochasticEnumeration, 4},
 	{"stochasticEnumerationSpecificEdges", (DL_FUNC)&stochasticEnumerationSpecificEdges, 5},
-	{"stochasticEnumerationNauty", (DL_FUNC)&stochasticEnumerationNauty, 3},
-	{"stochasticEnumerationNautySpecificEdges", (DL_FUNC)&stochasticEnumerationNautySpecificEdges, 4},
+	{"stochasticEnumerationNauty", (DL_FUNC)&stochasticEnumerationNauty, 4},
+	{"stochasticEnumerationNautySpecificEdges", (DL_FUNC)&stochasticEnumerationNautySpecificEdges, 5},
 	{"horvitzThompson", (DL_FUNC)&horvitzThompson, 5},
 	{"horvitzThompsonSpecificEdges", (DL_FUNC)&horvitzThompsonSpecificEdges, 6},
 	{NULL, NULL, 0}

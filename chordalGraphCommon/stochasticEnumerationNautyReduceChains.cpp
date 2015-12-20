@@ -6,7 +6,7 @@
 namespace chordalGraph
 {
 	using stochasticEnumeration::weightedCliqueTree;
-	void stochasticEnumerationNauty(stochasticEnumerationNautyArgs& args)
+	void stochasticEnumerationNautyReduceChains(stochasticEnumerationNautyArgs& args)
 	{
 		args.exact = true;
 		args.minimumSizeForExact = -1;
