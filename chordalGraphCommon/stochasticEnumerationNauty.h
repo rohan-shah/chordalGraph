@@ -22,6 +22,10 @@ namespace chordalGraph
 			weightedCliqueTree(int nVertices)
 				: tree(nVertices), weight(1)
 			{}
+			void addVertex()
+			{
+				tree.addVertex();
+			}
 			cliqueTree tree;
 			int weight;
 		};

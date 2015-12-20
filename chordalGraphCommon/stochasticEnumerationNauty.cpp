@@ -28,10 +28,10 @@ namespace chordalGraph
 		//the conditions for the next sample, etc
 		std::vector<bitsetType> conditions(args.budget);
 
-		//The vertex we're currently considering for a certain sample
-		std::vector<int> currentVertex;
+		//The vertex we're currently considering
+		int currentVertex = 0;
 		//The edge we're currently considering
-		std::vector<int> currentEdge;
+		int currentEdge = 0;
 		//We start off with one sample
 		{
 			weightedCliqueTree initialTree(args.nVertices);
@@ -39,10 +39,6 @@ namespace chordalGraph
 			initialTree.tree.addVertex();
 			cliqueTrees.push_back(initialTree);
 			nEdges[0] = 0;
-
-			//It has zero vertices and zero edges
-			currentEdge.push_back(0);
-			currentVertex.push_back(1);
 		}
 		//It has no conditions
 		conditions[0] = 0;
@@ -87,30 +83,29 @@ namespace chordalGraph
 		//Used to count the number of distinct graphs (up to isomorphism)
 		std::vector<bool> alreadyConsidered(args.budget);
 		//Continue while there are samples left.
-		while (currentVertex.size() > 0)
+		while (currentVertex < args.nVertices - 1)
 		{
+			currentVertex++;
+			currentEdge = 0;
 			//Work out how many different graphs we have, up to isomorphism
 			//To start with, get out cannonical representations
-			for (int sampleCounter = 0; sampleCounter < (int)currentVertex.size(); sampleCounter++)
+			for (int sampleCounter = 0; sampleCounter < (int)cliqueTrees.size(); sampleCounter++)
 			{
-				if(currentEdge[sampleCounter] == 0)
-				{
-					cliqueTrees[sampleCounter].tree.convertToNauty(lab, ptn, orbits, nautyGraph, cannonicalNautyGraphs[sampleCounter]);
-				}
+				cliqueTrees[sampleCounter].tree.convertToNauty(lab, ptn, orbits, nautyGraph, cannonicalNautyGraphs[sampleCounter]);
 			}
 			//Work out which graphs are isomorphic to a graph earlier on in the set of samples. The weight for those graphs are added to the earlier one. 
 			std::fill(alreadyConsidered.begin(), alreadyConsidered.end(), false);
-			for(int sampleCounter = 0; sampleCounter < (int)currentVertex.size(); sampleCounter++)
+			for(int sampleCounter = 0; sampleCounter < (int)cliqueTrees.size(); sampleCounter++)
 			{
-				if(!alreadyConsidered[sampleCounter] && currentEdge[sampleCounter] == 0)
+				if(!alreadyConsidered[sampleCounter])
 				{
 					int weightOther = 0;
-					for(int sampleCounter2 = sampleCounter+1; sampleCounter2 < (int)currentVertex.size(); sampleCounter2++)
+					for(int sampleCounter2 = sampleCounter+1; sampleCounter2 < (int)cliqueTrees.size(); sampleCounter2++)
 					{
-						if(!alreadyConsidered[sampleCounter2] && currentEdge[sampleCounter2] == 0 && currentVertex[sampleCounter] == currentVertex[sampleCounter2])
+						if(!alreadyConsidered[sampleCounter2])
 						{
-							int m = SETWORDSNEEDED(currentVertex[sampleCounter]);
-							int memcmpResult = memcmp(&(cannonicalNautyGraphs[sampleCounter][0]), &(cannonicalNautyGraphs[sampleCounter2][0]), m*currentVertex[sampleCounter]*sizeof(graph));
+							int m = SETWORDSNEEDED(currentVertex);
+							int memcmpResult = memcmp(&(cannonicalNautyGraphs[sampleCounter][0]), &(cannonicalNautyGraphs[sampleCounter2][0]), m*currentVertex*sizeof(graph));
 							if(memcmpResult == 0)
 							{
 								weightOther+= cliqueTrees[sampleCounter2].weight;
@@ -121,87 +116,89 @@ namespace chordalGraph
 					cliqueTrees[sampleCounter].weight += weightOther;
 				}
 			}
+			//There are no conditions when we move to the next vertex
+			std::fill(conditions.begin(), conditions.end(), 0);
+			//Add the extra vertex
+			std::for_each(cliqueTrees.begin(), cliqueTrees.end(), std::mem_fun_ref(&weightedCliqueTree::addVertex));
 
-			//Clear vector of indices of possibilities
-			shuffleVector.clear();
-			//count the number of nodes which have cost 1
-			int knownToBeChordalWeight = 0;
-			for (int sampleCounter = 0; sampleCounter < (int)currentVertex.size(); sampleCounter++)
+			while(currentEdge < currentVertex)
 			{
-				if(alreadyConsidered[sampleCounter]) continue;
-				while (true)
+				//Clear vector of indices of possibilities
+				shuffleVector.clear();
+				//count the number of nodes which have cost 1
+				int knownToBeChordalWeight = 0;
+				int nRemainingEdges = currentVertex - currentEdge + ((args.nVertices - currentVertex - 1)* (args.nVertices - 2 - currentVertex) / 2) + (args.nVertices - currentVertex - 1) * (currentVertex + 1);
+				//Clear data structures;
+				std::for_each(vertexSequence.begin(), vertexSequence.end(), std::mem_fun_ref(&std::list<cliqueTree::cliqueTreeGraphType::vertex_descriptor>::clear));
+				std::for_each(edgeSequence.begin(), edgeSequence.end(), std::mem_fun_ref(&std::list<cliqueTree::externalEdge>::clear));
+				std::for_each(removeEdges.begin(), removeEdges.end(), std::mem_fun_ref(&std::vector<cliqueTree::externalEdge>::clear));
+				std::for_each(addEdges.begin(), addEdges.end(), std::mem_fun_ref(&std::vector<cliqueTree::externalEdge>::clear));
+				std::fill(unionMinimalSeparators.begin(), unionMinimalSeparators.end(), 0);
+				for (int sampleCounter = 0; sampleCounter < (int)cliqueTrees.size(); sampleCounter++)
 				{
-					//Clear data structures;
-					vertexSequence[sampleCounter].clear();
-					edgeSequence[sampleCounter].clear();
-					removeEdges[sampleCounter].clear();
-					addEdges[sampleCounter].clear();
-					unionMinimalSeparators[sampleCounter] = 0;
+					if(alreadyConsidered[sampleCounter] && currentEdge == 0) continue;
 					//Remaining edges, including the one we're just about to consider. 
-					int& sampleCurrentVertex = currentVertex[sampleCounter];
-					int& sampleCurrentEdge = currentEdge[sampleCounter];
-					int nRemainingEdges = sampleCurrentVertex - sampleCurrentEdge + ((args.nVertices - sampleCurrentVertex - 1)* (args.nVertices - 2 - sampleCurrentVertex) / 2) + (args.nVertices - sampleCurrentVertex - 1) * (sampleCurrentVertex + 1);
 					bitsetType copiedConditions = conditions[sampleCounter];
 					//maximum possible number of edges
-					int maxEdges = nEdges[sampleCounter] + nRemainingEdges - (int)(copiedConditions & ~bitsetType((1ULL << (sampleCurrentEdge+1)) - 1)).count();
+					int maxEdges = nEdges[sampleCounter] + nRemainingEdges - (int)(copiedConditions & ~bitsetType((1ULL << (currentEdge+1)) - 1)).count();
 					//Do we need this edge to make up the numbers?
 					bool requiresEdge = maxEdges == args.nEdges;
 					if (maxEdges < args.nEdges)
 					{
 						//Too few edges to reach the target number. No children. 
-						break;
 					}
 					//The first condition corresponds to the case where adding ALL edges past this point gives us the target number
 					//The second corresponds to the case where we've already hit the target
-					else if ((sampleCurrentEdge == 0 && requiresEdge) || nEdges[sampleCounter] == args.nEdges)
+					else if ((currentEdge == 0 && requiresEdge) || nEdges[sampleCounter] == args.nEdges)
 					{
 						knownToBeChordalWeight += cliqueTrees[sampleCounter].weight;
-						break;
 					}
-					else if (sampleCurrentVertex == args.nVertices)
+					else if (currentVertex == args.nVertices)
 					{
 						//Reached the end without the right number of edges (because that case is handled by the previous condition)
-						break;
 					}
-					else if (copiedConditions[sampleCurrentEdge])
+					else if (copiedConditions[currentEdge])
 					{
-						//We already conditioned on this edge being in, so continue
+						//The case where this edge being off is not allowed.
+						//Note that in this case we add an edge without calling unionMinimalSeparator, so we need to be careful later on
+						possibilityEdges[sampleCounter] = nEdges[sampleCounter];
+
+						//Add correct index to possibilities vector
+						shuffleVector.push_back(2 * sampleCounter + 1);
 					}
 					//This edge could be either present or absent, without further information
 					else
 					{
-						cliqueTrees[sampleCounter].tree.unionMinimalSeparators(sampleCurrentVertex, sampleCurrentEdge, unionMinimalSeparators[sampleCounter], vertexSequence[sampleCounter], edgeSequence[sampleCounter], addEdges[sampleCounter], removeEdges[sampleCounter], temp);
+						cliqueTrees[sampleCounter].tree.unionMinimalSeparators(currentVertex, currentEdge, unionMinimalSeparators[sampleCounter], vertexSequence[sampleCounter], edgeSequence[sampleCounter], addEdges[sampleCounter], removeEdges[sampleCounter], temp);
 						//If we need to add edges that were already considered (and therefore, must have already been rejected), then this edge CANNOT be present
-						if ((unionMinimalSeparators[sampleCounter] & (~copiedConditions) & bitsetType((1ULL << sampleCurrentEdge) - 1)).any())
+						if ((unionMinimalSeparators[sampleCounter] & (~copiedConditions) & bitsetType((1ULL << currentEdge) - 1)).any())
 						{
 							//If we don't need this edge to make up the numbers, then mark it as off and 
 							//continue to the next edge
 							if (!requiresEdge)
 							{
-								//we don't have to do anything here
+								shuffleVector.push_back(2 * sampleCounter);
 							}
 							//If we do, then it's impossible to reach the target and there are no children. 
-							else break;
 						}
 						else
 						{
-							//Here we *may* have an actual branch, both taking and not taking the edge are possible. 
 							//We need to remove the ones that we've already conditioned on
 							//And also remove the one edge that's already present
-							bitsetType additionalEdges = unionMinimalSeparators[sampleCounter] & (~copiedConditions) & ~bitsetType((1ULL << sampleCurrentEdge) - 1);
+							bitsetType additionalEdges = unionMinimalSeparators[sampleCounter] & (~copiedConditions) & ~bitsetType((1ULL << currentEdge) - 1);
 							int nAdditionalEdges = (int)additionalEdges.count();
 							//If this would push us over the edge limit, then really this
 							//edge can only be missing
 							if (nEdges[sampleCounter] + nAdditionalEdges + 1 > args.nEdges)
 							{
+								//Add correct sampleCounter to possibilities vector
+								shuffleVector.push_back(2 * sampleCounter);
 							}
 							else if (requiresEdge)
 							{
-								//If we need this edge to make up the numbers, don't consider the case where it's missing. 
-								nEdges[sampleCounter] = nEdges[sampleCounter] + 1 + nAdditionalEdges;
-								cliqueTrees[sampleCounter].tree.addEdge(sampleCurrentVertex, sampleCurrentEdge, unionMinimalSeparators[sampleCounter], vertexSequence[sampleCounter], edgeSequence[sampleCounter], addEdges[sampleCounter], removeEdges[sampleCounter], temp, true);
-								conditions[sampleCounter][sampleCurrentEdge] = true;
-								conditions[sampleCounter] |= unionMinimalSeparators[sampleCounter];
+								//If we need this edge to make up the numbers, don't consider the case where it's missing.
+								possibilityEdges[sampleCounter] = nEdges[sampleCounter] + 1 + nAdditionalEdges;
+								shuffleVector.push_back(2 * sampleCounter + 1);
 							}
 							else
 							{
@@ -209,97 +206,92 @@ namespace chordalGraph
 								//Increase the number of total edges in the case that the edge is present
 								possibilityEdges[sampleCounter] = nEdges[sampleCounter] + 1 + nAdditionalEdges;
 
-								//Add correct indices to possibilities vector
+								//Add correct sampleCounter to possibilities vector
 								shuffleVector.push_back(2 * sampleCounter);
 								shuffleVector.push_back(2 * sampleCounter + 1);
-								break;
 							}
 						}
 					}
-					sampleCurrentEdge++;
-					if (sampleCurrentEdge == sampleCurrentVertex)
+				}
+				args.estimate += multiple * knownToBeChordalWeight;
+
+				if (nRemainingEdges == 1)
+				{
+					knownToBeChordalWeight = 0;
+					for(std::vector<int>::iterator i = shuffleVector.begin(); i != shuffleVector.end(); i++)
 					{
-						sampleCurrentVertex++;
-						sampleCurrentEdge = 0;
-						conditions[sampleCounter] = 0;
-						cliqueTrees[sampleCounter].tree.addVertex();
+						knownToBeChordalWeight += cliqueTrees[(*i) / 2].weight;
+					}
+					args.estimate += multiple * knownToBeChordalWeight;
+					return;
+				}
+
+				boost::range::random_shuffle(shuffleVector, generator);
+				int toTake = std::min((int)shuffleVector.size(), args.budget);
+
+				if(toTake != (int)shuffleVector.size() || !args.exact)
+				{
+					args.exact = false;
+					args.minimumSizeForExact = -1;
+				}
+				else args.minimumSizeForExact = std::max(args.minimumSizeForExact, toTake);
+				//Ratio of vertices examined to not examined
+				multiple *= (double)shuffleVector.size() / (double)toTake;
+
+				std::fill(copyCounts.begin(), copyCounts.end(), 0);
+				//Now work out how many copies (0, 1, 2) are taken of each sample
+				for (int i = 0; i < toTake; i++)
+				{
+					copyCounts[shuffleVector[i]/2]++;
+				}
+
+				//Now actually start making copies
+				newCliqueTrees.clear();
+				newCurrentVertex.clear();
+				newCurrentEdge.clear();
+				for (int i = 0; i < toTake; i++)
+				{
+					int originalIndex = shuffleVector[i] / 2;
+					newConditions[i] = conditions[originalIndex];
+
+					if (copyCounts[originalIndex] == 1)
+					{
+						newCliqueTrees.push_back(std::move(cliqueTrees[originalIndex]));
+					}
+					else if (copyCounts[originalIndex] == 2)
+					{
+						copyCounts[originalIndex]--;
+						newCliqueTrees.push_back(cliqueTrees[originalIndex]);
+					}
+					//This should never happen. 
+					else
+					{
+						throw std::runtime_error("Internal error");
+					}
+					//Did we take the case where we added an edge?
+					if (shuffleVector[i] % 2 == 1)
+					{
+						newConditions[i][currentEdge] = 1;
+						newNEdges[i] = possibilityEdges[originalIndex];
+						if (!conditions[originalIndex][currentEdge])
+						{
+							newConditions[i] |= unionMinimalSeparators[originalIndex];
+							newCliqueTrees[i].tree.addEdge(currentVertex, currentEdge, unionMinimalSeparators[originalIndex], vertexSequence[originalIndex], edgeSequence[originalIndex], addEdges[originalIndex], removeEdges[originalIndex], temp, true);
+						}
+					}
+					else
+					{
+						newNEdges[i] = nEdges[originalIndex];
+						newConditions[i] = conditions[originalIndex];
 					}
 				}
+				newCliqueTrees.swap(cliqueTrees);
+				nEdges.swap(newNEdges);
+				conditions.swap(newConditions);
+				currentEdge++;
+				//If we've reached the end prematurely, break. 
+				if (cliqueTrees.size() == 0) return;
 			}
-			args.estimate += multiple * knownToBeChordalWeight;
-			boost::range::random_shuffle(shuffleVector, generator);
-			int toTake = std::min((int)shuffleVector.size(), args.budget);
-
-			if(toTake != (int)shuffleVector.size() || !args.exact)
-			{
-				args.exact = false;
-				args.minimumSizeForExact = -1;
-			}
-			else args.minimumSizeForExact = std::max(args.minimumSizeForExact, toTake);
-			//Ratio of vertices examined to not examined
-			multiple *= (double)shuffleVector.size() / (double)toTake;
-
-			std::fill(copyCounts.begin(), copyCounts.end(), 0);
-			//Now work out how many copies (0, 1, 2) are taken of each sample
-			for (int i = 0; i < toTake; i++)
-			{
-				copyCounts[shuffleVector[i]/2]++;
-			}
-
-			//Now actually start making copies
-			newCliqueTrees.clear();
-			newCurrentVertex.clear();
-			newCurrentEdge.clear();
-			for (int i = 0; i < toTake; i++)
-			{
-				int originalIndex = shuffleVector[i] / 2;
-				newConditions[i] = conditions[originalIndex];
-
-				if (copyCounts[originalIndex] == 1)
-				{
-					newCliqueTrees.push_back(std::move(cliqueTrees[originalIndex]));
-				}
-				else if (copyCounts[originalIndex] == 2)
-				{
-					copyCounts[originalIndex]--;
-					newCliqueTrees.push_back(cliqueTrees[originalIndex]);
-				}
-				//This should never happen. 
-				else
-				{
-					throw std::runtime_error("Internal error");
-				}
-				//Did we take the case where we added an edge?
-				if (shuffleVector[i] % 2 == 1)
-				{
-					newConditions[i][currentEdge[originalIndex]] = 1;
-					newConditions[i] |= unionMinimalSeparators[originalIndex];
-					newNEdges[i] = possibilityEdges[originalIndex];
-					newCliqueTrees[i].tree.addEdge(currentVertex[originalIndex], currentEdge[originalIndex], unionMinimalSeparators[originalIndex], vertexSequence[originalIndex], edgeSequence[originalIndex], addEdges[originalIndex], removeEdges[originalIndex], temp, true);
-				}
-				else
-				{
-					newNEdges[i] = nEdges[originalIndex];
-					newConditions[i] = conditions[originalIndex];
-				}
-				newCurrentVertex.push_back(currentVertex[originalIndex]);
-				newCurrentEdge.push_back(currentEdge[originalIndex]);
-				newCurrentEdge[i]++;
-				if (newCurrentEdge[i] == newCurrentVertex[i])
-				{
-					newCurrentEdge[i] = 0;
-					newCurrentVertex[i]++;
-					newCliqueTrees[i].tree.addVertex();
-					newConditions[i] = 0;
-				}
-			}
-			newCliqueTrees.swap(cliqueTrees);
-			nEdges.swap(newNEdges);
-			conditions.swap(newConditions);
-			currentVertex.swap(newCurrentVertex);
-			currentEdge.swap(newCurrentEdge);
-			//If we've reached the end prematurely, break. 
-			if (cliqueTrees.size() == 0) return;
 		}
 	}
 }
