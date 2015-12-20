@@ -812,7 +812,7 @@ namespace chordalGraph
 	{
 		*(mpz_class*)&(lab[-4]) *= index;
 	}
-	void cliqueTree::convertToNautyAndCountAutomorphisms(std::vector<int>& lab, std::vector<int>& ptn, std::vector<int>& orbits, std::vector<graph>& nautyGraph, std::vector<graph>& cannonicalNautyGraph, mpz_class& automorphismCount)
+/*	void cliqueTree::convertToNautyAndCountAutomorphisms(std::vector<int>& lab, std::vector<int>& ptn, std::vector<int>& orbits, std::vector<graph>& nautyGraph, std::vector<graph>& cannonicalNautyGraph, mpz_class& automorphismCount)
 	{
 #ifdef TRACK_GRAPH
 		std::size_t nVertices = boost::num_vertices(graph);
@@ -850,6 +850,6 @@ namespace chordalGraph
 		automorphismCount = 1;
 		*(mpz_class**)&(lab[0]) = &automorphismCount;
 		densenauty(&(nautyGraph[0]), &(lab[4]), &(ptn[0]), &(orbits[0]), &options, &stats, m, n, &(cannonicalNautyGraph[0]));
-	}
+	}*/
 #endif
 }

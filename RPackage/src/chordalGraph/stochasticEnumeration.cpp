@@ -64,7 +64,7 @@ BEGIN_RCPP
 		args.samples.clear();
 		if(reduceChains)
 		{
-			chordalGraph::stochasticEnumeration2(args);
+			chordalGraph::stochasticEnumerationReduceChains(args);
 		}
 		else
 		{
@@ -133,7 +133,7 @@ BEGIN_RCPP
 	}
 	else
 	{
-		chordalGraph::stochasticEnumeration2(args);
+		chordalGraph::stochasticEnumerationReduceChains(args);
 	}
 
 	std::string estimateAsString = args.estimate.str();

@@ -56,7 +56,7 @@ namespace chordalGraph
 		for (int nEdges = 0; nEdges < ((args.nVertices-1)*args.nVertices/2)+1; nEdges++)
 		{
 			args.nEdges = nEdges;
-			stochasticEnumeration2(args);
+			stochasticEnumerationReduceChains(args);
 			std::cout << args.estimate.str() << std::endl;
 		}
 		return 0;

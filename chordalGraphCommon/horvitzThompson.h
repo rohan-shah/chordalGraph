@@ -5,12 +5,10 @@
 #include <boost/multiprecision/gmp.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #include "numericType.h"
+#include "cliqueTree.h"
+#include "performSampling.h"
 namespace chordalGraph
 {
-	enum samplingType
-	{
-		sampfordSamplingMultinomial, conditionalPoissonSampling, paretoSampling, semiDeterministicSampling, sampfordSamplingConditionalPoisson, sampfordSamplingFromParetoNaive
-	};
 	enum weightType
 	{
 		weightsMultiplicity, weightsAutomorphismGroup
@@ -29,8 +27,27 @@ namespace chordalGraph
 		bool exact;
 		int minimumSizeForExact;
 		samplingType sampling;
-		weightType weights;
 	};
+	namespace horvitzThompsonPrivate
+	{
+		struct weightedCliqueTree
+		{
+		public:
+			weightedCliqueTree(weightedCliqueTree&& other)
+				: tree(std::move(other.tree)), weight(other.weight), automorphismGroupSize(other.automorphismGroupSize)
+			{} 
+			weightedCliqueTree(const weightedCliqueTree& other)
+				: tree(other.tree), weight(other.weight), automorphismGroupSize(other.automorphismGroupSize)
+			{}
+			weightedCliqueTree(int nVertices)
+				: tree(nVertices), weight(1), automorphismGroupSize(1)
+			{}
+			cliqueTree tree;
+			numericType weight;
+			mpz_class automorphismGroupSize;
+		};
+	}
+
 	samplingType toSamplingType(std::string samplingString);
 	weightType toWeightType(std::string weightString);
 	void horvitzThompson(horvitzThompsonArgs& args);

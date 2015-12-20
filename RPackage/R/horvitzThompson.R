@@ -1,5 +1,5 @@
 samplingMethods <- c("sampfordMultinomial", "sampfordConditionalPoisson", "conditionalPoisson", "sampfordFromParetoNaive", "semiDeterministic")
-weightMethods <- c("multiplicity", "automorphismGroup")
+weightMethods <- c("multiplicity")
 horvitzThompson <- function(nVertices, budget, seed, sampling, nEdges, weightMethod = "multiplicity")
 {
 	if(missing(nVertices) || missing(budget) || missing(seed))

@@ -27,6 +27,6 @@ namespace chordalGraph
 		int minimumSizeForExact;
 	};
 	void stochasticEnumeration(stochasticEnumerationArgs& args);
-	void stochasticEnumeration2(stochasticEnumerationArgs& args);
+	void stochasticEnumerationReduceChains(stochasticEnumerationArgs& args);
 }
 #endif

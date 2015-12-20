@@ -1,34 +1,12 @@
 #include "horvitzThompson.h"
-#include "cliqueTree.h"
 #include <boost/random/random_number_generator.hpp>
 #include <boost/random/bernoulli_distribution.hpp>
 #include <boost/random/uniform_real_distribution.hpp>
 #include <boost/math/special_functions.hpp>
 #include "nauty.h"
-#include "sampford.h"
-#include "semiDeterministicSampling.h"
-#include "conditionalPoisson.h"
+#include "performSampling.h"
 namespace chordalGraph
 {
-	namespace horvitzThompsonPrivate
-	{
-		struct weightedCliqueTree
-		{
-		public:
-			weightedCliqueTree(weightedCliqueTree&& other)
-				: tree(std::move(other.tree)), weight(other.weight), automorphismGroupSize(other.automorphismGroupSize)
-			{} 
-			weightedCliqueTree(const weightedCliqueTree& other)
-				: tree(other.tree), weight(other.weight), automorphismGroupSize(other.automorphismGroupSize)
-			{}
-			weightedCliqueTree(int nVertices)
-				: tree(nVertices), weight(1), automorphismGroupSize(1)
-			{}
-			cliqueTree tree;
-			numericType weight;
-			mpz_class automorphismGroupSize;
-		};
-	}
 	using horvitzThompsonPrivate::weightedCliqueTree;
 	weightType toWeightType(std::string weightString)
 	{
@@ -75,60 +53,6 @@ namespace chordalGraph
 		{
 			throw std::runtime_error("Sampling type must be one of \"sampfordMultinomial\", \"sampfordConditionalPoisson\", \"conditionalPoisson\", \"sampfordFromParetoNaive\", \"pareto\" or \"semiDeterministic\"");
 		}
-	}
-	struct performSamplingArgs
-	{
-		performSamplingArgs()
-		{
-			conditionalArgs.calculateInclusionProbabilities = true;
-		}
-		int toTake;
-		//Arguments for calling the sampford sampling function
-		sampfordMultinomialRejectiveArgs sampfordMultinomialArgs;
-		//Arguments for calling the conditional poisson sampling function
-		conditionalPoissonArgs conditionalArgs;
-		//Arguments for semi-deterministic sampling
-		semiDeterministicSamplingArgs semiDetArgs;
-		//Arguments for calling the sampford conditional poisson rejective sampling
-		sampfordConditionalPoissonRejectiveArgs sampfordConditionalPoissonArgs;
-		//Arguments for performing pareto sampling and pretending it's a sampford sample
-		sampfordFromParetoNaiveArgs sampfordFromParetoArgs;
-		samplingType sampling;
-
-	};
-	void performSampling(performSamplingArgs& args, std::vector<int>& indices, std::vector<numericType>& inclusionProbabilities, std::vector<numericType>& weights, boost::mt19937& randomSource)
-	{
-		if(args.sampling == sampfordSamplingConditionalPoisson)
-		{
-			args.sampfordConditionalPoissonArgs.n = args.toTake;
-			sampfordConditionalPoissonRejective(args.sampfordConditionalPoissonArgs, indices, inclusionProbabilities, weights, randomSource);
-		}
-		else if(args.sampling == semiDeterministicSampling)
-		{
-			args.semiDetArgs.n = args.toTake;
-			semiDeterministic(args.semiDetArgs, indices, inclusionProbabilities, weights, randomSource);
-		}
-		//The multinomial rejective version of sampford sampling
-		else if(args.sampling == sampfordSamplingMultinomial)
-		{
-			args.sampfordMultinomialArgs.n = args.toTake;
-			sampfordMultinomialRejective(args.sampfordMultinomialArgs, indices, inclusionProbabilities, weights, randomSource);
-		}
-		else if(args.sampling == conditionalPoissonSampling)
-		{
-			args.conditionalArgs.n = args.toTake;
-			conditionalPoisson(args.conditionalArgs, indices, inclusionProbabilities, weights, randomSource);
-		}
-		else if(args.sampling == sampfordSamplingFromParetoNaive)
-		{
-			args.sampfordFromParetoArgs.n = args.toTake;
-			sampfordFromParetoNaive(args.sampfordFromParetoArgs, indices, inclusionProbabilities, weights, randomSource);
-		}
-		else
-		{
-			throw std::runtime_error("This type of sampling is still unsupported");
-		}
-
 	}
 	void horvitzThompson(horvitzThompsonArgs& args)
 	{
@@ -225,11 +149,7 @@ namespace chordalGraph
 			{
 				if(currentEdge[sampleCounter] == 0)
 				{
-					if(args.weights == weightsMultiplicity) cliqueTrees[sampleCounter].tree.convertToNauty(lab, ptn, orbits, nautyGraph, cannonicalNautyGraphs[sampleCounter]);
-					else 
-					{
-						cliqueTrees[sampleCounter].tree.convertToNautyAndCountAutomorphisms(lab, ptn, orbits, nautyGraph, cannonicalNautyGraphs[sampleCounter], cliqueTrees[sampleCounter].automorphismGroupSize);
-					}
+					cliqueTrees[sampleCounter].tree.convertToNauty(lab, ptn, orbits, nautyGraph, cannonicalNautyGraphs[sampleCounter]);
 				}
 			}
 			//Work out which graphs are isomorphic to a graph earlier on in the set of samples. The weight for those graphs are added to the earlier one. 
@@ -345,17 +265,8 @@ namespace chordalGraph
 
 								//Add correct indices to possibilities vector
 								hasChildren.push_back(sampleCounter);
-								if(args.weights == weightsMultiplicity)
-								{
-									weights.push_back(cliqueTrees[sampleCounter].weight);
-									weights.push_back(cliqueTrees[sampleCounter].weight);
-								}
-								else
-								{
-									mpfr_class tmp = 1/mpfr_class(cliqueTrees[sampleCounter].automorphismGroupSize);
-									weights.push_back(tmp);
-									weights.push_back(tmp);
-								}
+								weights.push_back(cliqueTrees[sampleCounter].weight);
+								weights.push_back(cliqueTrees[sampleCounter].weight);
 								break;
 							}
 						}

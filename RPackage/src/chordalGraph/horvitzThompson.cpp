@@ -17,7 +17,6 @@ BEGIN_RCPP
 	args.nVertices = nVertices;
 	args.budget = budget;
 	args.sampling = sampling;
-	args.weights = weight;
 
 	int maxEdges = ((nVertices - 1)*nVertices / 2);
 
@@ -36,7 +35,16 @@ BEGIN_RCPP
 	{
 		setTxtProgressBar(barHandle, nEdges);
 		args.nEdges = nEdges;
-		chordalGraph::horvitzThompson(args);
+		if(weight == chordalGraph::weightsMultiplicity)
+		{
+			chordalGraph::horvitzThompson(args);
+		}
+		else if(weight == chordalGraph::weightsAutomorphismGroup)
+		{
+			throw std::runtime_error("this type of weighting is not supported");
+		}
+		else throw std::runtime_error("Internal error");
+
 		estimatesAsStrings.push_back(args.estimate.str());
 		exactVector.push_back(args.exact);
 		if(args.minimumSizeForExact != -1)
@@ -75,9 +83,16 @@ BEGIN_RCPP
 	args.nVertices = nVertices;
 	args.budget = budget;
 	args.sampling = sampling;
-	args.weights = weight;
 
-	chordalGraph::horvitzThompson(args);
+	if(weight == chordalGraph::weightsMultiplicity)
+	{
+		chordalGraph::horvitzThompson(args);
+	}
+	else if(weight == chordalGraph::weightsAutomorphismGroup)
+	{
+		throw std::runtime_error("this type of weighting is not supported");
+	}
+	else throw std::runtime_error("Internal error");
 
 	std::string estimateAsString = args.estimate.str();
 	SEXP estimateAsString_sexp = Rcpp::wrap(estimateAsString);

@@ -5,7 +5,7 @@
 #include <boost/math/special_functions.hpp>
 namespace chordalGraph
 {
-	void stochasticEnumeration2(stochasticEnumerationArgs& args)
+	void stochasticEnumerationReduceChains(stochasticEnumerationArgs& args)
 	{
 		args.exact = true;
 		args.minimumSizeForExact = -1;
