@@ -33,7 +33,7 @@ stochasticEnumerationNauty <- function(nVertices, budget, seed, nEdges, options 
 		start <- Sys.time()
 		result <- .Call("stochasticEnumerationNauty", nVertices, budget, seed, options, PACKAGE="chordalGraph")
 		end <- Sys.time()
-		s4Result <- new("estimatedChordalCounts", data = result$data, call = match.call(), start = start, end = end, samples = NULL, options = list(), exact = result$exact, minimumSizeForExact = result$minimumSizeForExact)
+		s4Result <- new("estimatedChordalCounts", data = result$data, call = match.call(), start = start, end = end, samples = NULL, options = options, exact = result$exact, minimumSizeForExact = result$minimumSizeForExact)
 		return(s4Result)
 	}
 	else
@@ -49,7 +49,7 @@ stochasticEnumerationNauty <- function(nVertices, budget, seed, nEdges, options 
 		start <- Sys.time()
 		result <- .Call("stochasticEnumerationNautySpecificEdges", nVertices, nEdges, budget, seed, options, PACKAGE="chordalGraph")
 		end <- Sys.time()
-		s4Result <- new("estimatedChordalCount", data = result$data, call = match.call(), start = start, end = end, samples = NULL, options = list(), exact = result$exact, minimumSizeForExact = result$minimumSizeForExact)
+		s4Result <- new("estimatedChordalCount", data = result$data, call = match.call(), start = start, end = end, samples = NULL, options = options, exact = result$exact, minimumSizeForExact = result$minimumSizeForExact)
 		return(s4Result)
 	}
 }

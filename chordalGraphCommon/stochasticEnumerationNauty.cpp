@@ -51,8 +51,6 @@ namespace chordalGraph
 		//The conditions, for the new set of samples
 		std::vector<bitsetType> newConditions(args.budget);
 
-		std::vector<int> newCurrentVertex, newCurrentEdge;
-
 		//This tells us how many children of a sample were taken.
 		//This is important, because if it's only one child then we don't need to make a copy of the clique tree, 
 		//we can use the move constructor instead. 
@@ -247,8 +245,6 @@ namespace chordalGraph
 
 				//Now actually start making copies
 				newCliqueTrees.clear();
-				newCurrentVertex.clear();
-				newCurrentEdge.clear();
 				for (int i = 0; i < toTake; i++)
 				{
 					int originalIndex = shuffleVector[i] / 2;

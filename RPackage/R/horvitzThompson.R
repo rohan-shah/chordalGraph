@@ -1,6 +1,5 @@
 samplingMethods <- c("sampfordMultinomial", "sampfordConditionalPoisson", "conditionalPoisson", "sampfordFromParetoNaive", "semiDeterministic")
-weightMethods <- c("multiplicity")
-horvitzThompson <- function(nVertices, budget, seed, sampling, nEdges, weightMethod = "multiplicity")
+horvitzThompson <- function(nVertices, budget, seed, sampling, nEdges, options = list(reduceChains = FALSE))
 {
 	if(missing(nVertices) || missing(budget) || missing(seed))
 	{
@@ -26,16 +25,20 @@ horvitzThompson <- function(nVertices, budget, seed, sampling, nEdges, weightMet
 	{
 		stop("Input sampling must be one of the values in chordalGraph:::samplingMethods")
 	}
-	if(!(weightMethod %in% weightMethods))
+	if(any(!(names(options) %in% c("reduceChains"))))
 	{
-		stop("Input weightMethod must be one of the values in chordalGraph:::weightMethods")
+		stop("The only valid option for horvitzThompson is \"reduceChains\"")
+	}
+	if(!("reduceChains" %in% names(options)))
+	{
+		stop("Option \"reduceChains\" is required")
 	}
 	if(missing(nEdges))
 	{
 		start <- Sys.time()
-		result <- .Call("horvitzThompson", nVertices, budget, seed, sampling, weightMethod, PACKAGE="chordalGraph")
+		result <- .Call("horvitzThompson", nVertices, budget, seed, sampling, options, PACKAGE="chordalGraph")
 		end <- Sys.time()
-		s4Result <- new("estimatedChordalCounts", data = result$data, call = match.call(), start = start, end = end, samples = NULL, options = list(), exact = result$exact, minimumSizeForExact = result$minimumSizeForExact)
+		s4Result <- new("estimatedChordalCounts", data = result$data, call = match.call(), start = start, end = end, samples = NULL, options = options, exact = result$exact, minimumSizeForExact = result$minimumSizeForExact)
 		return(s4Result)
 	}
 	else
@@ -49,9 +52,9 @@ horvitzThompson <- function(nVertices, budget, seed, sampling, nEdges, weightMet
 			stop("Input nEdges must be in range [0, ((nVertices-1)*nVertices/2)+1]")
 		}
 		start <- Sys.time()
-		result <- .Call("horvitzThompsonSpecificEdges", nVertices, nEdges, budget, seed, sampling, weightMethod, PACKAGE="chordalGraph")
+		result <- .Call("horvitzThompsonSpecificEdges", nVertices, nEdges, budget, seed, sampling, options, PACKAGE="chordalGraph")
 		end <- Sys.time()
-		s4Result <- new("estimatedChordalCount", data = result$data, call = match.call(), start = start, end = end, samples = NULL, options = list(), exact = result$exact, minimumSizeForExact = result$minimumSizeForExact)
+		s4Result <- new("estimatedChordalCount", data = result$data, call = match.call(), start = start, end = end, samples = NULL, options = options, exact = result$exact, minimumSizeForExact = result$minimumSizeForExact)
 		return(s4Result)
 	}
 }

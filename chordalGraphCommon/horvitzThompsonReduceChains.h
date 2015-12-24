@@ -9,10 +9,6 @@
 #include "performSampling.h"
 namespace chordalGraph
 {
-	enum weightType
-	{
-		weightsMultiplicity, weightsAutomorphismGroup
-	};
 	struct horvitzThompsonArgs
 	{
 	public:
@@ -42,6 +38,10 @@ namespace chordalGraph
 			weightedCliqueTree(int nVertices)
 				: tree(nVertices), weight(1), automorphismGroupSize(1)
 			{}
+			void addVertex()
+			{
+				tree.addVertex();
+			}
 			cliqueTree tree;
 			numericType weight;
 			mpz_class automorphismGroupSize;
@@ -49,7 +49,7 @@ namespace chordalGraph
 	}
 
 	samplingType toSamplingType(std::string samplingString);
-	weightType toWeightType(std::string weightString);
+	void horvitzThompsonReduceChains(horvitzThompsonArgs& args);
 	void horvitzThompson(horvitzThompsonArgs& args);
 }
 #endif

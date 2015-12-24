@@ -1,15 +1,16 @@
-#include "horvitzThompson.h"
+#include "horvitzThompsonReduceChains.h"
 #include <Rcpp.h>
-SEXP horvitzThompson(SEXP nVertices_sexp, SEXP budget_sexp, SEXP seed_sexp, SEXP sampling_sexp, SEXP weight_sexp)
+SEXP horvitzThompson(SEXP nVertices_sexp, SEXP budget_sexp, SEXP seed_sexp, SEXP sampling_sexp, SEXP options_sexp)
 {
 BEGIN_RCPP
 	int seed = Rcpp::as<int>(seed_sexp);
 	int nVertices = Rcpp::as<int>(nVertices_sexp);
 	int budget = Rcpp::as<int>(budget_sexp);
 	std::string samplingString = Rcpp::as<std::string>(sampling_sexp);
-	std::string weightString = Rcpp::as<std::string>(weight_sexp);
 	chordalGraph::samplingType sampling = chordalGraph::toSamplingType(samplingString);
-	chordalGraph::weightType weight = chordalGraph::toWeightType(weightString);
+	Rcpp::List options = options_sexp;
+	if(!options.containsElementNamed("reduceChains")) throw std::runtime_error("Unable to find option named reduceChains");
+	bool reduceChains = Rcpp::as<bool>(options("reduceChains"));
 
 	boost::mt19937 randomSource;
 	randomSource.seed(seed);
@@ -35,16 +36,14 @@ BEGIN_RCPP
 	{
 		setTxtProgressBar(barHandle, nEdges);
 		args.nEdges = nEdges;
-		if(weight == chordalGraph::weightsMultiplicity)
+		if(reduceChains)
 		{
 			chordalGraph::horvitzThompson(args);
 		}
-		else if(weight == chordalGraph::weightsAutomorphismGroup)
+		else
 		{
-			throw std::runtime_error("this type of weighting is not supported");
+			chordalGraph::horvitzThompsonReduceChains(args);
 		}
-		else throw std::runtime_error("Internal error");
-
 		estimatesAsStrings.push_back(args.estimate.str());
 		exactVector.push_back(args.exact);
 		if(args.minimumSizeForExact != -1)
@@ -64,7 +63,7 @@ BEGIN_RCPP
 	return result;
 END_RCPP
 }
-SEXP horvitzThompsonSpecificEdges(SEXP nVertices_sexp, SEXP nEdges_sexp, SEXP budget_sexp, SEXP seed_sexp, SEXP sampling_sexp, SEXP weight_sexp)
+SEXP horvitzThompsonSpecificEdges(SEXP nVertices_sexp, SEXP nEdges_sexp, SEXP budget_sexp, SEXP seed_sexp, SEXP sampling_sexp, SEXP options_sexp)
 {
 BEGIN_RCPP
 	int seed = Rcpp::as<int>(seed_sexp);
@@ -72,9 +71,10 @@ BEGIN_RCPP
 	int nEdges = Rcpp::as<int>(nEdges_sexp);
 	int budget = Rcpp::as<int>(budget_sexp);
 	std::string samplingString = Rcpp::as<std::string>(sampling_sexp);
-	std::string weightString = Rcpp::as<std::string>(weight_sexp);
 	chordalGraph::samplingType sampling = chordalGraph::toSamplingType(samplingString);
-	chordalGraph::weightType weight = chordalGraph::toWeightType(weightString);
+	Rcpp::List options = options_sexp;
+	if(!options.containsElementNamed("reduceChains")) throw std::runtime_error("Unable to find option named reduceChains");
+	bool reduceChains = Rcpp::as<bool>(options("reduceChains"));
 
 	boost::mt19937 randomSource;
 	randomSource.seed(seed);
@@ -84,15 +84,14 @@ BEGIN_RCPP
 	args.budget = budget;
 	args.sampling = sampling;
 
-	if(weight == chordalGraph::weightsMultiplicity)
+	if(reduceChains)
+	{
+		chordalGraph::horvitzThompsonReduceChains(args);
+	}
+	else
 	{
 		chordalGraph::horvitzThompson(args);
 	}
-	else if(weight == chordalGraph::weightsAutomorphismGroup)
-	{
-		throw std::runtime_error("this type of weighting is not supported");
-	}
-	else throw std::runtime_error("Internal error");
 
 	std::string estimateAsString = args.estimate.str();
 	SEXP estimateAsString_sexp = Rcpp::wrap(estimateAsString);
