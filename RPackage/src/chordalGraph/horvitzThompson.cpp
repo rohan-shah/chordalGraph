@@ -38,11 +38,11 @@ BEGIN_RCPP
 		args.nEdges = nEdges;
 		if(reduceChains)
 		{
-			chordalGraph::horvitzThompson(args);
+			chordalGraph::horvitzThompsonReduceChains(args);
 		}
 		else
 		{
-			chordalGraph::horvitzThompsonReduceChains(args);
+			chordalGraph::horvitzThompson(args);
 		}
 		estimatesAsStrings.push_back(args.estimate.str());
 		exactVector.push_back(args.exact);
