@@ -12,14 +12,13 @@ namespace chordalGraph
 	void sampfordFromParetoNaive(sampfordFromParetoNaiveArgs& args, std::vector<int>& indices, std::vector<numericType>& inclusionProbabilities, std::vector<numericType>& weights, boost::mt19937& randomSource)
 	{
 		int nUnits = weights.size();
-		paretoSamplingArgs paretoArgs;
-		paretoArgs.n = args.n;
-		paretoArgs.calculateInclusionProbabilities = false;
-		paretoSampling(paretoArgs, indices, inclusionProbabilities, weights, randomSource);
+		args.paretoArgs.n = args.n;
+		args.paretoArgs.calculateInclusionProbabilities = false;
+		pareto(args.paretoArgs, indices, inclusionProbabilities, weights, randomSource);
 		inclusionProbabilities.resize(nUnits);
 		for(int i = 0; i < nUnits; i++)
 		{
-			if(!paretoArgs.deterministicInclusion[i])
+			if(!args.paretoArgs.deterministicInclusion[i])
 			{
 				inclusionProbabilities[i] = weights[i];
 			}

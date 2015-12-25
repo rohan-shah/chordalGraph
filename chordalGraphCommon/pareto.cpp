@@ -8,7 +8,7 @@ namespace chordalGraph
 	using std::log;
 	using boost::multiprecision::exp;
 	using std::exp;
-	void paretoSampling(paretoSamplingArgs& args, std::vector<int>& indices, std::vector<numericType>& inclusionProbabilities, std::vector<numericType>& weights, boost::mt19937& randomSource)
+	void pareto(paretoSamplingArgs& args, std::vector<int>& indices, std::vector<numericType>& inclusionProbabilities, std::vector<numericType>& weights, boost::mt19937& randomSource)
 	{
 		indices.clear();
 		int nUnits = (int)weights.size();

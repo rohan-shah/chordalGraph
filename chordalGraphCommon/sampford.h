@@ -3,6 +3,7 @@
 #include <vector>
 #include <boost/random/mersenne_twister.hpp>
 #include "numericType.h"
+#include "pareto.h"
 namespace chordalGraph
 {
 	struct sampfordMultinomialRejectiveArgs
@@ -30,6 +31,7 @@ namespace chordalGraph
 	struct sampfordFromParetoNaiveArgs
 	{
 	public:
+		paretoSamplingArgs paretoArgs;
 		sampfordFromParetoNaiveArgs()
 		{}
 		std::size_t n;

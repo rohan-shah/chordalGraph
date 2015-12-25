@@ -129,13 +129,13 @@ namespace chordalGraph
 	class cliqueTree
 	{
 	public:
-		//typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, boost::property<boost::vertex_name_t, cliqueVertex>, boost::property<boost::edge_name_t, cliqueEdge> > cliqueTreeGraphType;
-		//typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS> graphType;
 		typedef moveable_adjacency_list<boost::property<boost::vertex_name_t, cliqueVertex>, boost::property<boost::edge_name_t, cliqueEdge> > cliqueTreeGraphType;
+#ifdef TRACK_GRAPH
 #ifdef USE_ADJACENCY_MATRIX_FOR_GRAPH
 		typedef moveable_adjacency_matrix<> graphType;
 #else
 		typedef moveable_adjacency_list<> graphType;
+#endif
 #endif
 		struct unionMinimalSeparatorsTemporaries
 		{
@@ -157,9 +157,8 @@ namespace chordalGraph
 			:cliqueGraph(std::move(other.cliqueGraph)), 
 #ifdef TRACK_GRAPH
 			graph(std::move(other.graph)), 
-#else
-			nVertices(other.nVertices),
 #endif
+			nVertices(other.nVertices),
 			verticesToCliqueVertices(std::move(other.verticesToCliqueVertices)), componentIDs(std::move(other.componentIDs))
 		{}
 		cliqueTree(int maximumVertices);
@@ -167,9 +166,8 @@ namespace chordalGraph
 			:cliqueGraph(other.cliqueGraph), 
 #ifdef TRACK_GRAPH
 			graph(other.graph), 
-#else
-			nVertices(other.nVertices),
 #endif
+			nVertices(other.nVertices),
 			verticesToCliqueVertices(other.verticesToCliqueVertices), componentIDs(other.componentIDs)
 		{}
 		const cliqueTreeGraphType& getCliqueGraph() const;
@@ -183,7 +181,7 @@ namespace chordalGraph
 		void addEdge(int vertexForExtraEdges, int v, bitsetType& unionMinimalSeparatorBitset, std::list<cliqueTreeGraphType::vertex_descriptor>& vertexSequence, std::list<externalEdge>& edgeSequence, std::vector<externalEdge>& addEdges, std::vector<externalEdge>& removeEdges, unionMinimalSeparatorsTemporaries& temp, bool hasPrecomputedUnionMinimalSeparator);
 		void check() const;
 #ifdef HAS_NAUTY
-		void convertToNauty(std::vector<int>& lab, std::vector<int>& ptn, std::vector<int>& orbits, std::vector<graph>& nautyGraph, std::vector<graph>& cannonicalNautyGraph);
+		void convertToNauty(std::vector<int>& lab, std::vector<int>& ptn, std::vector<int>& orbits, std::vector<::graph>& nautyGraph, std::vector<::graph>& cannonicalNautyGraph);
 		//void convertToNautyAndCountAutomorphisms(std::vector<int>& lab, std::vector<int>& ptn, std::vector<int>& orbits, std::vector<graph>& nautyGraph, std::vector<graph>& cannonicalNautyGraph, mpz_class& automorphismCount);
 		static void userlevelproc(int* lab, int* ptn, int level, int* orbits, statsblk* stats, int tv, int index, int tcellsize, int numcells, int childcount, int n);
 #endif
@@ -192,9 +190,8 @@ namespace chordalGraph
 		cliqueTreeGraphType cliqueGraph;
 #ifdef TRACK_GRAPH
 		graphType graph;
-#else
-		int nVertices;
 #endif
+		int nVertices;
 		//A vector that converts any vertex of the graph to a vertex of the clique tree
 		//which contains that vertex in the relevant subset. 
 		std::vector<int> verticesToCliqueVertices;

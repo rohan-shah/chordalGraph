@@ -24,6 +24,6 @@ namespace chordalGraph
 		std::vector<paretoStatistic> paretoStatistics;
 		bool calculateInclusionProbabilities;
 	};
-	void paretoSampling(paretoSamplingArgs& args, std::vector<int>& indices, std::vector<numericType>& inclusionProbabilities, std::vector<numericType>& weights, boost::mt19937& randomSource);
+	void pareto(paretoSamplingArgs& args, std::vector<int>& indices, std::vector<numericType>& inclusionProbabilities, std::vector<numericType>& weights, boost::mt19937& randomSource);
 }
 #endif

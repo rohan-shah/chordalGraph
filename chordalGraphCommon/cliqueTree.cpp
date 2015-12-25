@@ -29,12 +29,10 @@ namespace chordalGraph
 	}
 	void cliqueTree::addVertex()
 	{
-#ifdef TRACK_GRAPH
-		int previousVertexCount = (int)boost::num_vertices(graph);
-		boost::add_vertex(graph);
-#else
 		int previousVertexCount = nVertices;
 		nVertices++;
+#ifdef TRACK_GRAPH
+		boost::add_vertex(graph);
 #endif
 
 		bitsetType newBitset(0);
@@ -49,9 +47,6 @@ namespace chordalGraph
 	{
 		bitsetType copiedInvolvedEdges = involvedEdges;
 
-#ifdef TRACK_GRAPH
-		int nVertices = (int)boost::num_vertices(graph);
-#endif
 		if (nVertices == 0)
 		{
 			cliqueVertex newVertex;
@@ -60,9 +55,8 @@ namespace chordalGraph
 
 #ifdef TRACK_GRAPH
 			boost::add_vertex(graph);
-#else
-			nVertices = 1;
 #endif
+			nVertices = 1;
 			verticesToCliqueVertices.push_back(0);
 
 			componentIDs.push_back(0);
@@ -96,7 +90,6 @@ namespace chordalGraph
 				//That is, they've been added so don't try and add them again
 				copiedInvolvedEdges = copiedInvolvedEdges & (~unionMinimalSeparatorBitset);
 				copiedInvolvedEdges[i] = false;
-				this->check();
 			}
 		}
 		return true;
@@ -123,9 +116,6 @@ namespace chordalGraph
 			//are contained in cliques of size 1 in the clique tree. 
 			if (extraEdgesCliqueVertex.contents.count() == 1 && vCliqueVertex.contents.count() == 1)
 			{
-#ifdef TRACK_GRAPH
-				std::size_t nVertices = boost::num_vertices(graph);
-#endif
 				//If so we delete one clique vertex. This may invalidate references.
 				boost::remove_vertex(verticesToCliqueVertices[v], cliqueGraph);
 				//Compensate for removing the vertex by decreasing by 1 some of the entries
@@ -203,9 +193,6 @@ namespace chordalGraph
 		//Now the case where the pair of vertices were already in the same connected component
 		else
 		{
-#ifdef TRACK_GRAPH
-			int nVertices = (int)boost::num_vertices(graph);
-#endif
 			//Add every edge that is marked to be added.
 			for (std::vector<externalEdge>::iterator i = addEdges.begin(); i != addEdges.end(); i++)
 			{
@@ -605,16 +592,10 @@ namespace chordalGraph
 	};
 	int cliqueTree::getNVertices() const
 	{
-#ifdef TRACK_GRAPH
-		return (int)boost::num_vertices(graph);
-#endif
 		return nVertices;
 	}
 	void cliqueTree::check() const
 	{
-#ifdef TRACK_GRAPH
-		std::size_t nVertices = boost::num_vertices(graph);
-#endif
 		std::size_t nCliqueVertices = boost::num_vertices(cliqueGraph);
 		{
 			cliqueTreeGraphType::vertex_iterator current, end;
@@ -772,11 +753,8 @@ namespace chordalGraph
 		}
 	}
 #ifdef HAS_NAUTY
-	void cliqueTree::convertToNauty(std::vector<int>& lab, std::vector<int>& ptn, std::vector<int>& orbits, std::vector<graph>& nautyGraph, std::vector<graph>& cannonicalNautyGraph)
+	void cliqueTree::convertToNauty(std::vector<int>& lab, std::vector<int>& ptn, std::vector<int>& orbits, std::vector<::graph>& nautyGraph, std::vector<::graph>& cannonicalNautyGraph)
 	{
-#ifdef TRACK_GRAPH
-		std::size_t nVertices = boost::num_vertices(graph);
-#endif
 		static DEFAULTOPTIONS_GRAPH(options);
 		statsblk stats;
 		options.getcanon = true;
@@ -808,11 +786,11 @@ namespace chordalGraph
 		cannonicalNautyGraph.resize(n * m);
 		densenauty(&(nautyGraph[0]), &(lab[0]), &(ptn[0]), &(orbits[0]), &options, &stats, m, n, &(cannonicalNautyGraph[0]));
 	}
-	void cliqueTree::userlevelproc(int* lab, int* ptn, int level, int* orbits, statsblk* stats, int tv, int index, int tcellsize, int numcells, int childcount, int n)
+/*	void cliqueTree::userlevelproc(int* lab, int* ptn, int level, int* orbits, statsblk* stats, int tv, int index, int tcellsize, int numcells, int childcount, int n)
 	{
 		*(mpz_class*)&(lab[-4]) *= index;
 	}
-/*	void cliqueTree::convertToNautyAndCountAutomorphisms(std::vector<int>& lab, std::vector<int>& ptn, std::vector<int>& orbits, std::vector<graph>& nautyGraph, std::vector<graph>& cannonicalNautyGraph, mpz_class& automorphismCount)
+	void cliqueTree::convertToNautyAndCountAutomorphisms(std::vector<int>& lab, std::vector<int>& ptn, std::vector<int>& orbits, std::vector<graph>& nautyGraph, std::vector<graph>& cannonicalNautyGraph, mpz_class& automorphismCount)
 	{
 #ifdef TRACK_GRAPH
 		std::size_t nVertices = boost::num_vertices(graph);
