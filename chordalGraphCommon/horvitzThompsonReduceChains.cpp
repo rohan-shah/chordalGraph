@@ -1,58 +1,28 @@
-#include "horvitzThompsonReduceChains.h"
+#include "horvitzThompson.h"
 #include <boost/random/random_number_generator.hpp>
 #include <boost/random/bernoulli_distribution.hpp>
 #include <boost/random/uniform_real_distribution.hpp>
 #include <boost/math/special_functions.hpp>
 #include "nauty.h"
 #include "performSampling.h"
+#include "cliqueTree.h"
+#include "cliqueTreeAdjacencyMatrix.h"
 namespace chordalGraph
 {
-	using horvitzThompsonPrivate::weightedCliqueTree;
-	samplingType toSamplingType(std::string samplingString)
-	{
-		if(samplingString == "sampfordMultinomial")
-		{
-			return sampfordSamplingMultinomial;
-		}
-		else if(samplingString == "sampfordConditionalPoisson")
-		{
-			return sampfordSamplingConditionalPoisson;
-		}
-		else if(samplingString == "conditionalPoisson")
-		{
-			return conditionalPoissonSampling;
-		}
-		else if(samplingString == "sampfordFromParetoNaive")
-		{
-			return sampfordSamplingFromParetoNaive;
-		}
-		else if(samplingString == "pareto")
-		{
-			return paretoSampling;
-		}
-		else if(samplingString == "semiDeterministic")
-		{
-			return semiDeterministicSampling;
-		}
-		else
-		{
-			throw std::runtime_error("Sampling type must be one of \"sampfordMultinomial\", \"sampfordConditionalPoisson\", \"conditionalPoisson\", \"sampfordFromParetoNaive\", \"pareto\" or \"semiDeterministic\"");
-		}
-	}
-	void horvitzThompsonReduceChains(horvitzThompsonArgs& args)
+	template<typename cliqueTree> void horvitzThompsonReduceChains(horvitzThompsonArgs& args)
 	{
 		args.exact = true;
 		args.minimumSizeForExact = -1;
 		args.estimate = 0;
 
 		//Temporary data that's used in cliqueTree calls
-		cliqueTree::unionMinimalSeparatorsTemporaries temp;
+		typename cliqueTree::unionMinimalSeparatorsTemporaries temp;
 
 		boost::random_number_generator<boost::mt19937> generator(args.randomSource);
 		boost::random::bernoulli_distribution<> standardBernoulli(0.5);
 		//Number of edges either present (or to be added later)
 		std::vector<int> nEdges(args.budget);
-		std::vector<weightedCliqueTree> cliqueTrees;
+		std::vector<typename horvitzThompsonPrivate::weightedCliqueTree<cliqueTree> > cliqueTrees;
 		cliqueTrees.reserve(args.budget);
 
 		//At any point we will have a bunch of conditions on what other edges are required to be present (in order to maintain chordality)
@@ -67,7 +37,7 @@ namespace chordalGraph
 		std::vector<int> currentEdge;
 		//We start off with one sample
 		{
-			weightedCliqueTree initialTree(args.nVertices);
+			horvitzThompsonPrivate::weightedCliqueTree<cliqueTree> initialTree(args.nVertices);
 			initialTree.tree.addVertex();
 			initialTree.tree.addVertex();
 			cliqueTrees.push_back(initialTree);
@@ -95,14 +65,14 @@ namespace chordalGraph
 		//we can use the move constructor instead. 
 		std::vector<int> copyCounts(args.budget);
 
-		std::vector<weightedCliqueTree> newCliqueTrees;
+		std::vector<horvitzThompsonPrivate::weightedCliqueTree<cliqueTree> > newCliqueTrees;
 		newCliqueTrees.reserve(args.budget);
 		std::vector<int> newNEdges(args.budget);
 
-		std::vector<std::list<cliqueTree::cliqueTreeGraphType::vertex_descriptor> > vertexSequence(args.budget);
-		std::vector<std::list<cliqueTree::externalEdge> > edgeSequence(args.budget);
-		std::vector<std::vector<cliqueTree::externalEdge> > removeEdges(args.budget);
-		std::vector<std::vector<cliqueTree::externalEdge> > addEdges(args.budget);
+		std::vector<std::list<typename cliqueTree::cliqueTreeGraphType::vertex_descriptor> > vertexSequence(args.budget);
+		std::vector<std::list<typename cliqueTree::externalEdge> > edgeSequence(args.budget);
+		std::vector<std::vector<typename cliqueTree::externalEdge> > removeEdges(args.budget);
+		std::vector<std::vector<typename cliqueTree::externalEdge> > addEdges(args.budget);
 
 		std::vector<bitsetType> unionMinimalSeparators(args.budget);
 		//Vector used to shuffle indices
@@ -379,4 +349,6 @@ namespace chordalGraph
 			if (cliqueTrees.size() == 0) return;
 		}
 	}
+	template void horvitzThompsonReduceChains<chordalGraph::cliqueTree>(horvitzThompsonArgs& args);
+	template void horvitzThompsonReduceChains<chordalGraph::cliqueTreeAdjacencyMatrix>(horvitzThompsonArgs& args);
 }

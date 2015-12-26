@@ -3,12 +3,9 @@
 #include "sampford.h"
 #include "semiDeterministicSampling.h"
 #include "conditionalPoisson.h"
+#include "samplingType.h"
 namespace chordalGraph
 {
-	enum samplingType
-	{
-		sampfordSamplingMultinomial, conditionalPoissonSampling, paretoSampling, semiDeterministicSampling, sampfordSamplingConditionalPoisson, sampfordSamplingFromParetoNaive
-	};
 	struct performSamplingArgs
 	{
 		performSamplingArgs()

@@ -1,4 +1,6 @@
-#include "horvitzThompsonReduceChains.h"
+#include "horvitzThompson.h"
+#include "cliqueTree.h"
+#include "cliqueTreeAdjacencyMatrix.h"
 #include <Rcpp.h>
 SEXP horvitzThompson(SEXP nVertices_sexp, SEXP budget_sexp, SEXP seed_sexp, SEXP sampling_sexp, SEXP options_sexp)
 {
@@ -38,11 +40,11 @@ BEGIN_RCPP
 		args.nEdges = nEdges;
 		if(reduceChains)
 		{
-			chordalGraph::horvitzThompsonReduceChains(args);
+			chordalGraph::horvitzThompsonReduceChains<chordalGraph::cliqueTree>(args);
 		}
 		else
 		{
-			chordalGraph::horvitzThompson(args);
+			chordalGraph::horvitzThompson<chordalGraph::cliqueTree>(args);
 		}
 		estimatesAsStrings.push_back(args.estimate.str());
 		exactVector.push_back(args.exact);
@@ -86,11 +88,11 @@ BEGIN_RCPP
 
 	if(reduceChains)
 	{
-		chordalGraph::horvitzThompsonReduceChains(args);
+		chordalGraph::horvitzThompsonReduceChains<chordalGraph::cliqueTree>(args);
 	}
 	else
 	{
-		chordalGraph::horvitzThompson(args);
+		chordalGraph::horvitzThompson<chordalGraph::cliqueTree>(args);
 	}
 
 	std::string estimateAsString = args.estimate.str();

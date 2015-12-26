@@ -1,5 +1,5 @@
-#ifndef CLIQUE_TREE_HEADER_GUARD
-#define CLIQUE_TREE_HEADER_GUARD
+#ifndef CLIQUE_TREE_ADJACENCY_MATRIX_HEADER_GUARD
+#define CLIQUE_TREE_ADJACENCY_MATRIX_HEADER_GUARD
 #include <bitset>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/adjacency_matrix.hpp>
@@ -9,121 +9,7 @@
 #include "nauty.h"
 #endif
 #include <boost/multiprecision/mpfr.hpp>
-typedef boost::multiprecision::mpz_int mpz_class;
-namespace chordalGraph
-{
-	typedef std::bitset<MAX_STORAGE_VERTICES> bitsetType;
-	class cliqueVertex
-	{
-	public:
-		cliqueVertex(bitsetType& inputContents)
-			:contents(inputContents)
-		{}
-		static cliqueVertex createEmpty()
-		{
-			return cliqueVertex();
-		}
-		cliqueVertex()
-			:contents(0)
-		{}
-		bitsetType contents;
-	};
-	class cliqueEdge
-	{
-	public:
-		cliqueEdge(bitsetType contents)
-			:contents(contents)
-		{}
-		cliqueEdge()
-			:contents(0)
-		{}
-		cliqueEdge& operator=(const cliqueEdge& other)
-		{
-			contents = other.contents;
-			return *this;
-		}
-		bitsetType contents;
-	};
-}
-namespace chordalGraph
-{
-	template <class VertexProperty = boost::no_property, class EdgeProperty = boost::no_property, class EdgeListS = boost::listS>
-	class moveable_adjacency_list : public boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, VertexProperty, EdgeProperty, boost::no_property, EdgeListS>
-	{
-	public:
-		typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, VertexProperty, EdgeProperty, boost::no_property, EdgeListS> base;
-		typedef typename boost::detail::adj_list_gen<base, boost::vecS, boost::vecS, boost::undirectedS, VertexProperty, EdgeProperty, boost::no_property, EdgeListS>::type detailType;
-		typedef moveable_adjacency_list<VertexProperty, EdgeProperty, EdgeListS> type;
-		moveable_adjacency_list()
-		{}
-		moveable_adjacency_list(typename type::base::vertices_size_type num_vertices)
-			:base(num_vertices)
-		{}
-		moveable_adjacency_list(const type& other)
-			:base(other)
-		{
-		}
-		moveable_adjacency_list(type&& other)
-		{
-			detailType::m_vertices.swap(other.detailType::m_vertices);
-			detailType::m_edges.swap(other.detailType::m_edges);
-		}
-		type& operator=(type&& other)
-		{
-			this->detailType::m_vertices.swap(other.detailType::m_vertices);
-			this->detailType::m_edges.swap(other.detailType::m_edges);
-			return *this;
-		}
-	};
-	template <typename VertexProperty = boost::no_property, typename EdgeProperty = boost::no_property, typename Allocator = std::allocator<bool> >
-	class moveable_adjacency_matrix : public boost::adjacency_matrix<boost::undirectedS, VertexProperty, EdgeProperty, boost::no_property, Allocator>
-	{
-	public:
-		typedef boost::adjacency_matrix<boost::undirectedS, VertexProperty, EdgeProperty, boost::no_property, Allocator> base;
-		typedef moveable_adjacency_matrix<VertexProperty, EdgeProperty, Allocator> type;
-		moveable_adjacency_matrix()
-			:base(0), num_vertices(0)
-		{}
-		moveable_adjacency_matrix(typename type::base::vertices_size_type maxVertices)
-			:base(maxVertices), num_vertices(0)
-		{}
-		moveable_adjacency_matrix(const type& other)
-			:base(other), num_vertices(other.num_vertices)
-		{}
-		moveable_adjacency_matrix(type&& other)
-			: base(0)
-		{
-			type::base::m_matrix.swap(other.m_matrix);
-			type::base::m_vertex_set = other.m_vertex_set;
-			type::base::m_vertex_properties.swap(other.m_vertex_properties);
-			type::base::m_num_edges = other.m_num_edges;
-			num_vertices = other.num_vertices;
-		}
-		type& operator=(type&& other)
-		{
-			type::base::m_matrix.swap(other.m_matrix);
-			type::base::m_vertex_set = other.m_vertex_set;
-			type::base::m_vertex_properties.swap(other.m_vertex_properties);
-			type::base::m_num_edges = other.m_num_edges;
-			num_vertices = other.num_vertices;
-			return *this;
-		}
-		int num_vertices;
-	};
-}
-namespace boost
-{
-	template <typename VertexProperty, typename EdgeProperty, typename EdgeListS> typename ::chordalGraph::moveable_adjacency_matrix<VertexProperty, EdgeProperty, EdgeListS>::vertices_size_type num_vertices(const ::chordalGraph::moveable_adjacency_matrix<VertexProperty, EdgeProperty, EdgeListS>& g_)
-	{
-		return g_.num_vertices;
-	}
-	template <typename VertexProperty, typename EdgeProperty, typename EdgeListS> typename ::chordalGraph::moveable_adjacency_matrix<VertexProperty, EdgeProperty, EdgeListS>::vertex_descriptor add_vertex(::chordalGraph::moveable_adjacency_matrix<VertexProperty, EdgeProperty, EdgeListS>& g_)
-	{
-		typename ::chordalGraph::moveable_adjacency_matrix<VertexProperty, EdgeProperty, EdgeListS>::vertex_descriptor ret = g_.num_vertices;
-		g_.num_vertices++;
-		return ret;
-	}
-}
+#include "cliqueTree.h"
 namespace chordalGraph
 {
 	class cliqueTreeAdjacencyMatrix

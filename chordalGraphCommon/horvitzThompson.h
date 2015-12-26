@@ -5,7 +5,6 @@
 #include <boost/multiprecision/gmp.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #include "numericType.h"
-#include "cliqueTree.h"
 #include "performSampling.h"
 namespace chordalGraph
 {
@@ -26,7 +25,7 @@ namespace chordalGraph
 	};
 	namespace horvitzThompsonPrivate
 	{
-		struct weightedCliqueTree
+		template<typename cliqueTree> struct weightedCliqueTree
 		{
 		public:
 			weightedCliqueTree(weightedCliqueTree&& other)
@@ -48,8 +47,7 @@ namespace chordalGraph
 		};
 	}
 
-	samplingType toSamplingType(std::string samplingString);
-	void horvitzThompsonReduceChains(horvitzThompsonArgs& args);
-	void horvitzThompson(horvitzThompsonArgs& args);
+	template<typename cliqueTree> void horvitzThompsonReduceChains(horvitzThompsonArgs& args);
+	template<typename cliqueTree> void horvitzThompson(horvitzThompsonArgs& args);
 }
 #endif
