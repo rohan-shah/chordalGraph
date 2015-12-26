@@ -126,14 +126,16 @@ namespace boost
 }
 namespace chordalGraph
 {
-	class cliqueTree
+	class cliqueTreeAdjacencyMatrix
 	{
 	public:
-		typedef moveable_adjacency_list<boost::property<boost::vertex_name_t, cliqueVertex>, boost::property<boost::edge_name_t, cliqueEdge> > cliqueTreeGraphType;
+		typedef moveable_adjacency_matrix<boost::property<boost::vertex_name_t, cliqueVertex>, boost::property<boost::edge_name_t, cliqueEdge> > cliqueTreeGraphType;
+#ifdef TRACK_GRAPH
 #ifdef USE_ADJACENCY_MATRIX_FOR_GRAPH
 		typedef moveable_adjacency_matrix<> graphType;
 #else
 		typedef moveable_adjacency_list<> graphType;
+#endif
 #endif
 		struct unionMinimalSeparatorsTemporaries
 		{
@@ -151,22 +153,22 @@ namespace chordalGraph
 			bitsetType contents;
 		};
 	public:
-		cliqueTree(cliqueTree&& other)
+		cliqueTreeAdjacencyMatrix(cliqueTreeAdjacencyMatrix&& other)
 			:cliqueGraph(std::move(other.cliqueGraph)), 
 #ifdef TRACK_GRAPH
 			graph(std::move(other.graph)), 
 #endif
-			nVertices(other.nVertices),
-			verticesToCliqueVertices(std::move(other.verticesToCliqueVertices)), componentIDs(std::move(other.componentIDs))
+			nVertices(other.nVertices), nMaxVertices(other.nMaxVertices),
+			verticesToCliqueVertices(std::move(other.verticesToCliqueVertices)), componentIDs(std::move(other.componentIDs)), remainingCliqueTreeVertices(std::move(other.remainingCliqueTreeVertices))
 		{}
-		cliqueTree(int maximumVertices);
-		cliqueTree(const cliqueTree& other)
+		cliqueTreeAdjacencyMatrix(int maximumVertices);
+		cliqueTreeAdjacencyMatrix(const cliqueTreeAdjacencyMatrix& other)
 			:cliqueGraph(other.cliqueGraph), 
 #ifdef TRACK_GRAPH
 			graph(other.graph), 
 #endif
-			nVertices(other.nVertices),
-			verticesToCliqueVertices(other.verticesToCliqueVertices), componentIDs(other.componentIDs)
+			nVertices(other.nVertices), nMaxVertices(other.nMaxVertices),
+			verticesToCliqueVertices(other.verticesToCliqueVertices), componentIDs(other.componentIDs), remainingCliqueTreeVertices(other.remainingCliqueTreeVertices)
 		{}
 		const cliqueTreeGraphType& getCliqueGraph() const;
 #ifdef TRACK_GRAPH
@@ -184,18 +186,22 @@ namespace chordalGraph
 		static void userlevelproc(int* lab, int* ptn, int level, int* orbits, statsblk* stats, int tv, int index, int tcellsize, int numcells, int childcount, int n);
 #endif
 		int getNVertices() const;
+		int maxVertices() const;
 	private:
 		cliqueTreeGraphType cliqueGraph;
 #ifdef TRACK_GRAPH
 		graphType graph;
 #endif
 		int nVertices;
+		int nMaxVertices;
 		//A vector that converts any vertex of the graph to a vertex of the clique tree
 		//which contains that vertex in the relevant subset. 
 		std::vector<int> verticesToCliqueVertices;
 
 		//Store a list of the connected components
 		std::vector<int> componentIDs;
+		//clique tree vertices that can still be used
+		std::vector<int> remainingCliqueTreeVertices;
 	};
 }
 #endif

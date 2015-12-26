@@ -38,7 +38,6 @@ namespace chordalGraph
 		{
 			weightedCliqueTree initialTree(args.nVertices);
 			initialTree.tree.addVertex();
-			initialTree.tree.addVertex();
 			cliqueTrees.push_back(initialTree);
 			nEdges[0] = 0;
 		}
