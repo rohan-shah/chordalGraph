@@ -8,9 +8,9 @@
 #include "cliqueTree.h"
 namespace chordalGraph
 {
-	namespace stochasticEnumeration
+	namespace stochasticEnumerationNautyPrivate
 	{
-		struct weightedCliqueTree
+		template<typename cliqueTree> struct weightedCliqueTree
 		{
 		public:
 			weightedCliqueTree(weightedCliqueTree&& other)
@@ -44,7 +44,7 @@ namespace chordalGraph
 		bool exact;
 		int minimumSizeForExact;
 	};
-	void stochasticEnumerationNauty(stochasticEnumerationNautyArgs& args);
-	void stochasticEnumerationNautyReduceChains(stochasticEnumerationNautyArgs& args);
+	template<typename cliqueTree> void stochasticEnumerationNauty(stochasticEnumerationNautyArgs& args);
+	template<typename cliqueTree> void stochasticEnumerationNautyReduceChains(stochasticEnumerationNautyArgs& args);
 }
 #endif

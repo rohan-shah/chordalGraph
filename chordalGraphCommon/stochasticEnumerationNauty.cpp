@@ -3,10 +3,11 @@
 #include <boost/random/random_number_generator.hpp>
 #include <boost/math/special_functions.hpp>
 #include "nauty.h"
+#include "cliqueTree.h"
+#include "cliqueTreeAdjacencyMatrix.h"
 namespace chordalGraph
 {
-	using stochasticEnumeration::weightedCliqueTree;
-	void stochasticEnumerationNauty(stochasticEnumerationNautyArgs& args)
+	template<typename cliqueTree> void stochasticEnumerationNauty(stochasticEnumerationNautyArgs& args)
 	{
 		args.exact = true;
 		args.minimumSizeForExact = -1;
@@ -14,12 +15,12 @@ namespace chordalGraph
 		mpfr_class multiple = 1;
 
 		//Temporary data that's used in cliqueTree calls
-		cliqueTree::unionMinimalSeparatorsTemporaries temp;
+		typename cliqueTree::unionMinimalSeparatorsTemporaries temp;
 
 		boost::random_number_generator<boost::mt19937> generator(args.randomSource);
 		//Number of edges either present (or to be added later)
 		std::vector<int> nEdges(args.budget);
-		std::vector<weightedCliqueTree> cliqueTrees;
+		std::vector<stochasticEnumerationNautyPrivate::weightedCliqueTree<cliqueTree> > cliqueTrees;
 		cliqueTrees.reserve(args.budget);
 
 		//At any point we will have a bunch of conditions on what other edges are required to be present (in order to maintain chordality)
@@ -34,7 +35,7 @@ namespace chordalGraph
 		int currentEdge = 0;
 		//We start off with one sample
 		{
-			weightedCliqueTree initialTree(args.nVertices);
+			stochasticEnumerationNautyPrivate::weightedCliqueTree<cliqueTree> initialTree(args.nVertices);
 			initialTree.tree.addVertex();
 			cliqueTrees.push_back(initialTree);
 			nEdges[0] = 0;
@@ -56,14 +57,14 @@ namespace chordalGraph
 		std::vector<int> copyCounts(args.budget);
 
 
-		std::vector<weightedCliqueTree> newCliqueTrees;
+		std::vector<stochasticEnumerationNautyPrivate::weightedCliqueTree<cliqueTree> > newCliqueTrees;
 		newCliqueTrees.reserve(args.budget);
 		std::vector<int> newNEdges(args.budget);
 
-		std::vector<std::list<cliqueTree::cliqueTreeGraphType::vertex_descriptor> > vertexSequence(args.budget);
-		std::vector<std::list<cliqueTree::externalEdge> > edgeSequence(args.budget);
-		std::vector<std::vector<cliqueTree::externalEdge> > removeEdges(args.budget);
-		std::vector<std::vector<cliqueTree::externalEdge> > addEdges(args.budget);
+		std::vector<std::list<typename cliqueTree::cliqueTreeGraphType::vertex_descriptor> > vertexSequence(args.budget);
+		std::vector<std::list<typename cliqueTree::externalEdge> > edgeSequence(args.budget);
+		std::vector<std::vector<typename cliqueTree::externalEdge> > removeEdges(args.budget);
+		std::vector<std::vector<typename cliqueTree::externalEdge> > addEdges(args.budget);
 
 		std::vector<bitsetType> unionMinimalSeparators(args.budget);
 		//Vector used to shuffle indices
@@ -116,7 +117,7 @@ namespace chordalGraph
 			//There are no conditions when we move to the next vertex
 			std::fill(conditions.begin(), conditions.end(), 0);
 			//Add the extra vertex
-			std::for_each(cliqueTrees.begin(), cliqueTrees.end(), std::mem_fun_ref(&weightedCliqueTree::addVertex));
+			std::for_each(cliqueTrees.begin(), cliqueTrees.end(), std::mem_fun_ref(&stochasticEnumerationNautyPrivate::weightedCliqueTree<cliqueTree>::addVertex));
 
 			while(currentEdge < currentVertex)
 			{
@@ -126,10 +127,10 @@ namespace chordalGraph
 				int knownToBeChordalWeight = 0;
 				int nRemainingEdges = currentVertex - currentEdge + ((args.nVertices - currentVertex - 1)* (args.nVertices - 2 - currentVertex) / 2) + (args.nVertices - currentVertex - 1) * (currentVertex + 1);
 				//Clear data structures;
-				std::for_each(vertexSequence.begin(), vertexSequence.end(), std::mem_fun_ref(&std::list<cliqueTree::cliqueTreeGraphType::vertex_descriptor>::clear));
-				std::for_each(edgeSequence.begin(), edgeSequence.end(), std::mem_fun_ref(&std::list<cliqueTree::externalEdge>::clear));
-				std::for_each(removeEdges.begin(), removeEdges.end(), std::mem_fun_ref(&std::vector<cliqueTree::externalEdge>::clear));
-				std::for_each(addEdges.begin(), addEdges.end(), std::mem_fun_ref(&std::vector<cliqueTree::externalEdge>::clear));
+				std::for_each(vertexSequence.begin(), vertexSequence.end(), std::mem_fun_ref(&std::list<typename cliqueTree::cliqueTreeGraphType::vertex_descriptor>::clear));
+				std::for_each(edgeSequence.begin(), edgeSequence.end(), std::mem_fun_ref(&std::list<typename cliqueTree::externalEdge>::clear));
+				std::for_each(removeEdges.begin(), removeEdges.end(), std::mem_fun_ref(&std::vector<typename cliqueTree::externalEdge>::clear));
+				std::for_each(addEdges.begin(), addEdges.end(), std::mem_fun_ref(&std::vector<typename cliqueTree::externalEdge>::clear));
 				std::fill(unionMinimalSeparators.begin(), unionMinimalSeparators.end(), 0);
 				for (int sampleCounter = 0; sampleCounter < (int)cliqueTrees.size(); sampleCounter++)
 				{
@@ -289,4 +290,6 @@ namespace chordalGraph
 			}
 		}
 	}
+	template void stochasticEnumerationNauty<cliqueTree>(stochasticEnumerationNautyArgs& args);
+	template void stochasticEnumerationNauty<cliqueTreeAdjacencyMatrix>(stochasticEnumerationNautyArgs& args);
 }

@@ -39,11 +39,11 @@ BEGIN_RCPP
 		args.nEdges = nEdges;
 		if(reduceChains)
 		{
-			chordalGraph::stochasticEnumerationNautyReduceChains(args);
+			chordalGraph::stochasticEnumerationNautyReduceChains<chordalGraph::cliqueTree>(args);
 		}
 		else 
 		{
-			chordalGraph::stochasticEnumerationNauty(args);
+			chordalGraph::stochasticEnumerationNauty<chordalGraph::cliqueTree>(args);
 		}
 		estimatesAsStrings.push_back(args.estimate.str());
 		exactVector.push_back(args.exact);
@@ -83,11 +83,11 @@ BEGIN_RCPP
 
 	if(reduceChains)
 	{
-		chordalGraph::stochasticEnumerationNautyReduceChains(args);
+		chordalGraph::stochasticEnumerationNautyReduceChains<chordalGraph::cliqueTree>(args);
 	}
 	else
 	{
-		chordalGraph::stochasticEnumerationNauty(args);
+		chordalGraph::stochasticEnumerationNauty<chordalGraph::cliqueTree>(args);
 	}
 
 	std::string estimateAsString = args.estimate.str();
