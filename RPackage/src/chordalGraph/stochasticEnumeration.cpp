@@ -1,4 +1,5 @@
 #include "stochasticEnumeration.h"
+#include "cliqueTree.h"
 #include <Rcpp.h>
 void convert(Rcpp::List& samples, const std::vector<chordalGraph::stochasticEnumerationArgs::matrixType>& boostMatrices)
 {
@@ -64,11 +65,11 @@ BEGIN_RCPP
 		args.samples.clear();
 		if(reduceChains)
 		{
-			chordalGraph::stochasticEnumerationReduceChains(args);
+			chordalGraph::stochasticEnumerationReduceChains<chordalGraph::cliqueTree>(args);
 		}
 		else
 		{
-			chordalGraph::stochasticEnumeration(args);
+			chordalGraph::stochasticEnumeration<chordalGraph::cliqueTree>(args);
 		}
 		estimatesAsStrings.push_back(args.estimate.str());
 		exactVector.push_back(args.exact);
@@ -129,11 +130,11 @@ BEGIN_RCPP
 
 	if(reduceChains)
 	{
-		chordalGraph::stochasticEnumeration(args);
+		chordalGraph::stochasticEnumeration<chordalGraph::cliqueTree>(args);
 	}
 	else
 	{
-		chordalGraph::stochasticEnumerationReduceChains(args);
+		chordalGraph::stochasticEnumerationReduceChains<chordalGraph::cliqueTree>(args);
 	}
 
 	std::string estimateAsString = args.estimate.str();
