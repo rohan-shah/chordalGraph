@@ -2,6 +2,7 @@
 #include "cliqueTree.h"
 #include "cliqueTreeAdjacencyMatrix.h"
 #include <Rcpp.h>
+#include "graphRepresentation.h"
 SEXP horvitzThompson(SEXP nVertices_sexp, SEXP budget_sexp, SEXP seed_sexp, SEXP sampling_sexp, SEXP options_sexp)
 {
 BEGIN_RCPP
@@ -12,7 +13,11 @@ BEGIN_RCPP
 	chordalGraph::samplingType sampling = chordalGraph::toSamplingType(samplingString);
 	Rcpp::List options = options_sexp;
 	if(!options.containsElementNamed("reduceChains")) throw std::runtime_error("Unable to find option named reduceChains");
+	if(!options.containsElementNamed("graphRepresentation")) throw std::runtime_error("Unable to find option named graphRepresentation");
 	bool reduceChains = Rcpp::as<bool>(options("reduceChains"));
+	std::string graphRepresentationString = Rcpp::as<std::string>(options("graphRepresentation"));
+	graphRepresentation representation = toRepresentation(graphRepresentationString);
+
 
 	boost::mt19937 randomSource;
 	randomSource.seed(seed);
@@ -40,11 +45,25 @@ BEGIN_RCPP
 		args.nEdges = nEdges;
 		if(reduceChains)
 		{
-			chordalGraph::horvitzThompsonReduceChains<chordalGraph::cliqueTree>(args);
+			if(representation == listRepresentation)
+			{
+				chordalGraph::horvitzThompsonReduceChains<chordalGraph::cliqueTree>(args);
+			}
+			else
+			{
+				chordalGraph::horvitzThompsonReduceChains<chordalGraph::cliqueTreeAdjacencyMatrix>(args);
+			}
 		}
 		else
 		{
-			chordalGraph::horvitzThompson<chordalGraph::cliqueTree>(args);
+			if(representation == listRepresentation)
+			{
+				chordalGraph::horvitzThompson<chordalGraph::cliqueTree>(args);
+			}
+			else
+			{
+				chordalGraph::horvitzThompson<chordalGraph::cliqueTreeAdjacencyMatrix>(args);
+			}
 		}
 		estimatesAsStrings.push_back(args.estimate.str());
 		exactVector.push_back(args.exact);
@@ -76,7 +95,10 @@ BEGIN_RCPP
 	chordalGraph::samplingType sampling = chordalGraph::toSamplingType(samplingString);
 	Rcpp::List options = options_sexp;
 	if(!options.containsElementNamed("reduceChains")) throw std::runtime_error("Unable to find option named reduceChains");
+	if(!options.containsElementNamed("graphRepresentation")) throw std::runtime_error("Unable to find option named graphRepresentation");
 	bool reduceChains = Rcpp::as<bool>(options("reduceChains"));
+	std::string graphRepresentationString = Rcpp::as<std::string>(options("graphRepresentation"));
+	graphRepresentation representation = toRepresentation(graphRepresentationString);
 
 	boost::mt19937 randomSource;
 	randomSource.seed(seed);
@@ -88,11 +110,25 @@ BEGIN_RCPP
 
 	if(reduceChains)
 	{
-		chordalGraph::horvitzThompsonReduceChains<chordalGraph::cliqueTree>(args);
+		if(representation == listRepresentation)
+		{	
+			chordalGraph::horvitzThompsonReduceChains<chordalGraph::cliqueTree>(args);
+		}
+		else
+		{
+			chordalGraph::horvitzThompsonReduceChains<chordalGraph::cliqueTreeAdjacencyMatrix>(args);
+		}
 	}
 	else
 	{
-		chordalGraph::horvitzThompson<chordalGraph::cliqueTree>(args);
+		if(representation == listRepresentation)
+		{
+			chordalGraph::horvitzThompson<chordalGraph::cliqueTree>(args);
+		}
+		else
+		{
+			chordalGraph::horvitzThompson<chordalGraph::cliqueTreeAdjacencyMatrix>(args);
+		}
 	}
 
 	std::string estimateAsString = args.estimate.str();

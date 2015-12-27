@@ -1,6 +1,8 @@
 #include "stochasticEnumerationNauty.h"
 #include <Rcpp.h>
-
+#include "graphRepresentation.h"
+#include "cliqueTree.h"
+#include "cliqueTreeAdjacencyMatrix.h"
 SEXP stochasticEnumerationNauty(SEXP nVertices_sexp, SEXP budget_sexp, SEXP seed_sexp, SEXP options_sexp)
 {
 BEGIN_RCPP
@@ -8,11 +10,11 @@ BEGIN_RCPP
 	int nVertices = Rcpp::as<int>(nVertices_sexp);
 	int budget = Rcpp::as<int>(budget_sexp);
 	Rcpp::List options = options_sexp;
-	bool reduceChains = false;
-	if(options.containsElementNamed("reduceChains"))
-	{
-		reduceChains = Rcpp::as<bool>(options("reduceChains"));
-	}
+	if(!options.containsElementNamed("reduceChains")) throw std::runtime_error("Unable to find option named reduceChains");
+	if(!options.containsElementNamed("graphRepresentation")) throw std::runtime_error("Unable to find option named graphRepresentation");
+	bool reduceChains = Rcpp::as<bool>(options("reduceChains"));
+	std::string graphRepresentationString = Rcpp::as<std::string>(options("graphRepresentation"));
+	graphRepresentation representation = toRepresentation(graphRepresentationString);
 
 	boost::mt19937 randomSource;
 	randomSource.seed(seed);
@@ -39,11 +41,25 @@ BEGIN_RCPP
 		args.nEdges = nEdges;
 		if(reduceChains)
 		{
-			chordalGraph::stochasticEnumerationNautyReduceChains<chordalGraph::cliqueTree>(args);
+			if(representation == listRepresentation)
+			{
+				chordalGraph::stochasticEnumerationNautyReduceChains<chordalGraph::cliqueTree>(args);
+			}
+			else
+			{
+				chordalGraph::stochasticEnumerationNautyReduceChains<chordalGraph::cliqueTreeAdjacencyMatrix>(args);
+			}
 		}
 		else 
 		{
-			chordalGraph::stochasticEnumerationNauty<chordalGraph::cliqueTree>(args);
+			if(representation == listRepresentation)
+			{
+				chordalGraph::stochasticEnumerationNauty<chordalGraph::cliqueTree>(args);
+			}
+			else
+			{
+				chordalGraph::stochasticEnumerationNauty<chordalGraph::cliqueTreeAdjacencyMatrix>(args);
+			}
 		}
 		estimatesAsStrings.push_back(args.estimate.str());
 		exactVector.push_back(args.exact);
@@ -67,12 +83,11 @@ BEGIN_RCPP
 	int nEdges = Rcpp::as<int>(nEdges_sexp);
 	int budget = Rcpp::as<int>(budget_sexp);
 	Rcpp::List options = options_sexp;
-	bool reduceChains = false;
-	if(options.containsElementNamed("reduceChains"))
-	{
-		reduceChains = Rcpp::as<bool>(options("reduceChains"));
-	}
-
+	if(!options.containsElementNamed("reduceChains")) throw std::runtime_error("Unable to find option named reduceChains");
+	if(!options.containsElementNamed("graphRepresentation")) throw std::runtime_error("Unable to find option named graphRepresentation");
+	bool reduceChains = Rcpp::as<bool>(options("reduceChains"));
+	std::string graphRepresentationString = Rcpp::as<std::string>(options("graphRepresentation"));
+	graphRepresentation representation = toRepresentation(graphRepresentationString);
 
 	boost::mt19937 randomSource;
 	randomSource.seed(seed);
@@ -83,11 +98,25 @@ BEGIN_RCPP
 
 	if(reduceChains)
 	{
-		chordalGraph::stochasticEnumerationNautyReduceChains<chordalGraph::cliqueTree>(args);
+		if(representation == listRepresentation)
+		{
+			chordalGraph::stochasticEnumerationNautyReduceChains<chordalGraph::cliqueTree>(args);
+		}
+		else
+		{
+			chordalGraph::stochasticEnumerationNautyReduceChains<chordalGraph::cliqueTreeAdjacencyMatrix>(args);
+		}
 	}
 	else
 	{
-		chordalGraph::stochasticEnumerationNauty<chordalGraph::cliqueTree>(args);
+		if(representation == listRepresentation)
+		{
+			chordalGraph::stochasticEnumerationNauty<chordalGraph::cliqueTree>(args);
+		}
+		else
+		{
+			chordalGraph::stochasticEnumerationNauty<chordalGraph::cliqueTreeAdjacencyMatrix>(args);
+		}
 	}
 
 	std::string estimateAsString = args.estimate.str();

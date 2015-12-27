@@ -1,5 +1,5 @@
 samplingMethods <- c("sampfordMultinomial", "sampfordConditionalPoisson", "conditionalPoisson", "sampfordFromParetoNaive", "semiDeterministic")
-horvitzThompson <- function(nVertices, budget, seed, sampling, nEdges, options = list(reduceChains = FALSE))
+horvitzThompson <- function(nVertices, budget, seed, sampling, nEdges, options = list(reduceChains = FALSE, graphRepresentation = "list"))
 {
 	if(missing(nVertices) || missing(budget) || missing(seed))
 	{
@@ -25,13 +25,17 @@ horvitzThompson <- function(nVertices, budget, seed, sampling, nEdges, options =
 	{
 		stop("Input sampling must be one of the values in chordalGraph:::samplingMethods")
 	}
-	if(any(!(names(options) %in% c("reduceChains"))))
+	if(any(!(names(options) %in% c("reduceChains", "graphRepresentation"))))
 	{
-		stop("The only valid option for horvitzThompson is \"reduceChains\"")
+		stop("The only valid options for horvitzThompson are \"reduceChains\" and \"graphRepresentation\"")
 	}
-	if(!("reduceChains" %in% names(options)))
+	if(any(!(c("reduceChains", "graphRepresentation") %in% names(options))))
 	{
-		stop("Option \"reduceChains\" is required")
+		stop("Options \"reduceChains\" and \"graphRepresentation\" are required")
+	}
+	if(!(options$graphRepresentation %in% c("list", "matrix")))
+	{
+		stop("options$graphRepresentation must be either \"list\" or \"matrix\"")
 	}
 	if(missing(nEdges))
 	{

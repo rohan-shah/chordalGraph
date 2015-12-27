@@ -1,4 +1,4 @@
-stochasticEnumerationNauty <- function(nVertices, budget, seed, nEdges, options = list())
+stochasticEnumerationNauty <- function(nVertices, budget, seed, nEdges, options = list(reduceChains = FALSE, graphRepresentation = "list"))
 {
 	if(missing(nVertices) || missing(budget) || missing(seed))
 	{
@@ -24,9 +24,17 @@ stochasticEnumerationNauty <- function(nVertices, budget, seed, nEdges, options 
 	{
 		stop("Input options must be a list")
 	}
-	if(any(!(names(options) %in% c("reduceChains"))))
+	if(any(!(names(options) %in% c("reduceChains", "graphRepresentation"))))
 	{
-		stop("Input options contained invalid entries")
+		stop("The only valid options for stochasticEnumerationNauty are \"reduceChains\" and \"graphRepresentation\"")
+	}
+	if(any(!(c("reduceChains", "graphRepresentation") %in% names(options))))
+	{
+		stop("Options \"reduceChains\" and \"graphRepresentation\" are required")
+	}
+	if(!(options$graphRepresentation %in% c("list", "matrix")))
+	{
+		stop("options$graphRepresentation must be either \"list\" or \"matrix\"")
 	}
 	if(missing(nEdges))
 	{
