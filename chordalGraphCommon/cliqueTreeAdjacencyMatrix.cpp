@@ -145,9 +145,7 @@ namespace chordalGraph
 				extraEdgesCliqueVertex.contents[v] = true;
 
 				//Add an extra edge having vertex v
-				cliqueEdge newEdge;
-				newEdge.contents[v] = true;
-				boost::add_edge(verticesToCliqueVertices[vertexForExtraEdges], verticesToCliqueVertices[v], newEdge, cliqueGraph);
+				boost::add_edge(verticesToCliqueVertices[vertexForExtraEdges], verticesToCliqueVertices[v], cliqueGraph);
 
 				//Update componentIDs. If we do it this way around it's one change
 				componentIDs[vertexForExtraEdges] = componentIDs[v];
@@ -161,9 +159,7 @@ namespace chordalGraph
 				vCliqueVertex.contents[vertexForExtraEdges] = true;
 
 				//Add an extra edge having vertex v
-				cliqueEdge newEdge;
-				newEdge.contents[vertexForExtraEdges] = true;
-				boost::add_edge(verticesToCliqueVertices[vertexForExtraEdges], verticesToCliqueVertices[v], newEdge, cliqueGraph);
+				boost::add_edge(verticesToCliqueVertices[vertexForExtraEdges], verticesToCliqueVertices[v], cliqueGraph);
 
 				//Update componentIDs. If we do it this way around it's one change
 				componentIDs[v] = componentIDs[vertexForExtraEdges];
@@ -182,11 +178,8 @@ namespace chordalGraph
 				newVertex.contents[v] = newVertex.contents[vertexForExtraEdges] = true;
 
 				//Add extra edges
-				cliqueEdge newEdge1, newEdge2;
-				newEdge1.contents[v] = true;
-				newEdge2.contents[vertexForExtraEdges] = true;
-				boost::add_edge(verticesToCliqueVertices[v], newVertexId, newEdge1, cliqueGraph);
-				boost::add_edge(verticesToCliqueVertices[vertexForExtraEdges], newVertexId, newEdge2, cliqueGraph);
+				boost::add_edge(verticesToCliqueVertices[v], newVertexId, cliqueGraph);
+				boost::add_edge(verticesToCliqueVertices[vertexForExtraEdges], newVertexId, cliqueGraph);
 
 				//Update componentIDs. Slightly more complicated this time. Note that std::replace takes inputs by reference.
 				int oldValue = componentIDs[v], newValue = componentIDs[vertexForExtraEdges];
@@ -201,7 +194,7 @@ namespace chordalGraph
 			//Add every edge that is marked to be added.
 			for (std::vector<externalEdge>::iterator i = addEdges.begin(); i != addEdges.end(); i++)
 			{
-				boost::add_edge(i->source, i->target, cliqueEdge(i->contents), cliqueGraph);
+				boost::add_edge(i->source, i->target, cliqueGraph);
 			}
 			//Remove every edge that has been marked for removal.
 			for (std::vector<externalEdge>::iterator i = removeEdges.begin(); i != removeEdges.end(); i++)
@@ -215,8 +208,6 @@ namespace chordalGraph
 			{
 				cliqueTreeGraphType::edge_descriptor currentEdge = boost::edge(i->source, i->target, cliqueGraph).first;
 				edgeSequenceInternalEdges.push_back(currentEdge);
-				//After we've called addTo, we know we can treat it as a regular graph edge
-				boost::get(boost::edge_name, cliqueGraph, currentEdge).contents[vertexForExtraEdges] = true;
 			}
 			for (std::list<cliqueTreeGraphType::vertex_descriptor>::iterator i = vertexSequence.begin(); i != vertexSequence.end(); i++)
 			{
@@ -256,19 +247,14 @@ namespace chordalGraph
 						bitsetType currentCliqueVertexContents = currentCliqueVertex.contents;
 
 						//Set up new edges between previous / next and new vertex
-						cliqueEdge newCliqueEdgePrevious, newCliqueEdgeNext;
-						newCliqueEdgePrevious.contents = newCliqueVertex.contents & previousCliqueVertexContents;
-						newCliqueEdgeNext.contents = newCliqueVertex.contents & nextCliqueVertexContents;
-						cliqueTreeGraphType::edge_descriptor newCliqueEdgePreviousDescriptor = boost::add_edge(newCliqueVertexId, *previous, newCliqueEdgePrevious, cliqueGraph).first;
-						cliqueTreeGraphType::edge_descriptor newCliqueEdgeNextDescriptor = boost::add_edge(newCliqueVertexId, *next, newCliqueEdgeNext, cliqueGraph).first;
+						cliqueTreeGraphType::edge_descriptor newCliqueEdgePreviousDescriptor = boost::add_edge(newCliqueVertexId, *previous, cliqueGraph).first;
+						cliqueTreeGraphType::edge_descriptor newCliqueEdgeNextDescriptor = boost::add_edge(newCliqueVertexId, *next, cliqueGraph).first;
 						//delete old edges
 						boost::remove_edge(*current, *previous, cliqueGraph);
 						boost::remove_edge(*current, *next, cliqueGraph);
 
 						//Add edge between new path vertex and old path vertex
-						cliqueEdge oldAndNewEdge;
-						oldAndNewEdge.contents = newCliqueVertex.contents & currentCliqueVertexContents;
-						boost::add_edge(newCliqueVertexId, *current, oldAndNewEdge, cliqueGraph);
+						boost::add_edge(newCliqueVertexId, *current, cliqueGraph);
 
 						//Update path
 						*current = newCliqueVertexId;
@@ -305,11 +291,8 @@ namespace chordalGraph
 					bitsetType secondVertexContents = secondVertex.contents;
 
 					//New edges
-					cliqueEdge newEdge;
-					newEdge.contents = firstVertexContents & newVertex.contents;
-					boost::add_edge(firstVertexId, newCliqueVertexId, newEdge, cliqueGraph);
-					newEdge.contents = secondVertexContents & newVertex.contents;
-					cliqueTreeGraphType::edge_descriptor newEdgeDescriptor = boost::add_edge(secondVertexId, newCliqueVertexId, newEdge, cliqueGraph).first;
+					boost::add_edge(firstVertexId, newCliqueVertexId, cliqueGraph);
+					cliqueTreeGraphType::edge_descriptor newEdgeDescriptor = boost::add_edge(secondVertexId, newCliqueVertexId, cliqueGraph).first;
 					
 					//Update path
 					*edgeSequenceInternalEdges.begin() = newEdgeDescriptor;
@@ -337,11 +320,8 @@ namespace chordalGraph
 					bitsetType secondLastVertexContents = secondLastVertex.contents;
 
 					//New edges
-					cliqueEdge newEdge;
-					newEdge.contents = lastVertexContents & newVertex.contents;
-					boost::add_edge(lastVertexId, newCliqueVertexId, newEdge, cliqueGraph);
-					newEdge.contents = secondLastVertexContents & newVertex.contents;
-					cliqueTreeGraphType::edge_descriptor newEdgeDescriptor = boost::add_edge(secondLastVertexId, newCliqueVertexId, newEdge, cliqueGraph).first;
+					boost::add_edge(lastVertexId, newCliqueVertexId, cliqueGraph);
+					cliqueTreeGraphType::edge_descriptor newEdgeDescriptor = boost::add_edge(secondLastVertexId, newCliqueVertexId, cliqueGraph).first;
 
 					//Update path
 					*edgeSequenceInternalEdges.begin() = newEdgeDescriptor;
@@ -385,9 +365,7 @@ namespace chordalGraph
 					{
 						if ((int)currentEdgeIterator->m_target != biggerVertexIndex)
 						{
-							cliqueEdge newEdge;
-							newEdge.contents = boost::get(boost::vertex_name, cliqueGraph, currentEdgeIterator->m_target).contents & boost::get(boost::vertex_name, cliqueGraph, biggerVertexIndex).contents;
-							boost::add_edge(currentEdgeIterator->m_target, biggerVertexIndex, newEdge, cliqueGraph);
+							boost::add_edge(currentEdgeIterator->m_target, biggerVertexIndex, cliqueGraph);
 						}
 						currentEdgeIterator++;
 					}
@@ -421,13 +399,6 @@ namespace chordalGraph
 #ifdef TRACK_GRAPH
 		boost::add_edge(vertexForExtraEdges, v, graph);
 #endif
-		for(std::vector<int>::iterator i = verticesToCliqueVertices.begin(); i != verticesToCliqueVertices.end(); i++)
-		{
-			if(std::find(remainingCliqueTreeVertices.begin(), remainingCliqueTreeVertices.end(), *i) != remainingCliqueTreeVertices.end())
-			{
-				throw std::runtime_error("");
-			}
-		}
 	}
 	int cliqueTreeAdjacencyMatrix::maxVertices() const
 	{
@@ -480,7 +451,7 @@ namespace chordalGraph
 			while (true)
 			{
 				cliqueTreeGraphType::edge_descriptor internalEdge = temp.predecessorEdges[currentVertex];
-				externalEdge internalToExternal((int)boost::source(internalEdge, cliqueGraph), (int)boost::target(internalEdge, cliqueGraph), boost::get(boost::edge_name, cliqueGraph, internalEdge).contents);
+				externalEdge internalToExternal((int)boost::source(internalEdge, cliqueGraph), (int)boost::target(internalEdge, cliqueGraph));
 				edgeSequence.push_back(internalToExternal);
 				vertexSequence.push_back(temp.predecessorVertices[currentVertex]);
 				if (temp.predecessorVertices[currentVertex] == uVertex)
@@ -530,8 +501,8 @@ namespace chordalGraph
 				for (; std::next(edgeSequenceIterator) != edgeSequence.end(); edgeSequenceIterator++,vertexSequenceIterator++)
 				{
 					externalEdge currentEdge = *edgeSequenceIterator, nextEdge = *std::next(edgeSequenceIterator);
-					bitsetType currentEdgeSet = currentEdge.contents;
-					bitsetType nextEdgeSet = nextEdge.contents;
+					bitsetType currentEdgeSet = boost::get(boost::vertex_name, cliqueGraph, currentEdge.source).contents & boost::get(boost::vertex_name, cliqueGraph, currentEdge.target).contents;
+					bitsetType nextEdgeSet = boost::get(boost::vertex_name, cliqueGraph, nextEdge.source).contents & boost::get(boost::vertex_name, cliqueGraph, nextEdge.target).contents;
 					//this is the clique tree vertex shared between these edges
 					cliqueTreeGraphType::vertex_descriptor sharedVertex = *vertexSequenceIterator;
 					//currentEdgeSet is contained within nextEdgeSet
@@ -540,7 +511,7 @@ namespace chordalGraph
 						//Remove the edge associated with the smaller subset
 						removeEdges.push_back(currentEdge);
 						//Add an edge which skips over
-						externalEdge edgeToAdd((int)*std::prev(vertexSequenceIterator), (int)*std::next(vertexSequenceIterator), currentEdgeSet & nextEdgeSet);
+						externalEdge edgeToAdd((int)*std::prev(vertexSequenceIterator), (int)*std::next(vertexSequenceIterator));
 						addEdges.push_back(edgeToAdd);
 
 						vertexSequence.erase(vertexSequenceIterator);
@@ -556,7 +527,7 @@ namespace chordalGraph
 						//Remove the edge associated with the smaller subset
 						removeEdges.push_back(nextEdge);
 						//Add an edge which skips over
-						externalEdge edgeToAdd((int)*std::prev(vertexSequenceIterator), (int)*std::next(vertexSequenceIterator), currentEdgeSet & nextEdgeSet);
+						externalEdge edgeToAdd((int)*std::prev(vertexSequenceIterator), (int)*std::next(vertexSequenceIterator));
 						addEdges.push_back(edgeToAdd);
 
 						vertexSequence.erase(vertexSequenceIterator);
@@ -572,7 +543,7 @@ namespace chordalGraph
 			//Now take the union of everything that's left in the edge sequence
 			for (std::list<externalEdge>::iterator edgeSequenceIterator = edgeSequence.begin(); edgeSequenceIterator != edgeSequence.end(); edgeSequenceIterator++)
 			{
-				bitsetType relevantSubset = edgeSequenceIterator->contents;
+				bitsetType relevantSubset = boost::get(boost::vertex_name, cliqueGraph, edgeSequenceIterator->source).contents & boost::get(boost::vertex_name, cliqueGraph, edgeSequenceIterator->target).contents;
 				vertices |= relevantSubset;
 			}
 			return;
@@ -684,89 +655,6 @@ namespace chordalGraph
 			if (componentsCount > 1)
 			{
 				throw std::runtime_error("Vertex induced a disconnected tree of the clique graph");
-			}
-		}
-
-		//Sets for the edges are the intersections of the sets for the vertices
-		{
-			cliqueTreeGraphType::vertex_iterator firstVertex, secondVertex, end;
-			boost::tie(firstVertex, end) = boost::vertices(cliqueGraph);
-			for (; firstVertex != end; firstVertex++)
-			{
-				for (secondVertex = firstVertex + 1; secondVertex != end; secondVertex++)
-				{
-					bitsetType firstVertexSet = boost::get(boost::vertex_name, cliqueGraph, *firstVertex).contents;
-					bitsetType secondVertexSet = boost::get(boost::vertex_name, cliqueGraph, *secondVertex).contents;
-					bool hasEdge;
-					cliqueTreeGraphType::edge_descriptor potentialEdge;
-					boost::tie(potentialEdge, hasEdge) = boost::edge(*firstVertex, *secondVertex, cliqueGraph);
-					if (hasEdge)
-					{
-						bitsetType edgeSet = boost::get(boost::edge_name, cliqueGraph, potentialEdge).contents;
-						if (edgeSet != (firstVertexSet & secondVertexSet))
-						{
-							throw std::runtime_error("Found an edge with a vertex set not equal to the intersection of the vertex sets of its clique tree nodes");
-						}
-					}
-				}
-			}
-		}
-		//Intersection of two clique nodes is contained in the path between them.
-		{
-			cliqueTreeGraphType::vertex_iterator firstVertex, end;
-			boost::tie(firstVertex, end) = boost::vertices(cliqueGraph);
-
-			std::vector<cliqueTreeGraphType::edge_descriptor> predecessorEdges(nCliqueVertices + 1);
-			std::vector<cliqueTreeGraphType::vertex_descriptor> predecessorVertices(nCliqueVertices + 1);
-
-			typedef boost::color_traits<boost::default_color_type> Color;
-			std::vector<boost::default_color_type> colorVector(nCliqueVertices, Color::white());
-
-			boost::iterator_property_map<std::vector<boost::default_color_type>::iterator, boost::identity_property_map> colorMap(colorVector.begin());
-			for (; firstVertex != end; firstVertex++)
-			{
-				std::fill(colorVector.begin(), colorVector.end(), Color::white());
-				//start from vertex u, go to vertex v
-				boost::depth_first_visit(cliqueGraph, *firstVertex,
-						boost::make_dfs_visitor(
-							std::make_pair(
-								boost::record_edge_predecessors(&predecessorEdges[0], boost::on_tree_edge()),
-								boost::record_predecessors(&predecessorVertices[0], boost::on_tree_edge())
-							)
-					), colorMap
-				);
-				for (cliqueTreeGraphType::vertex_iterator secondVertex = firstVertex + 1; secondVertex != end; secondVertex++)
-				{
-					//There is only a path if they're in the same connected component
-					if (colorMap[*secondVertex] == Color::black())
-					{
-						bitsetType firstVertexSet = boost::get(boost::vertex_name, cliqueGraph, *firstVertex).contents;
-						bitsetType secondVertexSet = boost::get(boost::vertex_name, cliqueGraph, *secondVertex).contents;
-						bitsetType intersectionSet = firstVertexSet & secondVertexSet;
-
-						cliqueTreeGraphType::vertex_descriptor currentVertex = *secondVertex;
-						while (true)
-						{
-							cliqueTreeGraphType::edge_descriptor existingEdge;
-							bool hasExistingEdge;
-
-							boost::tie(existingEdge, hasExistingEdge) = boost::edge(currentVertex, predecessorVertices[currentVertex], cliqueGraph);
-							//If there is no path between them, break
-							if (!hasExistingEdge) break;
-
-							bitsetType existingEdgeSet = boost::get(boost::edge_name, cliqueGraph, existingEdge).contents;
-							if ((existingEdgeSet & intersectionSet) != intersectionSet)
-							{
-								throw std::runtime_error("There was a pair of vertices so that the path between them did not contain the intersection");
-							}
-							currentVertex = predecessorVertices[currentVertex];
-							if (currentVertex == *firstVertex)
-							{
-								break;
-							}
-						}
-					}
-				}
 			}
 		}
 	}

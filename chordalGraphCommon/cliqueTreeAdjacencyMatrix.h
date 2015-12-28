@@ -15,7 +15,7 @@ namespace chordalGraph
 	class cliqueTreeAdjacencyMatrix
 	{
 	public:
-		typedef moveable_adjacency_matrix<boost::property<boost::vertex_name_t, cliqueVertex>, boost::property<boost::edge_name_t, cliqueEdge> > cliqueTreeGraphType;
+		typedef moveable_adjacency_matrix<boost::property<boost::vertex_name_t, cliqueVertex>, boost::no_property> cliqueTreeGraphType;
 #ifdef TRACK_GRAPH
 #ifdef USE_ADJACENCY_MATRIX_FOR_GRAPH
 		typedef moveable_adjacency_matrix<> graphType;
@@ -32,11 +32,10 @@ namespace chordalGraph
 		struct externalEdge
 		{
 		public:
-			externalEdge(int source, int target, bitsetType contents)
-				:source(source), target(target), contents(contents)
+			externalEdge(int source, int target)
+				:source(source), target(target)
 			{}
 			int source, target;
-			bitsetType contents;
 		};
 	public:
 		cliqueTreeAdjacencyMatrix(cliqueTreeAdjacencyMatrix&& other)
