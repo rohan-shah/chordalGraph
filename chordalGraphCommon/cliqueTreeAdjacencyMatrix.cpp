@@ -241,11 +241,6 @@ namespace chordalGraph
 						newCliqueVertex.contents &= ~toSplitOut;
 						newCliqueVertex.contents[vertexForExtraEdges] = true;
 
-						//Copy the contents of the vertices we have references to, as adding a vertex may invalidate the references.
-						bitsetType nextCliqueVertexContents = nextCliqueVertex.contents;
-						bitsetType previousCliqueVertexContents = previousCliqueVertex.contents;
-						bitsetType currentCliqueVertexContents = currentCliqueVertex.contents;
-
 						//Set up new edges between previous / next and new vertex
 						cliqueTreeGraphType::edge_descriptor newCliqueEdgePreviousDescriptor = boost::add_edge(newCliqueVertexId, *previous, cliqueGraph).first;
 						cliqueTreeGraphType::edge_descriptor newCliqueEdgeNextDescriptor = boost::add_edge(newCliqueVertexId, *next, cliqueGraph).first;
@@ -270,7 +265,6 @@ namespace chordalGraph
 				//First
 				int firstVertexId = (int)*vertexSequence.begin(), secondVertexId = (int)*std::next(vertexSequence.begin());
 				cliqueVertex& firstVertex = boost::get(boost::vertex_name, cliqueGraph, firstVertexId);
-				cliqueVertex& secondVertex = boost::get(boost::vertex_name, cliqueGraph, secondVertexId);
 				
 				//make a copy of the minimal separators that contains both end-points
 				bitsetType unionMinimalSeparatorBitsetCopy = unionMinimalSeparatorBitset;
@@ -284,11 +278,6 @@ namespace chordalGraph
 					newVertex.contents = firstVertex.contents & unionMinimalSeparatorBitsetCopy;
 					newVertex.contents[vertexForExtraEdges] = true;
 					firstVertex.contents[vertexForExtraEdges] = false;
-
-					//This addition of a vertex may invalidate the references firstVertex and secondVertex. So 
-					//make a copy of their contents.
-					bitsetType firstVertexContents = firstVertex.contents;
-					bitsetType secondVertexContents = secondVertex.contents;
 
 					//New edges
 					boost::add_edge(firstVertexId, newCliqueVertexId, cliqueGraph);
@@ -306,7 +295,6 @@ namespace chordalGraph
 				//last
 				int lastVertexId = (int)*vertexSequence.rbegin(), secondLastVertexId = (int)*std::next(vertexSequence.rbegin());
 				cliqueVertex& lastVertex = boost::get(boost::vertex_name, cliqueGraph, lastVertexId);
-				cliqueVertex& secondLastVertex = boost::get(boost::vertex_name, cliqueGraph, secondLastVertexId);
 				if ((lastVertex.contents & ~unionMinimalSeparatorBitsetCopy).any())
 				{
 					int newCliqueVertexId = *remainingCliqueTreeVertices.rbegin();
@@ -315,9 +303,6 @@ namespace chordalGraph
 					cliqueVertex& newVertex = boost::get(boost::vertex_name, cliqueGraph, newCliqueVertexId);
 					newVertex.contents = lastVertex.contents & unionMinimalSeparatorBitsetCopy;
 					newVertex.contents[vertexForExtraEdges] = true;
-					//lastVertex.contents[vertexForExtraEdges] = false;
-					bitsetType lastVertexContents = lastVertex.contents;
-					bitsetType secondLastVertexContents = secondLastVertex.contents;
 
 					//New edges
 					boost::add_edge(lastVertexId, newCliqueVertexId, cliqueGraph);

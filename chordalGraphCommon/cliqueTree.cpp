@@ -234,10 +234,6 @@ namespace chordalGraph
 						newCliqueVertex.contents &= ~toSplitOut;
 						newCliqueVertex.contents[vertexForExtraEdges] = true;
 
-						//Copy the contents of the vertices we have references to, as adding a vertex may invalidate the references.
-						bitsetType nextCliqueVertexContents = nextCliqueVertex.contents;
-						bitsetType previousCliqueVertexContents = previousCliqueVertex.contents;
-						bitsetType currentCliqueVertexContents = currentCliqueVertex.contents;
 						//This may invalidate references
 						int newCliqueVertexId = (int)boost::add_vertex(newCliqueVertex, cliqueGraph);
 
@@ -265,7 +261,6 @@ namespace chordalGraph
 				//First
 				int firstVertexId = (int)*vertexSequence.begin(), secondVertexId = (int)*std::next(vertexSequence.begin());
 				cliqueVertex& firstVertex = boost::get(boost::vertex_name, cliqueGraph, firstVertexId);
-				cliqueVertex& secondVertex = boost::get(boost::vertex_name, cliqueGraph, secondVertexId);
 				
 				//make a copy of the minimal separators that contains both end-points
 				bitsetType unionMinimalSeparatorBitsetCopy = unionMinimalSeparatorBitset;
@@ -277,10 +272,7 @@ namespace chordalGraph
 					newVertex.contents[vertexForExtraEdges] = true;
 					firstVertex.contents[vertexForExtraEdges] = false;
 
-					//This addition of a vertex may invalidate the references firstVertex and secondVertex. So 
-					//make a copy of their contents.
-					bitsetType firstVertexContents = firstVertex.contents;
-					bitsetType secondVertexContents = secondVertex.contents;
+					//This addition of a vertex may invalidate the reference firstVertex.
 					int newVertexId = (int)boost::add_vertex(newVertex, cliqueGraph);
 
 					//New edges
@@ -299,15 +291,11 @@ namespace chordalGraph
 				//last
 				int lastVertexId = (int)*vertexSequence.rbegin(), secondLastVertexId = (int)*std::next(vertexSequence.rbegin());
 				cliqueVertex& lastVertex = boost::get(boost::vertex_name, cliqueGraph, lastVertexId);
-				cliqueVertex& secondLastVertex = boost::get(boost::vertex_name, cliqueGraph, secondLastVertexId);
 				if ((lastVertex.contents & ~unionMinimalSeparatorBitsetCopy).any())
 				{
 					cliqueVertex newVertex;
 					newVertex.contents = lastVertex.contents & unionMinimalSeparatorBitsetCopy;
 					newVertex.contents[vertexForExtraEdges] = true;
-					//lastVertex.contents[vertexForExtraEdges] = false;
-					bitsetType lastVertexContents = lastVertex.contents;
-					bitsetType secondLastVertexContents = secondLastVertex.contents;
 					int newVertexId = (int)boost::add_vertex(newVertex, cliqueGraph);
 
 					//New edges
