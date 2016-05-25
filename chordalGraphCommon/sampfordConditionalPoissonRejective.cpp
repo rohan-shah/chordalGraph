@@ -42,8 +42,7 @@ namespace chordalGraph
 				cumulative += weights[i];
 				args.accumulated[i] = double(cumulative);
 			}
-			//Make the maxAllowed value slightly smaller. This is because we don't want inclusion probabilities that are numerically close to 1, because in that case the alternating series used to compute the inclusion probabilities becomes unstable. 
-			numericType maxAllowed = 0.9999* cumulative / numericType(args.n - indices.size());
+			numericType maxAllowed = cumulative / numericType(args.n - indices.size());
 			//Any weights that are too big are included with probability 1
 			for(int i = 0; i < nUnits; i++)
 			{
@@ -55,6 +54,10 @@ namespace chordalGraph
 					weights[i] = 0;
 					inclusionProbabilities[i] = 1;
 				}
+			}
+			if(indices.size() > args.n)
+			{
+				throw std::runtime_error("Internal error");
 			}
 		} while(hasDeterministic);
 		int deterministicIndices = (int)indices.size();
@@ -80,7 +83,8 @@ beginSample:
 		int firstIndex = (int)std::distance(args.accumulated.begin(), std::upper_bound(args.accumulated.begin(), args.accumulated.end(), firstSample, std::less_equal<double>()));
 		if(args.deterministicInclusion[firstIndex] || indices.size() == args.n)
 		{
-			throw std::runtime_error("Internal error");
+			//In rare cases this can fail, e.g. getting a random number of exactly 0. 
+			goto beginSample;
 		}
 
 		for(int i = 0; i < nUnits; i++)

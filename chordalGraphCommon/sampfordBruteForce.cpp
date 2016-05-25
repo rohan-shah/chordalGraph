@@ -54,6 +54,10 @@ namespace chordalGraph
 					inclusionProbabilities[i] = 1;
 				}
 			}
+			if(indices.size() > args.n)
+			{
+				throw std::runtime_error("Internal error");
+			}
 		} while(hasDeterministic);
 		int deterministicIndices = (int)args.deterministicIndices.size();
 		//Rescale weights so they sum to args.n. These are the weights used for the first sample
