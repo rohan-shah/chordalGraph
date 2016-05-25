@@ -8,6 +8,7 @@ set(Boost_USE_STATIC_RUNTIME	OFF)
 option(BUILD_R_PACKAGE "Build R package" ON)
 option(USE_NAUTY "Use the Nauty package" ON)
 option(BUILD_R_DATA "Build data for R package" OFF)
+find_package(sampling REQUIRED CONFIG)
 
 add_definitions("-DBOOST_NO_AUTO_PTR")
 if(CMAKE_COMPILER_IS_GNUCC)

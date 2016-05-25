@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.1)
-set(CppFiles cliqueTree.cpp stochasticEnumeration.cpp stochasticEnumerationReduceChains.cpp sampfordBruteForce.cpp conditionalPoisson.cpp sampfordConditionalPoissonRejective.cpp semiDeterministicSampling.cpp sampfordFromParetoNaive.cpp pareto.cpp performSampling.cpp samplingType.cpp cliqueTreeAdjacencyMatrix.cpp)
-set(HeaderFiles cliqueTree.h stochasticEnumeration.h sampford.h numericType.h conditionalPoisson.h semiDeterministicSampling.h pareto.h performSampling.h samplingType.h cliqueTreeAdjacencyMatrix.h)
+set(CppFiles cliqueTree.cpp stochasticEnumeration.cpp stochasticEnumerationReduceChains.cpp performSampling.cpp samplingType.cpp cliqueTreeAdjacencyMatrix.cpp)
+set(HeaderFiles cliqueTree.h stochasticEnumeration.h numericType.h  performSampling.h samplingType.h cliqueTreeAdjacencyMatrix.h)
 if(USE_NAUTY)
 	list(APPEND CppFiles stochasticEnumerationNauty.cpp stochasticEnumerationNautyReduceChains.cpp horvitzThompson.cpp horvitzThompsonReduceChains.cpp)
 	list(APPEND HeaderFiles stochasticEnumerationNauty.h horvitzThompson.h)
@@ -8,7 +8,7 @@ endif()
 
 add_library(chordalGraphCommon STATIC ${CppFiles} ${HeaderFiles})
 target_include_directories(chordalGraphCommon PUBLIC ${Boost_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR}/chordalGraphCommon ${IGRAPH_INCLUDES} ${boostGraphExt_include})
-target_link_libraries(chordalGraphCommon PUBLIC ${Boost_LIBRARIES} mpfr)
+target_link_libraries(chordalGraphCommon PUBLIC ${Boost_LIBRARIES} mpfr sampling)
 
 target_compile_definitions(chordalGraphCommon PUBLIC BOOST_ALL_NO_LIB BOOST_ALL_DYN_LINK)
 if(USE_NAUTY)

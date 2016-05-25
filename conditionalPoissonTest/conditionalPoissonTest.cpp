@@ -1,4 +1,5 @@
 #include "conditionalPoisson.h"
+#include "numericType.h"
 #include <iostream>
 namespace chordalGraph
 {
@@ -10,7 +11,7 @@ namespace chordalGraph
 		std::vector<int> indices;
 		std::vector<numericType> inclusionProbabilities;
 		std::vector<numericType> weights;
-		conditionalPoissonArgs args;
+		::sampling::conditionalPoissonArgs args;
 		randomSource.seed(1);
 
 		args.exponentialParameters.push_back(-2.151);
@@ -27,7 +28,7 @@ namespace chordalGraph
 		{
 			args.expExponentialParameters.push_back(exp(args.exponentialParameters[i]));
 		}
-		calculateExpNormalisingConstants(args.expExponentialParameters, args.exponentialParameters, args.expNormalisingConstant, (int)args.exponentialParameters.size(), (int)args.exponentialParameters.size(), args.deterministicInclusion);
+		::sampling::calculateExpNormalisingConstants(args.expExponentialParameters, args.exponentialParameters, args.expNormalisingConstant, (int)args.exponentialParameters.size(), (int)args.exponentialParameters.size(), args.deterministicInclusion);
 		for(int i = 0; i < 6; i++)
 		{
 			for(int j = 0; j < 6; j++)
@@ -53,7 +54,7 @@ namespace chordalGraph
 		for(int i = 0; i < nSamples; i++)
 		{
 			std::vector<numericType> weightsCopy = weights;
-			conditionalPoisson(args, indices, inclusionProbabilities, weightsCopy, randomSource);
+			sampling::conditionalPoisson(args, indices, inclusionProbabilities, weightsCopy, randomSource);
 			for(std::vector<int>::iterator j = indices.begin(); j != indices.end(); j++)
 			{
 				counts[*j]++;
