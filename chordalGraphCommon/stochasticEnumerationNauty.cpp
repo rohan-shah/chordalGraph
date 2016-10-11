@@ -7,6 +7,23 @@
 #include "cliqueTreeAdjacencyMatrix.h"
 namespace chordalGraph
 {
+	struct childNode
+	{
+	public:
+		childNode(int parentIndex, bool includesEdge)
+			:value(2*parentIndex + includesEdge)
+		{}
+		int getParentIndex() const
+		{
+			return value / 2;
+		}
+		bool includesEdge() const 
+		{
+			return (value % 2) == 1;
+		}
+	private:
+		int value;
+	};
 	template<typename cliqueTree> void stochasticEnumerationNauty(stochasticEnumerationNautyArgs& args)
 	{
 		args.exact = true;
@@ -67,9 +84,9 @@ namespace chordalGraph
 		std::vector<std::vector<typename cliqueTree::externalEdge> > addEdges(args.budget);
 
 		std::vector<bitsetType> unionMinimalSeparators(args.budget);
-		//Vector used to shuffle indices
-		std::vector<int> shuffleVector;
-		shuffleVector.reserve(args.budget);
+		//All the possible children
+		std::vector<childNode> childNodes;
+		childNodes.reserve(args.budget);
 
 		//Nauty variables
 		std::vector<int> lab, ptn, orbits;
@@ -121,8 +138,8 @@ namespace chordalGraph
 
 			while(currentEdge < currentVertex)
 			{
-				//Clear vector of indices of possibilities
-				shuffleVector.clear();
+				//Clear vector of children
+				childNodes.clear();
 				//count the number of nodes which have cost 1
 				int knownToBeChordalWeight = 0;
 				int nRemainingEdges = currentVertex - currentEdge + ((args.nVertices - currentVertex - 1)* (args.nVertices - 2 - currentVertex) / 2) + (args.nVertices - currentVertex - 1) * (currentVertex + 1);
@@ -162,7 +179,7 @@ namespace chordalGraph
 						possibilityEdges[sampleCounter] = nEdges[sampleCounter];
 
 						//Add correct index to possibilities vector
-						shuffleVector.push_back(2 * sampleCounter + 1);
+						childNodes.push_back(childNode(sampleCounter, true));
 					}
 					//This edge could be either present or absent, without further information
 					else
@@ -175,7 +192,7 @@ namespace chordalGraph
 							//continue to the next edge
 							if (!requiresEdge)
 							{
-								shuffleVector.push_back(2 * sampleCounter);
+								childNodes.push_back(childNode(sampleCounter, false));
 							}
 							//If we do, then it's impossible to reach the target and there are no children. 
 						}
@@ -190,13 +207,13 @@ namespace chordalGraph
 							if (nEdges[sampleCounter] + nAdditionalEdges + 1 > args.nEdges)
 							{
 								//Add correct sampleCounter to possibilities vector
-								shuffleVector.push_back(2 * sampleCounter);
+								childNodes.push_back(childNode(sampleCounter, false));
 							}
 							else if (requiresEdge)
 							{
 								//If we need this edge to make up the numbers, don't consider the case where it's missing.
 								possibilityEdges[sampleCounter] = nEdges[sampleCounter] + 1 + nAdditionalEdges;
-								shuffleVector.push_back(2 * sampleCounter + 1);
+								childNodes.push_back(childNode(sampleCounter, true));
 							}
 							else
 							{
@@ -205,8 +222,8 @@ namespace chordalGraph
 								possibilityEdges[sampleCounter] = nEdges[sampleCounter] + 1 + nAdditionalEdges;
 
 								//Add correct sampleCounter to possibilities vector
-								shuffleVector.push_back(2 * sampleCounter);
-								shuffleVector.push_back(2 * sampleCounter + 1);
+								childNodes.push_back(childNode(sampleCounter, false));
+								childNodes.push_back(childNode(sampleCounter, true));
 							}
 						}
 					}
@@ -216,48 +233,48 @@ namespace chordalGraph
 				if (nRemainingEdges == 1)
 				{
 					knownToBeChordalWeight = 0;
-					for(std::vector<int>::iterator i = shuffleVector.begin(); i != shuffleVector.end(); i++)
+					for(std::vector<childNode>::iterator i = childNodes.begin(); i != childNodes.end(); i++)
 					{
-						knownToBeChordalWeight += cliqueTrees[(*i) / 2].weight;
+						knownToBeChordalWeight += cliqueTrees[i->getParentIndex()].weight;
 					}
 					args.estimate += multiple * knownToBeChordalWeight;
 					return;
 				}
 
-				boost::range::random_shuffle(shuffleVector, generator);
-				int toTake = std::min((int)shuffleVector.size(), args.budget);
+				boost::range::random_shuffle(childNodes, generator);
+				int toTake = std::min((int)childNodes.size(), args.budget);
 
-				if(toTake != (int)shuffleVector.size() || !args.exact)
+				if(toTake != (int)childNodes.size() || !args.exact)
 				{
 					args.exact = false;
 					args.minimumSizeForExact = -1;
 				}
 				else args.minimumSizeForExact = std::max(args.minimumSizeForExact, toTake);
 				//Ratio of vertices examined to not examined
-				multiple *= (double)shuffleVector.size() / (double)toTake;
+				multiple *= (double)childNodes.size() / (double)toTake;
 
 				std::fill(copyCounts.begin(), copyCounts.end(), 0);
 				//Now work out how many copies (0, 1, 2) are taken of each sample
 				for (int i = 0; i < toTake; i++)
 				{
-					copyCounts[shuffleVector[i]/2]++;
+					copyCounts[childNodes[i].getParentIndex()]++;
 				}
 
 				//Now actually start making copies
 				newCliqueTrees.clear();
 				for (int i = 0; i < toTake; i++)
 				{
-					int originalIndex = shuffleVector[i] / 2;
-					newConditions[i] = conditions[originalIndex];
+					int parentIndex = childNodes[i].getParentIndex();
+					newConditions[i] = conditions[parentIndex];
 
-					if (copyCounts[originalIndex] == 1)
+					if (copyCounts[parentIndex] == 1)
 					{
-						newCliqueTrees.push_back(std::move(cliqueTrees[originalIndex]));
+						newCliqueTrees.push_back(std::move(cliqueTrees[parentIndex]));
 					}
-					else if (copyCounts[originalIndex] == 2)
+					else if (copyCounts[parentIndex] == 2)
 					{
-						copyCounts[originalIndex]--;
-						newCliqueTrees.push_back(cliqueTrees[originalIndex]);
+						copyCounts[parentIndex]--;
+						newCliqueTrees.push_back(cliqueTrees[parentIndex]);
 					}
 					//This should never happen. 
 					else
@@ -265,20 +282,20 @@ namespace chordalGraph
 						throw std::runtime_error("Internal error");
 					}
 					//Did we take the case where we added an edge?
-					if (shuffleVector[i] % 2 == 1)
+					if (childNodes[i].includesEdge())
 					{
 						newConditions[i][currentEdge] = 1;
-						newNEdges[i] = possibilityEdges[originalIndex];
-						if (!conditions[originalIndex][currentEdge])
+						newNEdges[i] = possibilityEdges[parentIndex];
+						if (!conditions[parentIndex][currentEdge])
 						{
-							newConditions[i] |= unionMinimalSeparators[originalIndex];
-							newCliqueTrees[i].tree.addEdge(currentVertex, currentEdge, unionMinimalSeparators[originalIndex], vertexSequence[originalIndex], edgeSequence[originalIndex], addEdges[originalIndex], removeEdges[originalIndex], temp, true);
+							newConditions[i] |= unionMinimalSeparators[parentIndex];
+							newCliqueTrees[i].tree.addEdge(currentVertex, currentEdge, unionMinimalSeparators[parentIndex], vertexSequence[parentIndex], edgeSequence[parentIndex], addEdges[parentIndex], removeEdges[parentIndex], temp, true);
 						}
 					}
 					else
 					{
-						newNEdges[i] = nEdges[originalIndex];
-						newConditions[i] = conditions[originalIndex];
+						newNEdges[i] = nEdges[parentIndex];
+						newConditions[i] = conditions[parentIndex];
 					}
 				}
 				newCliqueTrees.swap(cliqueTrees);
