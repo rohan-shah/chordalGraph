@@ -677,6 +677,40 @@ namespace chordalGraph
 		cannonicalNautyGraph.resize(n * m);
 		densenauty(&(nautyGraph[0]), &(lab[0]), &(ptn[0]), &(orbits[0]), &options, &stats, m, n, &(cannonicalNautyGraph[0]));
 	}
+	void cliqueTreeAdjacencyMatrix::convertToNautyWithEdge(std::vector<int>& lab, std::vector<int>& ptn, std::vector<int>& orbits, std::vector<::graph>& nautyGraph, std::vector<::graph>& cannonicalNautyGraph, int v1, int v2)
+	{
+		static DEFAULTOPTIONS_GRAPH(options);
+		statsblk stats;
+		options.getcanon = true;
+
+		int n = nVertices;
+		int m = SETWORDSNEEDED(n);
+		nauty_check(WORDSIZE, m, n, NAUTYVERSIONID);
+		lab.resize(n);
+		ptn.resize(n);
+		orbits.resize(n);
+		nautyGraph.resize(n * m);
+		EMPTYGRAPH(&(nautyGraph[0]), m, n);
+		cliqueTreeAdjacencyMatrix::cliqueTreeGraphType::vertex_iterator current, end;
+		boost::tie(current, end) = boost::vertices(cliqueGraph);
+		for(; current != end; current++)
+		{
+			bitsetType bitset = boost::get(boost::vertex_name, cliqueGraph, *current).contents;
+			for(int i = 0; i < n; i++)
+			{
+				for(int j = 0; j < n; j++)
+				{
+					if(bitset[i] && bitset[j])
+					{
+						ADDONEEDGE(&(nautyGraph[0]), i, j, m);
+					}
+				}
+			}
+		}
+		ADDONEEDGE(&(nautyGraph[0]), v1, v2, m);
+		cannonicalNautyGraph.resize(n * m);
+		densenauty(&(nautyGraph[0]), &(lab[0]), &(ptn[0]), &(orbits[0]), &options, &stats, m, n, &(cannonicalNautyGraph[0]));
+	}
 /*	void cliqueTreeAdjacencyMatrix::userlevelproc(int* lab, int* ptn, int level, int* orbits, statsblk* stats, int tv, int index, int tcellsize, int numcells, int childcount, int n)
 	{
 		*(mpz_class*)&(lab[-4]) *= index;

@@ -5,13 +5,14 @@
 #include "nauty.h"
 #include "cliqueTree.h"
 #include "cliqueTreeAdjacencyMatrix.h"
+#include <iterator>
 namespace chordalGraph
 {
 	struct childNode
 	{
 	public:
-		childNode(int parentIndex, bool includesEdge)
-			:value(2*parentIndex + includesEdge)
+		childNode(int parentIndex, bool includesEdge, double weight)
+			:weight(weight), value(2*parentIndex + includesEdge)
 		{}
 		int getParentIndex() const
 		{
@@ -21,6 +22,7 @@ namespace chordalGraph
 		{
 			return (value % 2) == 1;
 		}
+		double weight;
 	private:
 		int value;
 	};
@@ -93,44 +95,15 @@ namespace chordalGraph
 		lab.reserve(args.nVertices);
 		ptn.reserve(args.nVertices);
 		std::vector<graph> nautyGraph;
-		std::vector<std::vector<graph> > cannonicalNautyGraphs(args.budget);
+		std::vector<std::vector<graph> > cannonicalNautyGraphs(2*args.budget);
 
 		//Used to count the number of distinct graphs (up to isomorphism)
-		std::vector<bool> alreadyConsidered(args.budget);
+		std::vector<bool> alreadyConsidered(2*args.budget);
 		//Continue while there are samples left.
 		while (currentVertex < args.nVertices - 1)
 		{
 			currentVertex++;
 			currentEdge = 0;
-			//Work out how many different graphs we have, up to isomorphism
-			//To start with, get out cannonical representations
-			for (int sampleCounter = 0; sampleCounter < (int)cliqueTrees.size(); sampleCounter++)
-			{
-				cliqueTrees[sampleCounter].tree.convertToNauty(lab, ptn, orbits, nautyGraph, cannonicalNautyGraphs[sampleCounter]);
-			}
-			//Work out which graphs are isomorphic to a graph earlier on in the set of samples. The weight for those graphs are added to the earlier one. 
-			std::fill(alreadyConsidered.begin(), alreadyConsidered.end(), false);
-			for(int sampleCounter = 0; sampleCounter < (int)cliqueTrees.size(); sampleCounter++)
-			{
-				if(!alreadyConsidered[sampleCounter])
-				{
-					int weightOther = 0;
-					for(int sampleCounter2 = sampleCounter+1; sampleCounter2 < (int)cliqueTrees.size(); sampleCounter2++)
-					{
-						if(!alreadyConsidered[sampleCounter2])
-						{
-							int m = SETWORDSNEEDED(currentVertex);
-							int memcmpResult = memcmp(&(cannonicalNautyGraphs[sampleCounter][0]), &(cannonicalNautyGraphs[sampleCounter2][0]), m*currentVertex*sizeof(graph));
-							if(memcmpResult == 0)
-							{
-								weightOther+= cliqueTrees[sampleCounter2].weight;
-								alreadyConsidered[sampleCounter2] = true;
-							}
-						}
-					}
-					cliqueTrees[sampleCounter].weight += weightOther;
-				}
-			}
 			//There are no conditions when we move to the next vertex
 			std::fill(conditions.begin(), conditions.end(), 0);
 			//Add the extra vertex
@@ -151,7 +124,7 @@ namespace chordalGraph
 				std::fill(unionMinimalSeparators.begin(), unionMinimalSeparators.end(), 0);
 				for (int sampleCounter = 0; sampleCounter < (int)cliqueTrees.size(); sampleCounter++)
 				{
-					if(alreadyConsidered[sampleCounter] && currentEdge == 0) continue;
+					stochasticEnumerationNautyPrivate::weightedCliqueTree<cliqueTree>& currentCliqueTree = cliqueTrees[sampleCounter];
 					//Remaining edges, including the one we're just about to consider. 
 					bitsetType copiedConditions = conditions[sampleCounter];
 					//maximum possible number of edges
@@ -166,7 +139,7 @@ namespace chordalGraph
 					//The second corresponds to the case where we've already hit the target
 					else if ((currentEdge == 0 && requiresEdge) || nEdges[sampleCounter] == args.nEdges)
 					{
-						knownToBeChordalWeight += cliqueTrees[sampleCounter].weight;
+						knownToBeChordalWeight += currentCliqueTree.weight;
 					}
 					else if (currentVertex == args.nVertices)
 					{
@@ -179,7 +152,7 @@ namespace chordalGraph
 						possibilityEdges[sampleCounter] = nEdges[sampleCounter];
 
 						//Add correct index to possibilities vector
-						childNodes.push_back(childNode(sampleCounter, true));
+						childNodes.push_back(childNode(sampleCounter, true, currentCliqueTree.weight));
 					}
 					//This edge could be either present or absent, without further information
 					else
@@ -192,7 +165,7 @@ namespace chordalGraph
 							//continue to the next edge
 							if (!requiresEdge)
 							{
-								childNodes.push_back(childNode(sampleCounter, false));
+								childNodes.push_back(childNode(sampleCounter, false, currentCliqueTree.weight));
 							}
 							//If we do, then it's impossible to reach the target and there are no children. 
 						}
@@ -207,13 +180,13 @@ namespace chordalGraph
 							if (nEdges[sampleCounter] + nAdditionalEdges + 1 > args.nEdges)
 							{
 								//Add correct sampleCounter to possibilities vector
-								childNodes.push_back(childNode(sampleCounter, false));
+								childNodes.push_back(childNode(sampleCounter, false, currentCliqueTree.weight));
 							}
 							else if (requiresEdge)
 							{
 								//If we need this edge to make up the numbers, don't consider the case where it's missing.
 								possibilityEdges[sampleCounter] = nEdges[sampleCounter] + 1 + nAdditionalEdges;
-								childNodes.push_back(childNode(sampleCounter, true));
+								childNodes.push_back(childNode(sampleCounter, true, currentCliqueTree.weight));
 							}
 							else
 							{
@@ -222,20 +195,71 @@ namespace chordalGraph
 								possibilityEdges[sampleCounter] = nEdges[sampleCounter] + 1 + nAdditionalEdges;
 
 								//Add correct sampleCounter to possibilities vector
-								childNodes.push_back(childNode(sampleCounter, false));
-								childNodes.push_back(childNode(sampleCounter, true));
+								childNodes.push_back(childNode(sampleCounter, false, currentCliqueTree.weight));
+								childNodes.push_back(childNode(sampleCounter, true, currentCliqueTree.weight));
 							}
 						}
 					}
 				}
 				args.estimate += multiple * knownToBeChordalWeight;
 
+				if(currentEdge == currentVertex - 1)
+				{
+					//Work out how many different graphs we have, up to isomorphism
+					//To start with, get out cannonical representations
+					for (int childCounter = 0; childCounter < (int)childNodes.size(); childCounter++)
+					{
+						childNode& currentChild = childNodes[childCounter];
+						if(!currentChild.includesEdge())
+						{
+							cliqueTrees[currentChild.getParentIndex()].tree.convertToNauty(lab, ptn, orbits, nautyGraph, cannonicalNautyGraphs[childCounter]);
+						}
+						else
+						{
+							cliqueTrees[currentChild.getParentIndex()].tree.convertToNautyWithEdge(lab, ptn, orbits, nautyGraph, cannonicalNautyGraphs[childCounter], currentEdge, currentVertex);
+						}
+					}
+					//Work out which graphs are isomorphic to a graph earlier on in the set of samples. The weight for those graphs are added to the earlier one.
+					std::fill(alreadyConsidered.begin(), alreadyConsidered.end(), false);
+					for (int childCounter = 0; childCounter < (int)childNodes.size(); childCounter++)
+					{
+						if(!alreadyConsidered[childCounter])
+						{
+							int weightOther = 0;
+							for (int childCounter2 = childCounter+1; childCounter2 < (int)childNodes.size(); childCounter2++)
+							{
+								if(!alreadyConsidered[childCounter2])
+								{
+									int m = SETWORDSNEEDED(currentVertex);
+									int memcmpResult = memcmp(&(cannonicalNautyGraphs[childCounter][0]), &(cannonicalNautyGraphs[childCounter2][0]), m*currentVertex*sizeof(graph));
+									if(memcmpResult == 0)
+									{
+										weightOther += childNodes[childCounter2].weight;
+										alreadyConsidered[childCounter2] = true;
+									}
+								}
+							}
+							childNodes[childCounter].weight += weightOther;
+						}
+					}
+					std::vector<bool>::reverse_iterator alreadyConsideredIterator = std::vector<bool>::reverse_iterator(alreadyConsidered.begin() + childNodes.size());
+					std::vector<childNode>::reverse_iterator toErase = childNodes.rbegin();
+					for(std::vector<childNode>::reverse_iterator i = childNodes.rbegin(); i != childNodes.rend(); i++, alreadyConsideredIterator++)
+					{
+						if(*alreadyConsideredIterator)
+						{
+							std::swap(*i, *toErase);
+							toErase++;
+						}
+					}
+					childNodes.erase(toErase.base(), childNodes.end()); 
+				}
 				if (nRemainingEdges == 1)
 				{
 					knownToBeChordalWeight = 0;
 					for(std::vector<childNode>::iterator i = childNodes.begin(); i != childNodes.end(); i++)
 					{
-						knownToBeChordalWeight += cliqueTrees[i->getParentIndex()].weight;
+						knownToBeChordalWeight += i->weight;
 					}
 					args.estimate += multiple * knownToBeChordalWeight;
 					return;
@@ -270,11 +294,13 @@ namespace chordalGraph
 					if (copyCounts[parentIndex] == 1)
 					{
 						newCliqueTrees.push_back(std::move(cliqueTrees[parentIndex]));
+						newCliqueTrees.back().weight = childNodes[i].weight;
 					}
 					else if (copyCounts[parentIndex] == 2)
 					{
 						copyCounts[parentIndex]--;
 						newCliqueTrees.push_back(cliqueTrees[parentIndex]);
+						newCliqueTrees.back().weight = childNodes[i].weight;
 					}
 					//This should never happen. 
 					else
