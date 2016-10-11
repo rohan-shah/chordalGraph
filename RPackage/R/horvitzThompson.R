@@ -1,5 +1,4 @@
-samplingMethods <- c("sampfordMultinomial", "sampfordConditionalPoisson", "conditionalPoisson", "sampfordFromParetoNaive", "semiDeterministic")
-horvitzThompson <- function(nVertices, budget, seed, sampling, nEdges, options = list(reduceChains = FALSE, graphRepresentation = "list"))
+horvitzThompson <- function(nVertices, budget, seed, nEdges, options = list(reduceChains = FALSE, graphRepresentation = "list"))
 {
 	if(missing(nVertices) || missing(budget) || missing(seed))
 	{
@@ -21,10 +20,6 @@ horvitzThompson <- function(nVertices, budget, seed, sampling, nEdges, options =
 	{
 		stop("Inputs nVertices and budget must be positive")
 	}
-	if(!(sampling %in% samplingMethods))
-	{
-		stop("Input sampling must be one of the values in chordalGraph:::samplingMethods")
-	}
 	if(any(!(names(options) %in% c("reduceChains", "graphRepresentation"))))
 	{
 		stop("The only valid options for horvitzThompson are \"reduceChains\" and \"graphRepresentation\"")
@@ -40,7 +35,7 @@ horvitzThompson <- function(nVertices, budget, seed, sampling, nEdges, options =
 	if(missing(nEdges))
 	{
 		start <- Sys.time()
-		result <- .Call("horvitzThompson", nVertices, budget, seed, sampling, options, PACKAGE="chordalGraph")
+		result <- .Call("horvitzThompson", nVertices, budget, seed, options, PACKAGE="chordalGraph")
 		end <- Sys.time()
 		s4Result <- new("estimatedChordalCounts", data = result$data, call = match.call(), start = start, end = end, samples = NULL, options = options, exact = result$exact, minimumSizeForExact = result$minimumSizeForExact)
 		return(s4Result)
@@ -56,7 +51,7 @@ horvitzThompson <- function(nVertices, budget, seed, sampling, nEdges, options =
 			stop("Input nEdges must be in range [0, ((nVertices-1)*nVertices/2)+1]")
 		}
 		start <- Sys.time()
-		result <- .Call("horvitzThompsonSpecificEdges", nVertices, nEdges, budget, seed, sampling, options, PACKAGE="chordalGraph")
+		result <- .Call("horvitzThompsonSpecificEdges", nVertices, nEdges, budget, seed, options, PACKAGE="chordalGraph")
 		end <- Sys.time()
 		s4Result <- new("estimatedChordalCount", data = result$data, call = match.call(), start = start, end = end, samples = NULL, options = options, exact = result$exact, minimumSizeForExact = result$minimumSizeForExact)
 		return(s4Result)

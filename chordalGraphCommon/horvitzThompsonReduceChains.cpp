@@ -4,9 +4,9 @@
 #include <boost/random/uniform_real_distribution.hpp>
 #include <boost/math/special_functions.hpp>
 #include "nauty.h"
-#include "performSampling.h"
 #include "cliqueTree.h"
 #include "cliqueTreeAdjacencyMatrix.h"
+#include "sampford.h"
 namespace chordalGraph
 {
 	template<typename cliqueTree> void horvitzThompsonReduceChains(horvitzThompsonArgs& args)
@@ -79,12 +79,11 @@ namespace chordalGraph
 		std::vector<int> hasChildren;
 		hasChildren.reserve(args.budget);
 
-		performSamplingArgs samplingArgs;
-		samplingArgs.sampling = args.sampling;
+		sampling::sampfordFromParetoNaiveArgs samplingArgs;
 		//Inclusion probabilities and indices that result from calling one of the sampling functions. These are taken out of the relevant argument struct
-		std::vector<numericType> inclusionProbabilities;
-		std::vector<int> indices;
-		std::vector<numericType> weights;
+		std::vector<int>& indices = samplingArgs.indices;
+		std::vector<numericType>& weights = samplingArgs.weights;
+		std::vector<numericType>& rescaledWeights = samplingArgs.rescaledWeights;
 
 		//Nauty variables
 		std::vector<int> lab, ptn, orbits;
@@ -247,14 +246,14 @@ namespace chordalGraph
 			if(toTake == 2*(int)hasChildren.size())
 			{
 				std::fill(copyCounts.begin(), copyCounts.end(), 2);
-				inclusionProbabilities.resize(toTake);
-				std::fill(inclusionProbabilities.begin(), inclusionProbabilities.end(), 1);
+				rescaledWeights.resize(toTake);
+				std::fill(rescaledWeights.begin(), rescaledWeights.end(), 1);
 			}
 			else
 			{
 				std::fill(copyCounts.begin(), copyCounts.end(), 0);
-				samplingArgs.toTake = toTake;
-				performSampling(samplingArgs, indices, inclusionProbabilities, weights, args.randomSource);
+				samplingArgs.n = toTake;
+				sampling::sampfordFromParetoNaive(samplingArgs, args.randomSource);
 				for(int i = 0; i < (int)toTake; i++)
 				{
 					copyCounts[indices[i]/2]++;
@@ -296,7 +295,7 @@ namespace chordalGraph
 						newCliqueTrees[newIndex].tree.addVertex();
 						newConditions[newIndex] = 0;
 					}
-					newCliqueTrees[newIndex].weight /= inclusionProbabilities[2*i];
+					newCliqueTrees[newIndex].weight /= rescaledWeights[2*i];
 				}
 				else if (copyCounts[i] == 2)
 				{
@@ -328,7 +327,7 @@ namespace chordalGraph
 						newCliqueTrees[newIndex].tree.addVertex(); newCliqueTrees[newIndex+1].tree.addVertex();
 						newConditions[newIndex] = 0; newConditions[newIndex+1] = 0;
 					}
-					newCliqueTrees[newIndex].weight /= inclusionProbabilities[2*i];
+					newCliqueTrees[newIndex].weight /= rescaledWeights[2*i];
 					newCliqueTrees[newIndex+1].weight = newCliqueTrees[newIndex].weight;
 				}
 				else if(copyCounts[i] == 0)

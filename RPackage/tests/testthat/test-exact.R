@@ -46,17 +46,14 @@ test_that("Exact data calculations are correct using Horvitz Thompson estimation
 	{
 		for(reduceChains in c(TRUE, FALSE))
 		{
-			for(method in chordalGraph:::samplingMethods)
-			{
-				capture.output(exactList <- horvitzThompson(nVertices = as.integer(nVertices), budget = 1000000, seed = 1, sampling = method, options = list(reduceChains = reduceChains, graphRepresentation = "list")))
-				capture.output(exactMatrix <- horvitzThompson(nVertices = as.integer(nVertices), budget = 1000000, seed = 1, sampling = method, options = list(reduceChains = reduceChains, graphRepresentation = "matrix")))
-				expect_that(Rmpfr::all.equal(exactList@data, exactResults[[nVertices]]), is_true())
-				#Remove the bits that are different
-				exactMatrix@call <- exactList@call <- call("list")
-				exactMatrix@options <- exactList@options <- list()
-				exactMatrix@start <- exactMatrix@end <- exactList@start <- exactList@end
-				expect_identical(exactMatrix, exactList)
-			}
+			capture.output(exactList <- horvitzThompson(nVertices = as.integer(nVertices), budget = 1000000, seed = 1, options = list(reduceChains = reduceChains, graphRepresentation = "list")))
+			capture.output(exactMatrix <- horvitzThompson(nVertices = as.integer(nVertices), budget = 1000000, seed = 1, options = list(reduceChains = reduceChains, graphRepresentation = "matrix")))
+			expect_that(Rmpfr::all.equal(exactList@data, exactResults[[nVertices]]), is_true())
+			#Remove the bits that are different
+			exactMatrix@call <- exactList@call <- call("list")
+			exactMatrix@options <- exactList@options <- list()
+			exactMatrix@start <- exactMatrix@end <- exactList@start <- exactList@end
+			expect_identical(exactMatrix, exactList)
 		}
 	}
 })

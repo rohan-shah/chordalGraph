@@ -5,7 +5,6 @@
 #include <boost/multiprecision/gmp.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #include "numericType.h"
-#include "performSampling.h"
 namespace chordalGraph
 {
 	struct horvitzThompsonArgs
@@ -21,7 +20,6 @@ namespace chordalGraph
 		boost::mt19937& randomSource;
 		bool exact;
 		int minimumSizeForExact;
-		samplingType sampling;
 	};
 	namespace horvitzThompsonPrivate
 	{
