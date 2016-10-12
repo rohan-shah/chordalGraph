@@ -76,7 +76,8 @@ namespace chordalGraph
 
 		std::vector<bitsetType> unionMinimalSeparators(args.budget);
 		//Vector used to shuffle indices
-		std::vector<childNode> childNodes;
+		typedef childNode<double> childNodeType;
+		std::vector<childNodeType> childNodes;
 		childNodes.reserve(2*args.budget);
 
 		//Nauty variables
@@ -180,8 +181,8 @@ namespace chordalGraph
 								possibilityEdges[sampleCounter] = nEdges[sampleCounter] + 1 + nAdditionalEdges;
 
 								//Add correct indices to possibilities vector
-								childNodes.push_back(childNode(sampleCounter, false, currentCliqueTree.weight));
-								childNodes.push_back(childNode(sampleCounter, true, currentCliqueTree.weight));
+								childNodes.push_back(childNodeType(sampleCounter, false, currentCliqueTree.weight));
+								childNodes.push_back(childNodeType(sampleCounter, true, currentCliqueTree.weight));
 								break;
 							}
 						}
@@ -201,7 +202,7 @@ namespace chordalGraph
 			//To start with, get out cannonical representations
 			for (int childCounter = 0; childCounter < (int)childNodes.size(); childCounter++)
 			{
-				childNode& currentChild = childNodes[childCounter];
+				childNodeType& currentChild = childNodes[childCounter];
 				int parentIndex = currentChild.getParentIndex();
 				if(currentEdge[parentIndex] == currentVertex[parentIndex] - 1)
 				{
@@ -241,8 +242,8 @@ namespace chordalGraph
 				}
 			}
 			std::vector<bool>::reverse_iterator alreadyConsideredIterator = std::vector<bool>::reverse_iterator(alreadyConsidered.begin() + childNodes.size());
-			std::vector<childNode>::reverse_iterator toErase = childNodes.rbegin();
-			for(std::vector<childNode>::reverse_iterator i = childNodes.rbegin(); i != childNodes.rend(); i++, alreadyConsideredIterator++)
+			std::vector<childNodeType>::reverse_iterator toErase = childNodes.rbegin();
+			for(std::vector<childNodeType>::reverse_iterator i = childNodes.rbegin(); i != childNodes.rend(); i++, alreadyConsideredIterator++)
 			{
 				if(*alreadyConsideredIterator)
 				{

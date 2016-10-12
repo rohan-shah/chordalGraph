@@ -2,10 +2,10 @@
 #define CHILD_NODE_HEADER_GUARD
 namespace chordalGraph
 {
-	struct childNode
+	template <typename weightType> struct childNode
 	{
 	public:
-		childNode(int parentIndex, bool includesEdge, double weight)
+		childNode(int parentIndex, bool includesEdge, weightType weight)
 			:weight(weight), value(2*parentIndex + includesEdge)
 		{}
 		int getParentIndex() const
@@ -16,7 +16,11 @@ namespace chordalGraph
 		{
 			return (value % 2) == 1;
 		}
-		double weight;
+		weightType weight;
+		bool operator<(const childNode& other) const
+		{
+			return value < other.value;
+		}
 	private:
 		int value;
 	};

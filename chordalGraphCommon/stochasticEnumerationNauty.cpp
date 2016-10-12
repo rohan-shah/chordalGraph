@@ -69,7 +69,8 @@ namespace chordalGraph
 
 		std::vector<bitsetType> unionMinimalSeparators(args.budget);
 		//All the possible children
-		std::vector<childNode> childNodes;
+		typedef childNode<double> childNodeType;
+		std::vector<childNodeType> childNodes;
 		childNodes.reserve(args.budget);
 
 		//Nauty variables
@@ -134,7 +135,7 @@ namespace chordalGraph
 						possibilityEdges[sampleCounter] = nEdges[sampleCounter];
 
 						//Add correct index to possibilities vector
-						childNodes.push_back(childNode(sampleCounter, true, currentCliqueTree.weight));
+						childNodes.push_back(childNodeType(sampleCounter, true, currentCliqueTree.weight));
 					}
 					//This edge could be either present or absent, without further information
 					else
@@ -147,7 +148,7 @@ namespace chordalGraph
 							//continue to the next edge
 							if (!requiresEdge)
 							{
-								childNodes.push_back(childNode(sampleCounter, false, currentCliqueTree.weight));
+								childNodes.push_back(childNodeType(sampleCounter, false, currentCliqueTree.weight));
 							}
 							//If we do, then it's impossible to reach the target and there are no children. 
 						}
@@ -162,13 +163,13 @@ namespace chordalGraph
 							if (nEdges[sampleCounter] + nAdditionalEdges + 1 > args.nEdges)
 							{
 								//Add correct sampleCounter to possibilities vector
-								childNodes.push_back(childNode(sampleCounter, false, currentCliqueTree.weight));
+								childNodes.push_back(childNodeType(sampleCounter, false, currentCliqueTree.weight));
 							}
 							else if (requiresEdge)
 							{
 								//If we need this edge to make up the numbers, don't consider the case where it's missing.
 								possibilityEdges[sampleCounter] = nEdges[sampleCounter] + 1 + nAdditionalEdges;
-								childNodes.push_back(childNode(sampleCounter, true, currentCliqueTree.weight));
+								childNodes.push_back(childNodeType(sampleCounter, true, currentCliqueTree.weight));
 							}
 							else
 							{
@@ -177,8 +178,8 @@ namespace chordalGraph
 								possibilityEdges[sampleCounter] = nEdges[sampleCounter] + 1 + nAdditionalEdges;
 
 								//Add correct sampleCounter to possibilities vector
-								childNodes.push_back(childNode(sampleCounter, false, currentCliqueTree.weight));
-								childNodes.push_back(childNode(sampleCounter, true, currentCliqueTree.weight));
+								childNodes.push_back(childNodeType(sampleCounter, false, currentCliqueTree.weight));
+								childNodes.push_back(childNodeType(sampleCounter, true, currentCliqueTree.weight));
 							}
 						}
 					}
@@ -191,7 +192,7 @@ namespace chordalGraph
 					//To start with, get out cannonical representations
 					for (int childCounter = 0; childCounter < (int)childNodes.size(); childCounter++)
 					{
-						childNode& currentChild = childNodes[childCounter];
+						childNodeType& currentChild = childNodes[childCounter];
 						if(!currentChild.includesEdge())
 						{
 							cliqueTrees[currentChild.getParentIndex()].tree.convertToNauty(lab, ptn, orbits, nautyGraph, cannonicalNautyGraphs[childCounter]);
@@ -225,8 +226,8 @@ namespace chordalGraph
 						}
 					}
 					std::vector<bool>::reverse_iterator alreadyConsideredIterator = std::vector<bool>::reverse_iterator(alreadyConsidered.begin() + childNodes.size());
-					std::vector<childNode>::reverse_iterator toErase = childNodes.rbegin();
-					for(std::vector<childNode>::reverse_iterator i = childNodes.rbegin(); i != childNodes.rend(); i++, alreadyConsideredIterator++)
+					std::vector<childNodeType>::reverse_iterator toErase = childNodes.rbegin();
+					for(std::vector<childNodeType>::reverse_iterator i = childNodes.rbegin(); i != childNodes.rend(); i++, alreadyConsideredIterator++)
 					{
 						if(*alreadyConsideredIterator)
 						{
@@ -239,7 +240,7 @@ namespace chordalGraph
 				if (nRemainingEdges == 1)
 				{
 					knownToBeChordalWeight = 0;
-					for(std::vector<childNode>::iterator i = childNodes.begin(); i != childNodes.end(); i++)
+					for(std::vector<childNodeType>::iterator i = childNodes.begin(); i != childNodes.end(); i++)
 					{
 						knownToBeChordalWeight += i->weight;
 					}

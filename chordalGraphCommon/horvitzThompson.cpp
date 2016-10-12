@@ -7,6 +7,7 @@
 #include "cliqueTree.h"
 #include "cliqueTreeAdjacencyMatrix.h"
 #include "sampford.h"
+#include "childNode.h"
 namespace chordalGraph
 {
 	template<typename cliqueTree> void horvitzThompson(horvitzThompsonArgs& args)
@@ -64,8 +65,9 @@ namespace chordalGraph
 
 		std::vector<bitsetType> unionMinimalSeparators(args.budget);
 		//Vector used to shuffle indices
-		std::vector<int> parent;
-		parent.reserve(args.budget*2);
+		typedef childNode<mpfr_class> childNodeType;
+		std::vector<childNodeType> childNodes;
+		childNodes.reserve(args.budget*2);
 
 		sampling::sampfordFromParetoNaiveArgs samplingArgs;
 		//Inclusion probabilities and indices that result from calling one of the sampling functions. These are taken out of the relevant argument struct
@@ -78,45 +80,15 @@ namespace chordalGraph
 		lab.reserve(args.nVertices);
 		ptn.reserve(args.nVertices);
 		std::vector<graph> nautyGraph;
-		std::vector<std::vector<graph> > cannonicalNautyGraphs(args.budget);
+		std::vector<std::vector<graph> > cannonicalNautyGraphs(2*args.budget);
 
 		//Used to count the number of distinct graphs (up to isomorphism)
-		std::vector<bool> alreadyConsidered(args.budget);
+		std::vector<bool> alreadyConsidered(2*args.budget);
 		//Continue while there are samples left.
 		while (currentVertex < args.nVertices - 1)
 		{
 			currentVertex++;
 			currentEdge = 0;
-			//Work out how many different graphs we have, up to isomorphism
-			//To start with, get out cannonical representations
-			for (int sampleCounter = 0; sampleCounter < (int)cliqueTrees.size(); sampleCounter++)
-			{
-				cliqueTrees[sampleCounter].tree.convertToNauty(lab, ptn, orbits, nautyGraph, cannonicalNautyGraphs[sampleCounter]);
-			}
-			//Work out which graphs are isomorphic to a graph earlier on in the set of samples. The weight for those graphs are added to the earlier one. 
-			std::fill(alreadyConsidered.begin(), alreadyConsidered.end(), false);
-			for(int sampleCounter = 0; sampleCounter < (int)cliqueTrees.size(); sampleCounter++)
-			{
-				if(!alreadyConsidered[sampleCounter])
-				{
-					numericType weightOther = 0;
-					for(int sampleCounter2 = sampleCounter+1; sampleCounter2 < (int)cliqueTrees.size(); sampleCounter2++)
-					{
-						if(!alreadyConsidered[sampleCounter2])
-						{
-							int m = SETWORDSNEEDED(currentVertex);
-							int memcmpResult = memcmp(&(cannonicalNautyGraphs[sampleCounter][0]), &(cannonicalNautyGraphs[sampleCounter2][0]), m*currentVertex*sizeof(graph));
-							if(memcmpResult == 0)
-							{
-								weightOther += cliqueTrees[sampleCounter2].weight;
-								cliqueTrees[sampleCounter2].weight = 0;
-								alreadyConsidered[sampleCounter2] = true;
-							}
-						}
-					}
-					cliqueTrees[sampleCounter].weight += weightOther;
-				}
-			}
 			//There are no conditions when we move to the next vertex
 			std::fill(conditions.begin(), conditions.end(), 0);
 			//Add the extra vertex
@@ -124,8 +96,7 @@ namespace chordalGraph
 			while(currentEdge < currentVertex)
 			{
 				//Clear vector of indices of possibilities
-				parent.clear();
-				weights.clear();
+				childNodes.clear();
 				//Remaining edges, including the one we're just about to consider. 
 				int nRemainingEdges = currentVertex - currentEdge + ((args.nVertices - currentVertex - 1)* (args.nVertices - 2 - currentVertex) / 2) + (args.nVertices - currentVertex - 1) * (currentVertex + 1);
 				//Clear data structures;
@@ -136,7 +107,7 @@ namespace chordalGraph
 				std::fill(unionMinimalSeparators.begin(), unionMinimalSeparators.end(), 0);
 				for (int sampleCounter = 0; sampleCounter < (int)cliqueTrees.size(); sampleCounter++)
 				{
-					if(alreadyConsidered[sampleCounter] && currentEdge == 0) continue;
+					horvitzThompsonPrivate::weightedCliqueTree<cliqueTree>& currentCliqueTree = cliqueTrees[sampleCounter];
 					bitsetType copiedConditions = conditions[sampleCounter];
 					//maximum possible number of edges
 					int maxEdges = nEdges[sampleCounter] + nRemainingEdges - (int)(copiedConditions & ~bitsetType((1ULL << (currentEdge+1)) - 1)).count();
@@ -150,7 +121,7 @@ namespace chordalGraph
 					//The second corresponds to the case where we've already hit the target
 					else if ((currentEdge == 0 && requiresEdge) || nEdges[sampleCounter] == args.nEdges)
 					{
-						args.estimate += cliqueTrees[sampleCounter].weight;
+						args.estimate += currentCliqueTree.weight;
 					}
 					else if (currentVertex == args.nVertices)
 					{
@@ -163,13 +134,12 @@ namespace chordalGraph
 						possibilityEdges[sampleCounter] = nEdges[sampleCounter];
 						
 						//Add correct index to possibilities vector
-						parent.push_back(2*sampleCounter + 1);
-						weights.push_back(cliqueTrees[sampleCounter].weight);
+						childNodes.push_back(childNodeType(sampleCounter, true, currentCliqueTree.weight));
 					}
 					//This edge could be either present or absent, without further information
 					else
 					{
-						cliqueTrees[sampleCounter].tree.unionMinimalSeparators(currentVertex, currentEdge, unionMinimalSeparators[sampleCounter], vertexSequence[sampleCounter], edgeSequence[sampleCounter], addEdges[sampleCounter], removeEdges[sampleCounter], temp);
+						currentCliqueTree.tree.unionMinimalSeparators(currentVertex, currentEdge, unionMinimalSeparators[sampleCounter], vertexSequence[sampleCounter], edgeSequence[sampleCounter], addEdges[sampleCounter], removeEdges[sampleCounter], temp);
 						//If we need to add edges that were already considered (and therefore, must have already been rejected), then this edge CANNOT be present
 						if ((unionMinimalSeparators[sampleCounter] & (~copiedConditions) & bitsetType((1ULL << currentEdge) - 1)).any())
 						{
@@ -177,8 +147,7 @@ namespace chordalGraph
 							//continue to the next edge
 							if (!requiresEdge)
 							{
-								parent.push_back(2*sampleCounter);
-								weights.push_back(cliqueTrees[sampleCounter].weight);
+								childNodes.push_back(childNodeType(sampleCounter, false, currentCliqueTree.weight));
 							}
 							//If we do, then it's impossible to reach the target and there are no children. 
 						}
@@ -193,15 +162,13 @@ namespace chordalGraph
 							//edge can only be missing
 							if (nEdges[sampleCounter] + nAdditionalEdges + 1 > args.nEdges)
 							{
-								parent.push_back(2 * sampleCounter);
-								weights.push_back(cliqueTrees[sampleCounter].weight);
+								childNodes.push_back(childNodeType(sampleCounter, false, currentCliqueTree.weight));
 							}
 							else if (requiresEdge)
 							{
 								//If we need this edge to make up the numbers, don't consider the case where it's missing. 
 								possibilityEdges[sampleCounter] = nEdges[sampleCounter] + 1 + nAdditionalEdges;
-								parent.push_back(2 * sampleCounter + 1);
-								weights.push_back(cliqueTrees[sampleCounter].weight);
+								childNodes.push_back(childNodeType(sampleCounter, true, currentCliqueTree.weight));
 							}
 							else
 							{
@@ -210,25 +177,76 @@ namespace chordalGraph
 								possibilityEdges[sampleCounter] = nEdges[sampleCounter] + 1 + nAdditionalEdges;
 
 								//Add correct indices to possibilities vector
-								parent.push_back(2 * sampleCounter);
-								parent.push_back(2 * sampleCounter + 1);
-								weights.push_back(cliqueTrees[sampleCounter].weight);
-								weights.push_back(cliqueTrees[sampleCounter].weight);
+								childNodes.push_back(childNodeType(sampleCounter, false, currentCliqueTree.weight));
+								childNodes.push_back(childNodeType(sampleCounter, true, currentCliqueTree.weight));
 							}
 						}
 					}
 				}
+				if(currentEdge == currentVertex - 1)
+				{
+					//Work out how many different graphs we have, up to isomorphism
+					//To start with, get out cannonical representations
+					for (int childCounter = 0; childCounter < (int)childNodes.size(); childCounter++)
+					{
+						childNodeType& currentChild = childNodes[childCounter];
+						if(!currentChild.includesEdge())
+						{
+							cliqueTrees[currentChild.getParentIndex()].tree.convertToNauty(lab, ptn, orbits, nautyGraph, cannonicalNautyGraphs[childCounter]);
+						}
+						else
+						{
+							cliqueTrees[currentChild.getParentIndex()].tree.convertToNautyWithEdge(lab, ptn, orbits, nautyGraph, cannonicalNautyGraphs[childCounter], currentEdge, currentVertex);
+						}
+					}
+					//Work out which graphs are isomorphic to a graph earlier on in the set of samples. The weight for those graphs are added to the earlier one.
+					std::fill(alreadyConsidered.begin(), alreadyConsidered.end(), false);
+					for (int childCounter = 0; childCounter < (int)childNodes.size(); childCounter++)
+					{
+						if(!alreadyConsidered[childCounter])
+						{
+							mpfr_class weightOther = 0;
+							for (int childCounter2 = childCounter+1; childCounter2 < (int)childNodes.size(); childCounter2++)
+							{
+								if(!alreadyConsidered[childCounter2])
+								{
+									int m = SETWORDSNEEDED(currentVertex);
+									int memcmpResult = memcmp(&(cannonicalNautyGraphs[childCounter][0]), &(cannonicalNautyGraphs[childCounter2][0]), m*currentVertex*sizeof(graph));
+									if(memcmpResult == 0)
+									{
+										weightOther += childNodes[childCounter2].weight;
+										alreadyConsidered[childCounter2] = true;
+									}
+								}
+							}
+							childNodes[childCounter].weight += weightOther;
+						}
+					}
+					std::vector<bool>::reverse_iterator alreadyConsideredIterator = std::vector<bool>::reverse_iterator(alreadyConsidered.begin() + childNodes.size());
+					std::vector<childNodeType>::reverse_iterator toErase = childNodes.rbegin();
+					for(std::vector<childNodeType>::reverse_iterator i = childNodes.rbegin(); i != childNodes.rend(); i++, alreadyConsideredIterator++)
+					{
+						if(*alreadyConsideredIterator)
+						{
+							std::swap(*i, *toErase);
+							toErase++;
+						}
+					}
+					childNodes.erase(toErase.base(), childNodes.end()); 
+					std::sort(childNodes.begin(), childNodes.end());
+				}
+
 				if (nRemainingEdges == 1)
 				{
-					for(std::vector<int>::iterator i = parent.begin(); i != parent.end(); i++)
+					for(std::vector<childNodeType>::iterator i = childNodes.begin(); i != childNodes.end(); i++)
 					{
-						args.estimate += cliqueTrees[(*i)/2].weight;
+						args.estimate += i->weight;
 					}
 					return;
 				}
 
-				int toTake = std::min((int)weights.size(), args.budget);
-				if(toTake != (int)weights.size() || !args.exact)
+				int toTake = std::min((int)childNodes.size(), args.budget);
+				if(toTake != (int)childNodes.size() || !args.exact)
 				{
 					args.exact = false;
 					args.minimumSizeForExact = -1;
@@ -236,7 +254,7 @@ namespace chordalGraph
 				else args.minimumSizeForExact = std::max(args.minimumSizeForExact, toTake);
 				newCliqueTrees.clear();
 				//If we're taking an exhaustive sample, then skip the resampling-without-replacement section. 
-				if(toTake == (int)weights.size())
+				if(toTake == (int)childNodes.size())
 				{
 					rescaledWeights.resize(toTake);
 					std::fill(rescaledWeights.begin(), rescaledWeights.end(), 1);
@@ -245,6 +263,9 @@ namespace chordalGraph
 				}
 				else
 				{
+					weights.clear();
+					for(int i = 0; i < (int)childNodes.size(); i++) weights.push_back(childNodes[i].weight);
+
 					samplingArgs.n = toTake;
 					sampling::sampfordFromParetoNaive(samplingArgs, args.randomSource);
 				}
@@ -253,52 +274,56 @@ namespace chordalGraph
 				int i = 0;
 				while (i < toTake)
 				{
-					int originalIndex = parent[indices[i]] / 2;
+					childNodeType& currentChildNode = childNodes[indices[i]];
+					int parentIndex = currentChildNode.getParentIndex();
 					int copyCount = 1;
-					if(i + 1 < toTake && parent[indices[i + 1]] / 2 == originalIndex)
+					if(i + 1 < toTake && childNodes[indices[i + 1]].getParentIndex() == parentIndex)
 					{
 						copyCount = 2;
 					}
 					int newIndex = newCliqueTrees.size();
-					newConditions[newIndex] = conditions[originalIndex];
+					newConditions[newIndex] = conditions[parentIndex];
 					if (copyCount == 1)
 					{
-						newCliqueTrees.push_back(std::move(cliqueTrees[originalIndex]));
-						if(parent[indices[i]] % 2)
+						newCliqueTrees.push_back(std::move(cliqueTrees[parentIndex]));
+						newCliqueTrees.back().weight = currentChildNode.weight;
+						if(childNodes[indices[i]].includesEdge())
 						{
 							newConditions[newIndex][currentEdge] = 1;
-							newNEdges[newIndex] = possibilityEdges[originalIndex];
-							if(!conditions[originalIndex][currentEdge])
+							newNEdges[newIndex] = possibilityEdges[parentIndex];
+							if(!conditions[parentIndex][currentEdge])
 							{
-								newConditions[newIndex] |= unionMinimalSeparators[originalIndex];
-								newCliqueTrees[newIndex].tree.addEdge(currentVertex, currentEdge, unionMinimalSeparators[originalIndex], vertexSequence[originalIndex], edgeSequence[originalIndex], addEdges[originalIndex], removeEdges[originalIndex], temp, true);
+								newConditions[newIndex] |= unionMinimalSeparators[parentIndex];
+								newCliqueTrees[newIndex].tree.addEdge(currentVertex, currentEdge, unionMinimalSeparators[parentIndex], vertexSequence[parentIndex], edgeSequence[parentIndex], addEdges[parentIndex], removeEdges[parentIndex], temp, true);
 							}
 						}
 						else
 						{
-							newNEdges[newIndex] = nEdges[originalIndex];
-							newConditions[newIndex] = conditions[originalIndex];
+							newNEdges[newIndex] = nEdges[parentIndex];
+							newConditions[newIndex] = conditions[parentIndex];
 						}
 						newCliqueTrees[newIndex].weight /= rescaledWeights[indices[i]];
 						i++;
 					}
 					else if (copyCount == 2)
 					{
-						newCliqueTrees.push_back(cliqueTrees[originalIndex]);
-						newCliqueTrees.push_back(std::move(cliqueTrees[originalIndex]));
+						newCliqueTrees.push_back(cliqueTrees[parentIndex]);
+						newCliqueTrees.back().weight = currentChildNode.weight;
+						newCliqueTrees.push_back(std::move(cliqueTrees[parentIndex]));
+						newCliqueTrees.back().weight = childNodes[indices[i + 1]].weight;
 						
-						newConditions[newIndex] = conditions[originalIndex];
-						newConditions[newIndex][currentEdge] = 1;
-						newConditions[newIndex] |= unionMinimalSeparators[originalIndex];
-						newNEdges[newIndex] = possibilityEdges[originalIndex];
-						newCliqueTrees[newIndex].tree.addEdge(currentVertex, currentEdge, unionMinimalSeparators[originalIndex], vertexSequence[originalIndex], edgeSequence[originalIndex], addEdges[originalIndex], removeEdges[originalIndex], temp, true);
+						newConditions[newIndex+1] = conditions[parentIndex];
+						newConditions[newIndex+1][currentEdge] = 1;
+						newConditions[newIndex+1] |= unionMinimalSeparators[parentIndex];
+						newNEdges[newIndex+1] = possibilityEdges[parentIndex];
+						newCliqueTrees[newIndex+1].tree.addEdge(currentVertex, currentEdge, unionMinimalSeparators[parentIndex], vertexSequence[parentIndex], edgeSequence[parentIndex], addEdges[parentIndex], removeEdges[parentIndex], temp, true);
 						
-						newNEdges[newIndex+1] = nEdges[originalIndex];
-						newConditions[newIndex+1] = conditions[originalIndex];
+						newNEdges[newIndex] = nEdges[parentIndex];
+						newConditions[newIndex] = conditions[parentIndex];
 						
 						newCliqueTrees[newIndex].weight /= rescaledWeights[indices[i]];
-						newCliqueTrees[newIndex+1].weight = newCliqueTrees[newIndex].weight;
-						i+= 2;
+						newCliqueTrees[newIndex+1].weight /= rescaledWeights[indices[i+1]];
+						i += 2;
 					}
 				}
 				newCliqueTrees.swap(cliqueTrees);
