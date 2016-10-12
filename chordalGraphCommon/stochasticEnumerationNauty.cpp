@@ -5,27 +5,9 @@
 #include "nauty.h"
 #include "cliqueTree.h"
 #include "cliqueTreeAdjacencyMatrix.h"
-#include <iterator>
+#include "childNode.h"
 namespace chordalGraph
 {
-	struct childNode
-	{
-	public:
-		childNode(int parentIndex, bool includesEdge, double weight)
-			:weight(weight), value(2*parentIndex + includesEdge)
-		{}
-		int getParentIndex() const
-		{
-			return value / 2;
-		}
-		bool includesEdge() const 
-		{
-			return (value % 2) == 1;
-		}
-		double weight;
-	private:
-		int value;
-	};
 	template<typename cliqueTree> void stochasticEnumerationNauty(stochasticEnumerationNautyArgs& args)
 	{
 		args.exact = true;
