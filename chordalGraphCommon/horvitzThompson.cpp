@@ -80,7 +80,7 @@ namespace chordalGraph
 		lab.reserve(args.nVertices);
 		ptn.reserve(args.nVertices);
 		std::vector<graph> nautyGraph;
-		std::vector<std::vector<graph> > cannonicalNautyGraphs(2*args.budget);
+		boost::numeric::ublas::matrix<graph, boost::numeric::ublas::row_major> cannonicalNautyGraphs(2 * args.budget, args.nVertices * SETWORDSNEEDED(args.nVertices));
 
 		//Used to count the number of distinct graphs (up to isomorphism)
 		std::vector<bool> alreadyConsidered(2*args.budget);
@@ -192,11 +192,11 @@ namespace chordalGraph
 						childNodeType& currentChild = childNodes[childCounter];
 						if(!currentChild.includesEdge())
 						{
-							cliqueTrees[currentChild.getParentIndex()].tree.convertToNauty(lab, ptn, orbits, nautyGraph, cannonicalNautyGraphs[childCounter]);
+							cliqueTrees[currentChild.getParentIndex()].tree.convertToNauty(lab, ptn, orbits, nautyGraph, &(cannonicalNautyGraphs(childCounter, 0)));
 						}
 						else
 						{
-							cliqueTrees[currentChild.getParentIndex()].tree.convertToNautyWithEdge(lab, ptn, orbits, nautyGraph, cannonicalNautyGraphs[childCounter], currentEdge, currentVertex);
+							cliqueTrees[currentChild.getParentIndex()].tree.convertToNautyWithEdge(lab, ptn, orbits, nautyGraph, &(cannonicalNautyGraphs(childCounter, 0)), currentEdge, currentVertex);
 						}
 					}
 					//Work out which graphs are isomorphic to a graph earlier on in the set of samples. The weight for those graphs are added to the earlier one.
@@ -211,7 +211,7 @@ namespace chordalGraph
 								if(!alreadyConsidered[childCounter2])
 								{
 									int m = SETWORDSNEEDED(currentVertex);
-									int memcmpResult = memcmp(&(cannonicalNautyGraphs[childCounter][0]), &(cannonicalNautyGraphs[childCounter2][0]), m*currentVertex*sizeof(graph));
+									int memcmpResult = memcmp(&(cannonicalNautyGraphs(childCounter, 0)), &(cannonicalNautyGraphs(childCounter2, 0)), m*currentVertex*sizeof(graph));
 									if(memcmpResult == 0)
 									{
 										weightOther += childNodes[childCounter2].weight;
@@ -281,7 +281,7 @@ namespace chordalGraph
 					{
 						copyCount = 2;
 					}
-					int newIndex = newCliqueTrees.size();
+					int newIndex = (int)newCliqueTrees.size();
 					newConditions[newIndex] = conditions[parentIndex];
 					if (copyCount == 1)
 					{

@@ -76,7 +76,7 @@ namespace chordalGraph
 
 		std::vector<bitsetType> unionMinimalSeparators(args.budget);
 		//Vector used to shuffle indices
-		typedef childNode<double> childNodeType;
+		typedef childNode<int> childNodeType;
 		std::vector<childNodeType> childNodes;
 		childNodes.reserve(2*args.budget);
 

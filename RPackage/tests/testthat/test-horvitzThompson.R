@@ -1,5 +1,5 @@
 context("Test horvitzThompson function")
-test_that("ConditionalPoisson method gives unbiased results for 5 x 5 graph",
+test_that("Horvitz Thompson algorithm gives unbiased results for 5 x 5 graph",
 {
 	data(exact5, envir = environment())
 	nReps <- 600
@@ -17,7 +17,7 @@ test_that("ConditionalPoisson method gives unbiased results for 5 x 5 graph",
 		}
 	}
 })
-test_that("ConditionalPoisson method gives identical results for different values of graphRepresentation",
+test_that("Horvitz Thompson algorithm gives identical results for different values of graphRepresentation",
 {
 	nReps <- 10
 	for(reduceChains in c(TRUE, FALSE))
@@ -34,7 +34,7 @@ test_that("ConditionalPoisson method gives identical results for different value
 	}
 })
 
-test_that("All methods except sampfordMultinomial, conditionalPoisson and pareto give unbiased results for 6 x 6 graph",
+test_that("Horvitz Thompson algorithm gives unbiased results for 6 x 6 graph",
 {
 	data(exact6, envir = environment())
 	nReps <- 600
@@ -49,22 +49,6 @@ test_that("All methods except sampfordMultinomial, conditionalPoisson and pareto
 		for(edgeCount in 1:16)
 		{
 			expect_equal(means[edgeCount], as.numeric(exact6@data[edgeCount]), tolerance = 0.01)
-		}
-	}
-})
-test_that("All methods except sampfordMultinomial, conditionalPoisson and pareto give identicla results for different values of graphRepresentation",
-{
-	nReps <- 10
-	for(reduceChains in c(TRUE, FALSE))
-	{
-		for(i in 1:nReps)
-		{
-			capture.output(resultMatrix <- horvitzThompson(nVertices = 6, seed = i, budget = 30, options = list(reduceChains = reduceChains, graphRepresentation = "matrix")))
-			capture.output(resultList <- horvitzThompson(nVertices = 6, seed = i, budget = 30, options = list(reduceChains = reduceChains, graphRepresentation = "list")))
-			resultList@call <- resultMatrix@call <- call("list")
-			resultList@options <- resultMatrix@options <- list()
-			resultList@start <- resultList@end <- resultMatrix@start <- resultMatrix@end
-			expect_identical(resultList, resultMatrix)
 		}
 	}
 })
