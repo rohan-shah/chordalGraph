@@ -27,13 +27,13 @@ namespace chordalGraph
 		{
 		public:
 			weightedCliqueTree(weightedCliqueTree&& other)
-				: tree(std::move(other.tree)), weight(other.weight), automorphismGroupSize(other.automorphismGroupSize)
+				: tree(std::move(other.tree)), weight(other.weight)
 			{} 
 			weightedCliqueTree(const weightedCliqueTree& other)
-				: tree(other.tree), weight(other.weight), automorphismGroupSize(other.automorphismGroupSize)
+				: tree(other.tree), weight(other.weight) 
 			{}
 			weightedCliqueTree(int nVertices)
-				: tree(nVertices), weight(1), automorphismGroupSize(1)
+				: tree(nVertices), weight(1) 
 			{}
 			void addVertex()
 			{
@@ -41,7 +41,6 @@ namespace chordalGraph
 			}
 			cliqueTree tree;
 			numericType weight;
-			mpz_class automorphismGroupSize;
 		};
 	}
 

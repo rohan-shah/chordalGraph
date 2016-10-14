@@ -11,6 +11,7 @@ SEXP stochasticEnumerationSpecificEdges(SEXP nVertices_sexp, SEXP nEdges_sexp, S
 SEXP stochasticEnumerationNauty(SEXP nVertices_sexp, SEXP budget_sexp, SEXP seed_sexp, SEXP options_sexp);
 SEXP stochasticEnumerationNautySpecificEdges(SEXP nVertices_sexp, SEXP nEdges_sexp, SEXP budget_sexp, SEXP seed_sexp, SEXP options_sexp);
 SEXP horvitzThompson(SEXP nVertices_sexp, SEXP budget_sexp, SEXP seed_sexp, SEXP options_sexp);
+SEXP horvitzThompson2(SEXP nVertices_sexp, SEXP budget_sexp, SEXP seed_sexp, SEXP options_sexp);
 SEXP horvitzThompsonSpecificEdges(SEXP nVertices_sexp, SEXP nEdges_sexp, SEXP budget_sexp, SEXP seed_sexp, SEXP options_sexp);
 R_CallMethodDef callMethods[] = 
 {
@@ -22,6 +23,7 @@ R_CallMethodDef callMethods[] =
 	{"stochasticEnumerationNauty", (DL_FUNC)&stochasticEnumerationNauty, 4},
 	{"stochasticEnumerationNautySpecificEdges", (DL_FUNC)&stochasticEnumerationNautySpecificEdges, 5},
 	{"horvitzThompson", (DL_FUNC)&horvitzThompson, 4},
+	{"horvitzThompson2", (DL_FUNC)&horvitzThompson2, 4},
 	{"horvitzThompsonSpecificEdges", (DL_FUNC)&horvitzThompsonSpecificEdges, 5},
 	{NULL, NULL, 0}
 };
