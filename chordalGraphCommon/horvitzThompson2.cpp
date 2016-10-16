@@ -23,7 +23,7 @@ namespace chordalGraph
 		boost::random::bernoulli_distribution<> standardBernoulli(0.5);
 		//Number of edges either present (or to be added later)
 		std::vector<int> nEdges(args.budget);
-		std::vector<horvitzThompson2Private::weightedCliqueTree<cliqueTree> > cliqueTrees;
+		std::vector<horvitzThompsonPrivate::weightedCliqueTree<cliqueTree> > cliqueTrees;
 		cliqueTrees.reserve(args.budget);
 
 		//At any point we will have a bunch of conditions on what other edges are required to be present (in order to maintain chordality)
@@ -38,7 +38,7 @@ namespace chordalGraph
 		int currentEdge = 0;
 		//We start off with one sample
 		{
-			horvitzThompson2Private::weightedCliqueTree<cliqueTree> initialTree(args.nVertices);
+			horvitzThompsonPrivate::weightedCliqueTree<cliqueTree> initialTree(args.nVertices);
 			initialTree.tree.addVertex();
 			cliqueTrees.push_back(initialTree);
 			nEdges[0] = 0;
@@ -54,7 +54,7 @@ namespace chordalGraph
 		//The conditions, for the new set of samples
 		std::vector<bitsetType> newConditions(args.budget);
 
-		std::vector<horvitzThompson2Private::weightedCliqueTree<cliqueTree> > newCliqueTrees;
+		std::vector<horvitzThompsonPrivate::weightedCliqueTree<cliqueTree> > newCliqueTrees;
 		newCliqueTrees.reserve(args.budget);
 		std::vector<int> newNEdges(args.budget);
 
@@ -65,7 +65,7 @@ namespace chordalGraph
 
 		std::vector<bitsetType> unionMinimalSeparators(args.budget);
 		//Vector used to shuffle indices
-		typedef horvitzThompson2Private::childNode<mpfr_class> childNodeType;
+		typedef childNode<mpfr_class> childNodeType;
 		std::vector<childNodeType> childNodes;
 		childNodes.reserve(args.budget*2);
 
@@ -92,7 +92,7 @@ namespace chordalGraph
 			//There are no conditions when we move to the next vertex
 			std::fill(conditions.begin(), conditions.end(), 0);
 			//Add the extra vertex
-			std::for_each(cliqueTrees.begin(), cliqueTrees.end(), std::mem_fun_ref(&horvitzThompson2Private::weightedCliqueTree<cliqueTree>::addVertex));
+			std::for_each(cliqueTrees.begin(), cliqueTrees.end(), std::mem_fun_ref(&horvitzThompsonPrivate::weightedCliqueTree<cliqueTree>::addVertex));
 			while(currentEdge < currentVertex)
 			{
 				//Clear vector of indices of possibilities
@@ -107,8 +107,8 @@ namespace chordalGraph
 				std::fill(unionMinimalSeparators.begin(), unionMinimalSeparators.end(), 0);
 				for (int sampleCounter = 0; sampleCounter < (int)cliqueTrees.size(); sampleCounter++)
 				{
-					horvitzThompson2Private::weightedCliqueTree<cliqueTree>& currentCliqueTree = cliqueTrees[sampleCounter];
-					bitsetType copiedConditions = conditions[sampleCounter];
+					horvitzThompsonPrivate::weightedCliqueTree<cliqueTree>& currentCliqueTree = cliqueTrees[sampleCounter];
+					bitsetType& copiedConditions = conditions[sampleCounter];
 					//maximum possible number of edges
 					int maxEdges = nEdges[sampleCounter] + nRemainingEdges - (int)(copiedConditions & ~bitsetType((1ULL << (currentEdge+1)) - 1)).count();
 					//Do we need this edge to make up the numbers?
@@ -134,7 +134,7 @@ namespace chordalGraph
 						possibilityEdges[sampleCounter] = nEdges[sampleCounter];
 						
 						//Add correct index to possibilities vector
-						childNodes.push_back(childNodeType(sampleCounter, true, currentCliqueTree.weight, currentCliqueTree.auxWeight));
+						childNodes.push_back(childNodeType(sampleCounter, true, currentCliqueTree.weight));
 					}
 					//This edge could be either present or absent, without further information
 					else
@@ -147,7 +147,7 @@ namespace chordalGraph
 							//continue to the next edge
 							if (!requiresEdge)
 							{
-								childNodes.push_back(childNodeType(sampleCounter, false, currentCliqueTree.weight, currentCliqueTree.auxWeight));
+								childNodes.push_back(childNodeType(sampleCounter, false, currentCliqueTree.weight));
 							}
 							//If we do, then it's impossible to reach the target and there are no children. 
 						}
@@ -162,13 +162,13 @@ namespace chordalGraph
 							//edge can only be missing
 							if (nEdges[sampleCounter] + nAdditionalEdges + 1 > args.nEdges)
 							{
-								childNodes.push_back(childNodeType(sampleCounter, false, currentCliqueTree.weight, currentCliqueTree.auxWeight));
+								childNodes.push_back(childNodeType(sampleCounter, false, currentCliqueTree.weight));
 							}
 							else if (requiresEdge)
 							{
 								//If we need this edge to make up the numbers, don't consider the case where it's missing. 
 								possibilityEdges[sampleCounter] = nEdges[sampleCounter] + 1 + nAdditionalEdges;
-								childNodes.push_back(childNodeType(sampleCounter, true, currentCliqueTree.weight, currentCliqueTree.auxWeight * pow(auxWeightPower, nAdditionalEdges)));
+								childNodes.push_back(childNodeType(sampleCounter, true, currentCliqueTree.weight));
 							}
 							else
 							{
@@ -177,8 +177,8 @@ namespace chordalGraph
 								possibilityEdges[sampleCounter] = nEdges[sampleCounter] + 1 + nAdditionalEdges;
 
 								//Add correct indices to possibilities vector
-								childNodes.push_back(childNodeType(sampleCounter, false, currentCliqueTree.weight, currentCliqueTree.auxWeight));
-								childNodes.push_back(childNodeType(sampleCounter, true, currentCliqueTree.weight, currentCliqueTree.auxWeight * pow(auxWeightPower, nAdditionalEdges)));
+								childNodes.push_back(childNodeType(sampleCounter, false, currentCliqueTree.weight));
+								childNodes.push_back(childNodeType(sampleCounter, true, currentCliqueTree.weight));
 							}
 						}
 					}
@@ -215,13 +215,11 @@ namespace chordalGraph
 									if(memcmpResult == 0)
 									{
 										weightOther += childNodes[childCounter2].weight;
-										weightOtherAux += childNodes[childCounter2].auxWeight;
 										alreadyConsidered[childCounter2] = true;
 									}
 								}
 							}
 							childNodes[childCounter].weight += weightOther;
-							childNodes[childCounter].auxWeight += weightOtherAux;
 						}
 					}
 					std::vector<bool>::reverse_iterator alreadyConsideredIterator = std::vector<bool>::reverse_iterator(alreadyConsidered.begin() + childNodes.size());
@@ -266,7 +264,23 @@ namespace chordalGraph
 				else
 				{
 					weights.clear();
-					for(int i = 0; i < (int)childNodes.size(); i++) weights.push_back(childNodes[i].auxWeight);
+					for(int i = 0; i < (int)childNodes.size(); i++)
+					{
+						int parentIndex = childNodes[i].getParentIndex();
+						bitsetType conditionsRef = conditions[parentIndex];
+						int promisedEdges;
+						if(childNodes[i].includesEdge())
+						{
+							bitsetType additionalEdges = (unionMinimalSeparators[parentIndex] | conditionsRef) & ~bitsetType((1ULL << currentEdge) - 1);
+							promisedEdges = additionalEdges.count();
+						}
+						else
+						{
+							bitsetType additionalEdges = conditionsRef & ~bitsetType((1ULL << currentEdge) - 1);
+							promisedEdges = additionalEdges.count();
+						}
+						weights.push_back(childNodes[i].weight * pow(auxWeightPower, promisedEdges));
+					}
 
 					samplingArgs.n = toTake;
 					sampling::sampfordFromParetoNaive(samplingArgs, args.randomSource);
@@ -289,7 +303,6 @@ namespace chordalGraph
 					{
 						newCliqueTrees.push_back(std::move(cliqueTrees[parentIndex]));
 						newCliqueTrees.back().weight = currentChildNode.weight;
-						newCliqueTrees.back().auxWeight = currentChildNode.auxWeight;
 						if(childNodes[indices[i]].includesEdge())
 						{
 							newConditions[newIndex][currentEdge] = 1;
@@ -306,17 +319,14 @@ namespace chordalGraph
 							newConditions[newIndex] = conditions[parentIndex];
 						}
 						newCliqueTrees[newIndex].weight /= rescaledWeights[indices[i]];
-						newCliqueTrees[newIndex].auxWeight /= rescaledWeights[indices[i]];
 						i++;
 					}
 					else if (copyCount == 2)
 					{
 						newCliqueTrees.push_back(cliqueTrees[parentIndex]);
 						newCliqueTrees.back().weight = currentChildNode.weight;
-						newCliqueTrees.back().auxWeight = currentChildNode.auxWeight;
 						newCliqueTrees.push_back(std::move(cliqueTrees[parentIndex]));
 						newCliqueTrees.back().weight = childNodes[indices[i + 1]].weight;
-						newCliqueTrees.back().auxWeight = childNodes[indices[i + 1]].auxWeight;
 						
 						newConditions[newIndex+1] = conditions[parentIndex];
 						newConditions[newIndex+1][currentEdge] = 1;
@@ -329,8 +339,6 @@ namespace chordalGraph
 						
 						newCliqueTrees[newIndex].weight /= rescaledWeights[indices[i]];
 						newCliqueTrees[newIndex+1].weight /= rescaledWeights[indices[i+1]];
-						newCliqueTrees[newIndex].auxWeight /= rescaledWeights[indices[i]];
-						newCliqueTrees[newIndex+1].auxWeight /= rescaledWeights[indices[i+1]];
 						i += 2;
 					}
 				}
