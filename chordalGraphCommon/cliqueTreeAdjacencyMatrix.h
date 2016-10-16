@@ -10,6 +10,9 @@
 #endif
 #include <boost/multiprecision/mpfr.hpp>
 #include "cliqueTree.h"
+#ifndef NDEBUG
+#define TRACK_GRAPH
+#endif
 namespace chordalGraph
 {
 	class cliqueTreeAdjacencyMatrix
@@ -46,6 +49,7 @@ namespace chordalGraph
 			nVertices(other.nVertices), nMaxVertices(other.nMaxVertices),
 			verticesToCliqueVertices(std::move(other.verticesToCliqueVertices)), componentIDs(std::move(other.componentIDs)), remainingCliqueTreeVertices(std::move(other.remainingCliqueTreeVertices))
 		{}
+		cliqueTreeAdjacencyMatrix& operator=(cliqueTreeAdjacencyMatrix&& other);
 		cliqueTreeAdjacencyMatrix(int maximumVertices);
 		cliqueTreeAdjacencyMatrix(const cliqueTreeAdjacencyMatrix& other)
 			:cliqueGraph(other.cliqueGraph), 
@@ -55,10 +59,12 @@ namespace chordalGraph
 			nVertices(other.nVertices), nMaxVertices(other.nMaxVertices),
 			verticesToCliqueVertices(other.verticesToCliqueVertices), componentIDs(other.componentIDs), remainingCliqueTreeVertices(other.remainingCliqueTreeVertices)
 		{}
+		void makeCopy(const cliqueTreeAdjacencyMatrix& other);
 		const cliqueTreeGraphType& getCliqueGraph() const;
 #ifdef TRACK_GRAPH
 		const graphType& getGraph() const;
 #endif
+		void swap(cliqueTreeAdjacencyMatrix& other);
 		bool tryAddVertexWithEdges(const bitsetType& involvedEdges, unionMinimalSeparatorsTemporaries& temp);
 		void addVertex();
 		int getNVertices();
@@ -75,6 +81,7 @@ namespace chordalGraph
 #endif
 		int getNVertices() const;
 		int maxVertices() const;
+		void reset();
 	private:
 		cliqueTreeGraphType cliqueGraph;
 #ifdef TRACK_GRAPH

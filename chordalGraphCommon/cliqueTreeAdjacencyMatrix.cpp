@@ -10,6 +10,18 @@ namespace chordalGraph
 		return graph;
 	}
 #endif
+	void cliqueTreeAdjacencyMatrix::makeCopy(const cliqueTreeAdjacencyMatrix& other)
+	{
+		cliqueGraph.makeCopy(other.cliqueGraph); 
+#ifdef TRACK_GRAPH
+		graph.makeCopy(other.graph);
+#endif
+		nVertices = other.nVertices;
+		nMaxVertices = other.nMaxVertices;
+		verticesToCliqueVertices = other.verticesToCliqueVertices;
+		componentIDs = other.componentIDs;
+		remainingCliqueTreeVertices = other.remainingCliqueTreeVertices;
+	}
 	const cliqueTreeAdjacencyMatrix::cliqueTreeGraphType& cliqueTreeAdjacencyMatrix::getCliqueGraph() const
 	{
 		return cliqueGraph;
@@ -30,12 +42,15 @@ namespace chordalGraph
 		remainingCliqueTreeVertices.resize(maximumVertices);
 		for(int i = 0; i < maximumVertices; i++) remainingCliqueTreeVertices[maximumVertices - 1 - i] = i;
 	}
+	
 	void cliqueTreeAdjacencyMatrix::addVertex()
 	{
 		int previousVertexCount = nVertices;
 		nVertices++;
 #ifdef TRACK_GRAPH
+#ifndef USE_ADJACENCY_MATRIX_FOR_GRAPH
 		boost::add_vertex(graph);
+#endif
 #endif
 
 		bitsetType newBitset(0);
@@ -62,7 +77,9 @@ namespace chordalGraph
 			newVertex.contents = 0;
 			newVertex.contents[0] = true;
 #ifdef TRACK_GRAPH
+#ifndef USE_ADJACENCY_MATRIX_FOR_GRAPH
 			boost::add_vertex(graph);
+#endif
 #endif
 			nVertices = 1;
 			verticesToCliqueVertices.push_back(newCliqueVertexId);
@@ -127,6 +144,7 @@ namespace chordalGraph
 				//If so we delete one clique vertex. This may invalidate references.
 				int deleted = verticesToCliqueVertices[v];
 				boost::clear_vertex(deleted, cliqueGraph);
+				boost::get(boost::vertex_name, cliqueGraph, deleted).contents.reset();
 				cliqueGraph.num_vertices--;
 				remainingCliqueTreeVertices.push_back(deleted);
 				
@@ -362,6 +380,7 @@ namespace chordalGraph
 					}
 					//Clear edges
 					boost::clear_vertex(smallerVertexIndex, cliqueGraph);
+					boost::get(boost::vertex_name, cliqueGraph, smallerVertexIndex).contents.reset();
 					cliqueGraph.num_vertices--;
 					remainingCliqueTreeVertices.push_back(smallerVertexIndex);
 					currentPathEdge = edgeSequenceInternalEdges.erase(currentPathEdge);
@@ -570,7 +589,6 @@ namespace chordalGraph
 	}
 	void cliqueTreeAdjacencyMatrix::check() const
 	{
-		std::size_t nCliqueVertices = boost::num_vertices(cliqueGraph);
 		{
 			cliqueTreeGraphType::vertex_iterator current, end;
 			boost::tie(current, end) = boost::vertices(cliqueGraph);
@@ -578,6 +596,7 @@ namespace chordalGraph
 			for (; current != end; current++)
 			{
 				bitsetType contents = boost::get(boost::vertex_name, cliqueGraph, *current).contents;
+				if(contents.none()) continue;
 				unionCliqueVertices |= contents;
 #ifdef TRACK_GRAPH
 				for (int i = 0; i < (int)nVertices; i++)
@@ -630,18 +649,65 @@ namespace chordalGraph
 		}
 		
 		//Check that vertices induce connected subtrees.
-		std::vector<int> connectedComponents(nCliqueVertices);
+		std::vector<int> connectedComponents(nMaxVertices);
+		std::vector<boost::default_color_type> colours(nMaxVertices);
 		for (int i = 0; i < (int)nVertices; i++)
 		{
 			filterByVertex filterObject(&cliqueGraph);
 			filterObject.vertex = i;
 			boost::filtered_graph<cliqueTreeAdjacencyMatrix::cliqueTreeGraphType, boost::keep_all, filterByVertex> filteredGraph(cliqueGraph, boost::keep_all(), filterObject);
-			int componentsCount = boost::connected_components(filteredGraph, &(connectedComponents[0]));
+			int componentsCount = boost::connected_components(filteredGraph, &(connectedComponents[0]), boost::color_map(&(colours[0])));
 			if (componentsCount > 1)
 			{
 				throw std::runtime_error("Vertex induced a disconnected tree of the clique graph");
 			}
 		}
+	}
+	void cliqueTreeAdjacencyMatrix::reset()
+	{
+		nVertices = 0;
+		cliqueGraph.clear();
+		for(int i = 0; i < nMaxVertices; i++) 
+		{
+			bitsetType& currentVertexContents = boost::get(boost::vertex_name, cliqueGraph, i).contents;
+			currentVertexContents.reset();
+		}
+#ifdef TRACK_GRAPH
+#ifndef USE_ADJACENCY_MATRIX_FOR_GRAPH
+		graph = graphType();
+#else 
+		graph.clear();
+#endif
+#endif
+		remainingCliqueTreeVertices.resize(nMaxVertices);
+		componentIDs.clear();
+		for(int i = 0; i < nMaxVertices; i++) remainingCliqueTreeVertices[nMaxVertices - 1 - i] = i;
+		verticesToCliqueVertices.clear();
+	}
+	void cliqueTreeAdjacencyMatrix::swap(cliqueTreeAdjacencyMatrix& other)
+	{
+		cliqueGraph.swap(other.cliqueGraph);
+#ifdef TRACK_GRAPH
+		graph.swap(other.graph);
+#endif
+		std::swap(nVertices, other.nVertices);
+		std::swap(nMaxVertices, other.nMaxVertices);
+		verticesToCliqueVertices.swap(other.verticesToCliqueVertices);
+		componentIDs.swap(other.componentIDs);
+		remainingCliqueTreeVertices.swap(other.remainingCliqueTreeVertices);
+	}
+	cliqueTreeAdjacencyMatrix& cliqueTreeAdjacencyMatrix::operator=(cliqueTreeAdjacencyMatrix&& other)
+	{
+		cliqueGraph = std::move(other.cliqueGraph); 
+#ifdef TRACK_GRAPH
+		graph = std::move(other.graph); 
+#endif
+		nVertices = other.nVertices;
+		nMaxVertices = other.nMaxVertices;
+		verticesToCliqueVertices = std::move(other.verticesToCliqueVertices);
+		componentIDs = std::move(other.componentIDs);
+		remainingCliqueTreeVertices = std::move(other.remainingCliqueTreeVertices);
+		return *this;
 	}
 #ifdef HAS_NAUTY
 	void cliqueTreeAdjacencyMatrix::convertToNauty(std::vector<int>& lab, std::vector<int>& ptn, std::vector<int>& orbits, std::vector<::graph>& nautyGraph, std::vector<::graph>& cannonicalNautyGraph)

@@ -9,6 +9,9 @@
 #include "nauty.h"
 #endif
 #include <boost/multiprecision/mpfr.hpp>
+#ifndef NDEBUG
+#define TRACK_GRAPH
+#endif
 typedef boost::multiprecision::mpz_int mpz_class;
 namespace chordalGraph
 {
@@ -63,6 +66,16 @@ namespace chordalGraph
 			:base(other)
 		{
 		}
+		void swap(type& other)
+		{
+			detailType::m_vertices.swap(other.detailType::m_vertices);
+			detailType::m_edges.swap(other.detailType::m_edges);
+		}
+		void makeCopy(const type& other)
+		{
+			detailType::m_vertices = other.detailType::m_vertices;
+			detailType::m_edges = other.detailType::m_edges;
+		}
 		moveable_adjacency_list(type&& other)
 		{
 			detailType::m_vertices.swap(other.detailType::m_vertices);
@@ -90,6 +103,12 @@ namespace chordalGraph
 		moveable_adjacency_matrix(const type& other)
 			:base(other), num_vertices(other.num_vertices)
 		{}
+		void clear()
+		{
+			std::fill(type::base::m_matrix.begin(), type::base::m_matrix.end(), 0);
+			type::base::m_num_edges = 0;
+			num_vertices = 0;
+		}
 		moveable_adjacency_matrix(type&& other)
 			: base(0)
 		{
@@ -98,6 +117,22 @@ namespace chordalGraph
 			type::base::m_vertex_properties.swap(other.m_vertex_properties);
 			type::base::m_num_edges = other.m_num_edges;
 			num_vertices = other.num_vertices;
+		}
+		void makeCopy(const type& other)
+		{
+			type::base::m_matrix = other.type::base::m_matrix;
+			type::base::m_vertex_set = other.m_vertex_set;
+			type::base::m_vertex_properties = other.m_vertex_properties;
+			type::base::m_num_edges = other.m_num_edges;
+			num_vertices = other.num_vertices;
+		}
+		void swap(type& other)
+		{
+			type::base::m_matrix.swap(other.m_matrix);
+			std::swap(type::base::m_vertex_set, other.m_vertex_set);
+			type::base::m_vertex_properties.swap(other.m_vertex_properties);
+			std::swap(type::base::m_num_edges, other.m_num_edges);
+			std::swap(num_vertices, other.num_vertices);
 		}
 		type& operator=(type&& other)
 		{
