@@ -52,39 +52,11 @@ namespace chordalGraph
 
 			if(copied.tryRemoveEdge(randomVertex1, randomVertex2, temp.colourVector, temp.counts1, temp.counts2))
 			{
-				std::vector<int>& vertexList = temp.vertexList;
-				vertexList.clear();
-				int totalOtherRemovableEdges = 0;
-tryRemoveAnotherEdge:
-				for(int i = 0; i < nVertices; i++)
-				{
-					if(temp.counts2[i] == 1 && temp.counts1[i] != 1)
-					{
-						if(!copied.tryRemoveEdge(randomVertex1, i, temp.colourVector, temp.counts1, temp.counts2))
-						{
-							throw std::runtime_error("Internal error");
-						}
-						totalOtherRemovableEdges--;
-						vertexList.push_back(i);
-						goto tryRemoveAnotherEdge;
-					}
-				}
-				boost::random::uniform_int_distribution<> extraNumberToRemoveDist(0, totalOtherRemovableEdges);
-				int extraToRemove = extraNumberToRemoveDist(randomSource);
-				mpfr_class acceptanceValue = (exactValues[original_edges] / exactValues[original_edges - 1 - extraToRemove]) * (totalOtherRemovableEdges + 1);
-				while((int)vertexList.size() != totalOtherRemovableEdges)
-				{
-					bitsetType newEdges;
-					copied.addEdge(randomVertex1, vertexList.back(), newEdges, temp.vertexSequence, temp.edgeSequence, temp.addEdges, temp.removeEdges, temp.unionMinimalSepTemp, false);
-				}
+				mpfr_class acceptanceValue = (exactValues[original_edges] / exactValues[original_edges - 1]);
 				if(acceptanceValue >= 1 || standardUniform(randomSource) <= acceptanceValue.convert_to<double>())
 				{
 					currentTree.swap(copied);
 					boost::remove_edge(randomVertex1, randomVertex2, graph);
-					for(int i = 0; i < totalOtherRemovableEdges; i++)
-					{
-						boost::remove_edge(randomVertex1, vertexList[i], graph);
-					}
 #ifdef TRACK_GRAPH
 					if(boost::num_edges(currentTree.getGraph()) != boost::num_edges(graph)) throw std::runtime_error("Internal error");
 #endif
@@ -97,20 +69,13 @@ tryRemoveAnotherEdge:
 			bitsetType newEdgesVertex1;
 			copied.unionMinimalSeparators(randomVertex1, randomVertex2, newEdgesVertex1, temp.vertexSequence, temp.edgeSequence, temp.addEdges, temp.removeEdges, temp.unionMinimalSepTemp);
 			int increaseInEdges = (int)newEdgesVertex1.count() + 1;
-			if((int)original_edges + increaseInEdges <= edgeLimit)
+			if((int)original_edges + increaseInEdges <= edgeLimit && increaseInEdges == 1)
 			{
 				mpfr_class acceptanceValue = exactValues[original_edges] / exactValues[original_edges + increaseInEdges];
 				copied.addEdge(randomVertex1, randomVertex2, newEdgesVertex1, temp.vertexSequence, temp.edgeSequence, temp.addEdges, temp.removeEdges, temp.unionMinimalSepTemp, true);
 				if(acceptanceValue >= 1 || standardUniform(randomSource) <= acceptanceValue.convert_to<double>())
 				{
-					newEdgesVertex1[randomVertex2] = true;
-					for(int i = 0; i < nVertices; i++)
-					{
-						if(newEdgesVertex1[i])
-						{
-							boost::add_edge(randomVertex1, i, graph);
-						}
-					}
+					boost::add_edge(randomVertex1, randomVertex2, graph);
 					currentTree.swap(copied);
 				}
 			}
@@ -160,7 +125,7 @@ tryRemoveAnotherEdge:
 			step(currentTree, graph, exactValues, nVertices, randomSource, temp, edgeLimit);
 		}
 		std::vector<std::size_t> counters(exactValues.size(), 0);
-		const int sampleSize = 100000;
+		const int sampleSize = 10000;
 		for(int i = 0; i < sampleSize; i++)
 		{
 			step(currentTree, graph, exactValues, nVertices, randomSource, temp, edgeLimit);

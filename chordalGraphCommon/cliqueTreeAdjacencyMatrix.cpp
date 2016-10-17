@@ -10,6 +10,297 @@ namespace chordalGraph
 		return graph;
 	}
 #endif
+	struct removeEdgeHelper
+	{
+		removeEdgeHelper(int nVertices, int* componentIDs, int valueToInsert)
+			:nVertices(nVertices), componentIDs(componentIDs), valueToInsert(valueToInsert)
+		{}
+		void initialize_vertex(cliqueTreeAdjacencyMatrix::cliqueTreeGraphType::vertex_descriptor v, const cliqueTreeAdjacencyMatrix::cliqueTreeGraphType& g)
+		{}
+		void finish_vertex(cliqueTreeAdjacencyMatrix::cliqueTreeGraphType::vertex_descriptor v, const cliqueTreeAdjacencyMatrix::cliqueTreeGraphType& g)
+		{}
+		void start_vertex(cliqueTreeAdjacencyMatrix::cliqueTreeGraphType::vertex_descriptor v, const cliqueTreeAdjacencyMatrix::cliqueTreeGraphType& g)
+		{}
+		void examine_edge(cliqueTreeAdjacencyMatrix::cliqueTreeGraphType::edge_descriptor v, const cliqueTreeAdjacencyMatrix::cliqueTreeGraphType& g)
+		{}
+		void tree_edge(cliqueTreeAdjacencyMatrix::cliqueTreeGraphType::edge_descriptor v, const cliqueTreeAdjacencyMatrix::cliqueTreeGraphType& g)
+		{}
+		void back_edge(cliqueTreeAdjacencyMatrix::cliqueTreeGraphType::edge_descriptor v, const cliqueTreeAdjacencyMatrix::cliqueTreeGraphType& g)
+		{}
+		void forward_or_cross_edge(cliqueTreeAdjacencyMatrix::cliqueTreeGraphType::edge_descriptor v, const cliqueTreeAdjacencyMatrix::cliqueTreeGraphType& g)
+		{}
+		void discover_vertex(cliqueTreeAdjacencyMatrix::cliqueTreeGraphType::vertex_descriptor v, const cliqueTreeAdjacencyMatrix::cliqueTreeGraphType& g)
+		{
+			bitsetType contents = boost::get(boost::vertex_name, g, v).contents;
+			for(int i = 0; i < nVertices; i++)
+			{
+				if(contents[i])
+				{
+					componentIDs[i] = valueToInsert;
+				}
+			}
+		}
+		int nVertices;
+		int* componentIDs;
+		int valueToInsert;
+	};
+	bool cliqueTreeAdjacencyMatrix::tryRemoveEdge(int u, int v, std::vector<boost::default_color_type>& colourVector, std::vector<int>& counts1, std::vector<int>& counts2)
+	{
+		int cliqueVertex = -1;
+		cliqueTreeGraphType::vertex_iterator current, end;
+		boost::tie(current, end) = boost::vertices(cliqueGraph);
+		bitsetType foundVertexContents;
+		std::fill(counts1.begin(), counts1.end(), 0);
+		for(; current != end; current++)
+		{
+			bitsetType contents = boost::get(boost::vertex_name, cliqueGraph, *current).contents;
+			if(contents[u])
+			{
+				if(contents[v])
+				{
+					cliqueVertex = (int)*current;
+					foundVertexContents = contents;
+				}
+				for(int other = 0; other < nVertices; other++)
+				{
+					if(contents[other])
+					{
+						counts1[other]++;
+					}
+				}
+			}
+		}
+		if(counts1[v] != 1) return false;
+
+		bitsetType foundVertexContentsMinusU = foundVertexContents, foundVertexContentsMinusV = foundVertexContents;
+		foundVertexContentsMinusU[u] = false;
+		foundVertexContentsMinusV[v] = false;
+	
+		bool removeVertexMinusU = false, removeVertexMinusV = false;
+		int largerVertexMinusU = -1, largerVertexMinusV = -1;
+		cliqueTreeGraphType::out_edge_iterator currentOut, endOut;
+		boost::tie(currentOut, endOut) = boost::out_edges(cliqueVertex, cliqueGraph);
+		for(; currentOut != endOut; currentOut++)
+		{
+			cliqueTreeGraphType::edge_descriptor e = *currentOut;
+			if((int)boost::target(e, cliqueGraph) == cliqueVertex) throw std::runtime_error("Internal error");
+			bitsetType targetContents = boost::get(boost::vertex_name, cliqueGraph, boost::target(e, cliqueGraph)).contents;
+			if((~targetContents & foundVertexContentsMinusU).none())
+			{
+				largerVertexMinusU = boost::target(e, cliqueGraph);
+				removeVertexMinusU = true;
+			}
+			if((~targetContents & foundVertexContentsMinusV).none())
+			{
+				largerVertexMinusV = boost::target(e, cliqueGraph);
+				removeVertexMinusV = true;
+			}
+		}
+		//If there are only two vertices in this clique, then we're actually breaking a connected component
+		if(foundVertexContents.count() == 2)
+		{
+			//Both U and V are connected to other stuff
+			if(removeVertexMinusU && removeVertexMinusV)
+			{
+				remainingCliqueTreeVertices.push_back(cliqueVertex);
+				boost::get(boost::vertex_name, cliqueGraph, cliqueVertex).contents.reset();
+				verticesToCliqueVertices[v] = largerVertexMinusU;
+				verticesToCliqueVertices[u] = largerVertexMinusV;
+
+				cliqueTreeGraphType::out_edge_iterator current, end;
+				boost::tie(current, end) = boost::out_edges(cliqueVertex, cliqueGraph);
+				for(; current != end; current++)
+				{
+					cliqueTreeGraphType::edge_descriptor e = *currentOut;
+					if((int)boost::target(e, cliqueGraph) == cliqueVertex) throw std::runtime_error("Internal error");
+					bitsetType targetContents = boost::get(boost::vertex_name, cliqueGraph, boost::target(e, cliqueGraph)).contents;
+					if(targetContents[v])
+					{
+						boost::add_edge(boost::target(e, cliqueGraph), largerVertexMinusU, cliqueGraph);
+						boost::remove_edge(boost::target(e, cliqueGraph), cliqueVertex, cliqueGraph);
+					}
+					if(targetContents[u])
+					{
+						boost::add_edge(boost::target(e, cliqueGraph), largerVertexMinusV, cliqueGraph);
+						boost::remove_edge(boost::target(e, cliqueGraph), cliqueVertex, cliqueGraph);
+					}
+				}
+				boost::clear_vertex(cliqueVertex, cliqueGraph);
+
+				int newComponentSize = *std::max_element(componentIDs.begin(), componentIDs.end())+1;
+				removeEdgeHelper visitor(nVertices, &(componentIDs[0]), newComponentSize);
+				colourVector.resize(nMaxVertices);
+				boost::iterator_property_map<std::vector<boost::default_color_type>::iterator, boost::identity_property_map> colorMap(colourVector.begin());
+				boost::depth_first_visit(cliqueGraph, largerVertexMinusU, visitor, colorMap);
+
+			}
+			//Here only v is connected to other stuff, so u ends up by itself. 
+			else if(removeVertexMinusU)
+			{
+				int newComponentSize = *std::max_element(componentIDs.begin(), componentIDs.end())+1;
+				bitsetType& firstBitset = boost::get(boost::vertex_name, cliqueGraph, cliqueVertex).contents;
+				firstBitset.reset();
+				firstBitset[u] = true;
+				componentIDs[u] = newComponentSize;
+
+				verticesToCliqueVertices[u] = cliqueVertex;
+				verticesToCliqueVertices[v] = largerVertexMinusU;
+		
+				cliqueTreeGraphType::out_edge_iterator current, end;
+				boost::tie(current, end) = boost::out_edges(cliqueVertex, cliqueGraph);
+				for(; current != end; current++)
+				{
+					cliqueTreeGraphType::edge_descriptor e = *currentOut;
+					if((int)boost::target(e, cliqueGraph) == cliqueVertex) throw std::runtime_error("Internal error");
+					bitsetType targetContents = boost::get(boost::vertex_name, cliqueGraph, boost::target(e, cliqueGraph)).contents;
+					if(targetContents[v])
+					{
+						boost::add_edge(boost::target(e, cliqueGraph), largerVertexMinusU, cliqueGraph);
+						boost::remove_edge(boost::target(e, cliqueGraph), cliqueVertex, cliqueGraph);
+					}
+				}
+				boost::clear_vertex(cliqueVertex, cliqueGraph);
+			}
+			//Here only u is connected to other stuff, so v ends up by itself. 
+			else if(removeVertexMinusV)
+			{
+				int newComponentSize = *std::max_element(componentIDs.begin(), componentIDs.end())+1;
+				bitsetType& firstBitset = boost::get(boost::vertex_name, cliqueGraph, cliqueVertex).contents;
+				firstBitset.reset();
+				firstBitset[v] = true;
+				componentIDs[v] = newComponentSize;
+
+				verticesToCliqueVertices[v] = cliqueVertex;
+				verticesToCliqueVertices[u] = largerVertexMinusV;
+
+				cliqueTreeGraphType::out_edge_iterator current, end;
+				boost::tie(current, end) = boost::out_edges(cliqueVertex, cliqueGraph);
+				for(; current != end; current++)
+				{
+					cliqueTreeGraphType::edge_descriptor e = *currentOut;
+					if((int)boost::target(e, cliqueGraph) == cliqueVertex) throw std::runtime_error("Internal error");
+					bitsetType targetContents = boost::get(boost::vertex_name, cliqueGraph, boost::target(e, cliqueGraph)).contents;
+					if(targetContents[u])
+					{
+						boost::add_edge(boost::target(e, cliqueGraph), largerVertexMinusV, cliqueGraph);
+						boost::remove_edge(boost::target(e, cliqueGraph), cliqueVertex, cliqueGraph);
+					}
+				}
+				boost::clear_vertex(cliqueVertex, cliqueGraph);
+			}
+			//In this case we're breaking a single isolated link.
+			else
+			{
+				int newComponentSize = *std::max_element(componentIDs.begin(), componentIDs.end())+1;
+
+				boost::clear_vertex(cliqueVertex, cliqueGraph);
+				bitsetType& firstBitset = boost::get(boost::vertex_name, cliqueGraph, cliqueVertex).contents;
+				firstBitset.reset();
+				firstBitset[u] = true;
+				componentIDs[u] = newComponentSize;
+				verticesToCliqueVertices[u] = cliqueVertex;
+
+				int newCliqueVertex = remainingCliqueTreeVertices.back();
+				remainingCliqueTreeVertices.pop_back();
+				bitsetType& secondBitset = boost::get(boost::vertex_name, cliqueGraph, newCliqueVertex).contents;
+				secondBitset.reset();
+				secondBitset[v] = true;
+				componentIDs[v] = newComponentSize+1;
+				verticesToCliqueVertices[v] = newCliqueVertex;
+			}
+		}
+		else if(removeVertexMinusU && removeVertexMinusV)
+		{
+			remainingCliqueTreeVertices.push_back(cliqueVertex);
+			boost::clear_vertex(cliqueVertex, cliqueGraph);
+			boost::get(boost::vertex_name, cliqueGraph, cliqueVertex).contents.reset();
+			verticesToCliqueVertices[v] = largerVertexMinusU;
+			verticesToCliqueVertices[u] = largerVertexMinusV;
+		}
+		else if(removeVertexMinusU)
+		{
+			cliqueTreeGraphType::out_edge_iterator current, end;
+			boost::tie(current, end) = boost::out_edges(cliqueVertex, cliqueGraph);
+			verticesToCliqueVertices[v] = largerVertexMinusU;
+			verticesToCliqueVertices[u] = cliqueVertex;
+			for(; current != end; current++)
+			{
+				cliqueTreeGraphType::edge_descriptor e = *currentOut;
+				if((int)boost::target(e, cliqueGraph) == cliqueVertex) throw std::runtime_error("Internal error");
+				bitsetType targetContents = boost::get(boost::vertex_name, cliqueGraph, boost::target(e, cliqueGraph)).contents;
+				if(targetContents[v])
+				{
+					boost::add_edge(boost::target(e, cliqueGraph), largerVertexMinusU, cliqueGraph);
+					boost::remove_edge(boost::target(e, cliqueGraph), cliqueVertex, cliqueGraph);
+				}
+			}
+			boost::get(boost::vertex_name, cliqueGraph, cliqueVertex).contents[v] = false;
+		}
+		else if(removeVertexMinusV)
+		{
+			cliqueTreeGraphType::out_edge_iterator current, end;
+			boost::tie(current, end) = boost::out_edges(cliqueVertex, cliqueGraph);
+			verticesToCliqueVertices[u] = largerVertexMinusV;
+			verticesToCliqueVertices[v] = cliqueVertex;
+			for(; current != end; current++)
+			{
+				cliqueTreeGraphType::edge_descriptor e = *currentOut;
+				if((int)boost::target(e, cliqueGraph) == cliqueVertex) throw std::runtime_error("Internal error");
+				bitsetType targetContents = boost::get(boost::vertex_name, cliqueGraph, boost::target(e, cliqueGraph)).contents;
+				if(targetContents[u])
+				{
+					boost::add_edge(boost::target(e, cliqueGraph), largerVertexMinusV, cliqueGraph);
+					boost::remove_edge(boost::target(e, cliqueGraph), cliqueVertex, cliqueGraph);
+				}
+			}
+			boost::get(boost::vertex_name, cliqueGraph, cliqueVertex).contents[u] = false;
+		}
+		else
+		{
+			int newCliqueVertex = remainingCliqueTreeVertices.back();
+			remainingCliqueTreeVertices.pop_back();
+			cliqueGraph.num_vertices++;
+			cliqueTreeGraphType::out_edge_iterator current, end;
+			boost::tie(current, end) = boost::out_edges(cliqueVertex, cliqueGraph);
+			for(; current != end; current++)
+			{
+				cliqueTreeGraphType::edge_descriptor e = *currentOut;
+				if((int)boost::target(e, cliqueGraph) == cliqueVertex) throw std::runtime_error("Internal error");
+				bitsetType targetContents = boost::get(boost::vertex_name, cliqueGraph, boost::target(e, cliqueGraph)).contents;
+				if(targetContents[v])
+				{
+					boost::add_edge(boost::target(e, cliqueGraph), newCliqueVertex, cliqueGraph);
+					boost::remove_edge(boost::target(e, cliqueGraph), cliqueVertex, cliqueGraph);
+				}
+			}
+			boost::get(boost::vertex_name, cliqueGraph, newCliqueVertex).contents = foundVertexContentsMinusU;
+			boost::get(boost::vertex_name, cliqueGraph, cliqueVertex).contents = foundVertexContentsMinusV;
+			verticesToCliqueVertices[u] = cliqueVertex;
+			verticesToCliqueVertices[v] = newCliqueVertex;
+		}
+#ifdef TRACK_GRAPH
+		boost::remove_edge(u, v, graph);
+#endif
+		std::fill(counts2.begin(), counts2.end(), 0);
+		for(; current != end; current++);
+		{
+			bitsetType contents = boost::get(boost::vertex_name, cliqueGraph, *current).contents;
+			if(contents[u])
+			{
+				for(int other = 0; other < nVertices; other++)
+				{
+					if(contents[other])
+					{
+						counts2[other]++;
+					}
+				}
+			}
+		}
+#ifndef NDEBUG
+		check();
+#endif
+		return true;
+	}
 	void cliqueTreeAdjacencyMatrix::makeCopy(const cliqueTreeAdjacencyMatrix& other)
 	{
 		cliqueGraph.makeCopy(other.cliqueGraph); 
@@ -50,6 +341,8 @@ namespace chordalGraph
 #ifdef TRACK_GRAPH
 #ifndef USE_ADJACENCY_MATRIX_FOR_GRAPH
 		boost::add_vertex(graph);
+#else
+		graph.num_vertices++;
 #endif
 #endif
 
@@ -662,6 +955,24 @@ namespace chordalGraph
 				throw std::runtime_error("Vertex induced a disconnected tree of the clique graph");
 			}
 		}
+#ifdef TRACK_GRAPH
+		//Check that the componentIDs entry is correct. 
+		boost::connected_components(graph, &(connectedComponents[0]));
+		for(int i = 0; i < (int)nVertices; i++)
+		{
+			for(int j = i + 1; j < (int)nVertices; j++)
+			{
+				if(connectedComponents[i] == connectedComponents[j])
+				{
+					if(componentIDs[i] != componentIDs[j]) throw std::runtime_error("Entry componentIDs was incorrect");
+				}
+				else
+				{
+					if(componentIDs[i] == componentIDs[j]) throw std::runtime_error("Entry componentIDs was incorrect");
+				}
+			}
+		}
+#endif
 	}
 	void cliqueTreeAdjacencyMatrix::reset()
 	{

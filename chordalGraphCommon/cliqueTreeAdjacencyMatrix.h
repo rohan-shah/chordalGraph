@@ -61,6 +61,7 @@ namespace chordalGraph
 		{}
 		void makeCopy(const cliqueTreeAdjacencyMatrix& other);
 		const cliqueTreeGraphType& getCliqueGraph() const;
+		bool tryRemoveEdge(int u, int v, std::vector<boost::default_color_type>& colourVector, std::vector<int>& counts1, std::vector<int>& counts2);
 #ifdef TRACK_GRAPH
 		const graphType& getGraph() const;
 #endif
