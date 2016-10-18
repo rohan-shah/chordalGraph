@@ -42,12 +42,11 @@ namespace chordalGraph
 		} while(randomVertex1 == randomVertex2);
 		std::size_t original_edges = boost::num_edges(graph);
 		std::pair<graphType::edge_descriptor, bool> existingEdge = boost::edge(randomVertex1, randomVertex2, graph);
-		cliqueTreeAdjacencyMatrix& copied = temp.copied;
-		copied.makeCopy(currentTree);
 
 		//Here we remove edges
 		if(existingEdge.second)
 		{
+			cliqueTreeAdjacencyMatrix& copied = temp.copied;
 			copied.makeCopy(currentTree);
 
 			if(copied.tryRemoveEdge(randomVertex1, randomVertex2, temp.colourVector, temp.counts1, temp.counts2))
@@ -85,9 +84,6 @@ tryRemoveAnotherEdge:
 					{
 						boost::remove_edge(randomVertex1, vertexList[i], graph);
 					}
-#ifdef TRACK_GRAPH
-					if(boost::num_edges(currentTree.getGraph()) != boost::num_edges(graph)) throw std::runtime_error("Internal error");
-#endif
 				}
 			}
 		}
@@ -95,14 +91,14 @@ tryRemoveAnotherEdge:
 		else
 		{
 			bitsetType newEdgesVertex1;
-			copied.unionMinimalSeparators(randomVertex1, randomVertex2, newEdgesVertex1, temp.vertexSequence, temp.edgeSequence, temp.addEdges, temp.removeEdges, temp.unionMinimalSepTemp);
+			currentTree.unionMinimalSeparators(randomVertex1, randomVertex2, newEdgesVertex1, temp.vertexSequence, temp.edgeSequence, temp.addEdges, temp.removeEdges, temp.unionMinimalSepTemp);
 			int increaseInEdges = (int)newEdgesVertex1.count() + 1;
 			if((int)original_edges + increaseInEdges <= edgeLimit)
 			{
 				mpfr_class acceptanceValue = exactValues[original_edges] / exactValues[original_edges + increaseInEdges];
-				copied.addEdge(randomVertex1, randomVertex2, newEdgesVertex1, temp.vertexSequence, temp.edgeSequence, temp.addEdges, temp.removeEdges, temp.unionMinimalSepTemp, true);
 				if(acceptanceValue >= 1 || standardUniform(randomSource) <= acceptanceValue.convert_to<double>())
 				{
+					currentTree.addEdge(randomVertex1, randomVertex2, newEdgesVertex1, temp.vertexSequence, temp.edgeSequence, temp.addEdges, temp.removeEdges, temp.unionMinimalSepTemp, true);
 					newEdgesVertex1[randomVertex2] = true;
 					for(int i = 0; i < nVertices; i++)
 					{
@@ -111,12 +107,8 @@ tryRemoveAnotherEdge:
 							boost::add_edge(randomVertex1, i, graph);
 						}
 					}
-					currentTree.swap(copied);
 				}
 			}
-#ifdef TRACK_GRAPH
-			if(boost::num_edges(currentTree.getGraph()) != boost::num_edges(graph)) throw std::runtime_error("Internal error");
-#endif
 		}
 		currentTree.check();
 	}
