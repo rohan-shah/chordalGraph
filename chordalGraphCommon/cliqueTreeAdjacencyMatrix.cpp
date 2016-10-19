@@ -65,11 +65,13 @@ namespace chordalGraph
 				}
 			}
 		}
+		if(u == v) return false;
 		if(counts[v] != 1) return false;
 		return true;
 	}
 	bool cliqueTreeAdjacencyMatrix::tryRemoveEdge(int u, int v, std::vector<boost::default_color_type>& colourVector, std::vector<int>& counts1, std::vector<int>& counts2)
 	{
+		if(u == v) return false;
 		int cliqueVertex = -1;
 		if(!canRemoveEdge(u, v, counts1, cliqueVertex)) return false;
 		removeEdgeKnownCliqueVertex(u, v, colourVector, counts2, cliqueVertex);
@@ -256,6 +258,7 @@ namespace chordalGraph
 			boost::add_edge(largerVertexMinusU, largerVertexMinusV, cliqueGraph);
 			remainingCliqueTreeVertices.push_back(cliqueVertex);
 			boost::clear_vertex(cliqueVertex, cliqueGraph);
+			cliqueGraph.num_vertices--;
 			boost::get(boost::vertex_name, cliqueGraph, cliqueVertex).contents.reset();
 		}
 		else if(removeVertexMinusU)
@@ -327,17 +330,16 @@ namespace chordalGraph
 		boost::remove_edge(u, v, graph);
 #endif
 		std::fill(counts2.begin(), counts2.end(), 0);
-		cliqueTreeGraphType::vertex_iterator current, end;
-		for(; current != end; current++);
+		for(int other = 0; other < nVertices; other++)
 		{
-			bitsetType contents = boost::get(boost::vertex_name, cliqueGraph, *current).contents;
+			bitsetType contents = boost::get(boost::vertex_name, cliqueGraph, other).contents;
 			if(contents[u])
 			{
-				for(int other = 0; other < nVertices; other++)
+				for(int other2 = 0; other2 < nVertices; other2++)
 				{
-					if(contents[other])
+					if(contents[other2])
 					{
-						counts2[other]++;
+						counts2[other2]++;
 					}
 				}
 			}
