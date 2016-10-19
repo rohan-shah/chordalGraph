@@ -76,7 +76,7 @@ tryRemoveAnotherEdge:
 				mpfr_class acceptanceValue = (exactValues[original_edges] / exactValues[original_edges - 1 - extraToRemove]) * (totalOtherRemovableEdges + 1);
 				if(acceptanceValue >= 1 || standardUniform(randomSource) <= acceptanceValue.convert_to<double>())
 				{
-					while((int)vertexList.size() != totalOtherRemovableEdges)
+					while((int)vertexList.size() != extraToRemove)
 					{
 						bitsetType newEdges;
 						copied.addEdge(randomVertex1, vertexList.back(), newEdges, temp.vertexSequence, temp.edgeSequence, temp.addEdges, temp.removeEdges, temp.unionMinimalSepTemp, false);
@@ -84,13 +84,12 @@ tryRemoveAnotherEdge:
 					}
 					currentTree.swap(copied);
 					boost::remove_edge(randomVertex1, randomVertex2, graph);
-					for(int i = 0; i < totalOtherRemovableEdges; i++)
+					for(int i = 0; i < extraToRemove; i++)
 					{
 						boost::remove_edge(randomVertex1, vertexList[i], graph);
 					}
 				}
 			}
-			else goto proposeAnother;
 		}
 		//Here we add edges
 		else
@@ -142,7 +141,6 @@ tryRemoveAnotherEdge2:
 					}
 				}
 			}
-			else goto proposeAnother;
 		}
 #ifndef NDEBUG
 		currentTree.check();
@@ -195,7 +193,7 @@ tryRemoveAnotherEdge2:
 		mpfr_class exactValuesSum = 0;
 		for(std::vector<mpfr_class>::iterator i = exactValues.begin(); i != exactValues.end(); i++) exactValuesSum += *i;
 
-		int nVertices = 9;
+		int nVertices = 4;
 		int edgeLimit = exactValues.size()-1;
 		cliqueTreeType currentTree(nVertices);
 		graphType graph(nVertices);
@@ -203,7 +201,7 @@ tryRemoveAnotherEdge2:
 
 		working temp(nVertices);
 		//burn-in
-		for(int i = 0; i < 10000; i++)
+		for(int i = 0; i < 50000; i++)
 		{
 			step(currentTree, graph, exactValues, nVertices, randomSource, temp, edgeLimit);
 		}

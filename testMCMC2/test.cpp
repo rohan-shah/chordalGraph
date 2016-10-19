@@ -55,7 +55,6 @@ proposeAnother:
 					boost::remove_edge(randomVertex1, randomVertex2, graph);
 				}
 			}
-			else goto proposeAnother;
 		}
 		//Here we add edges
 		else
@@ -76,7 +75,6 @@ proposeAnother:
 					boost::add_edge(randomVertex1, randomVertex2, graph);
 				}
 			}
-			else goto proposeAnother;
 		}
 	}
 	void main()
@@ -126,7 +124,7 @@ proposeAnother:
 		mpfr_class exactValuesSum = 0;
 		for(std::vector<mpfr_class>::iterator i = exactValues.begin(); i != exactValues.end(); i++) exactValuesSum += *i;
 
-		int nVertices = 9;
+		int nVertices = 4;
 		int edgeLimit = exactValues.size()-1;
 		cliqueTreeType currentTree(nVertices);
 		graphType graph(nVertices);
@@ -157,7 +155,7 @@ proposeAnother:
 		working temp(nVertices);
 		std::vector<std::size_t> counters(exactValues.size(), 0);
 		//burn-in
-		for(int i = 0; i < 10000; i++)
+		for(int i = 0; i < 50000; i++)
 		{
 			step(currentTree, graph, exactValues, nVertices, randomSource, temp, edgeLimit);
 			counters[boost::num_edges(graph)]++;
