@@ -900,18 +900,18 @@ namespace chordalGraph
 		}
 	}
 	//Used to filter clique tree by a graph vertex (the resulting graph should be connected)
-	struct filterByVertex
+	struct filterByVertexAdjacency
 	{
-		filterByVertex(const cliqueTreeAdjacencyMatrix::cliqueTreeGraphType* cliqueGraph)
+		filterByVertexAdjacency(const cliqueTreeAdjacencyMatrix::cliqueTreeGraphType* cliqueGraph)
 			:cliqueGraph(cliqueGraph)
 		{}
-		filterByVertex()
+		filterByVertexAdjacency()
 			:cliqueGraph(NULL), vertex(-1)
 		{}
-		filterByVertex(const filterByVertex& other)
+		filterByVertexAdjacency(const filterByVertexAdjacency& other)
 			:cliqueGraph(other.cliqueGraph), vertex(other.vertex)
 		{}
-		filterByVertex& operator=(const filterByVertex& other)
+		filterByVertexAdjacency& operator=(const filterByVertexAdjacency& other)
 		{
 			cliqueGraph = other.cliqueGraph;
 			vertex = other.vertex;
@@ -1017,9 +1017,9 @@ namespace chordalGraph
 		std::vector<boost::default_color_type> colours(nMaxVertices);
 		for (int i = 0; i < (int)nVertices; i++)
 		{
-			filterByVertex filterObject(&cliqueGraph);
+			filterByVertexAdjacency filterObject(&cliqueGraph);
 			filterObject.vertex = i;
-			boost::filtered_graph<cliqueTreeAdjacencyMatrix::cliqueTreeGraphType, boost::keep_all, filterByVertex> filteredGraph(cliqueGraph, boost::keep_all(), filterObject);
+			boost::filtered_graph<cliqueTreeAdjacencyMatrix::cliqueTreeGraphType, boost::keep_all, filterByVertexAdjacency> filteredGraph(cliqueGraph, boost::keep_all(), filterObject);
 			int componentsCount = boost::connected_components(filteredGraph, &(connectedComponents[0]), boost::color_map(&(colours[0])));
 			if (componentsCount > 1)
 			{

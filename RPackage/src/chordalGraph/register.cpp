@@ -13,6 +13,8 @@ SEXP stochasticEnumerationNautySpecificEdges(SEXP nVertices_sexp, SEXP nEdges_se
 SEXP horvitzThompson(SEXP nVertices_sexp, SEXP budget_sexp, SEXP seed_sexp, SEXP options_sexp);
 SEXP horvitzThompson2(SEXP nVertices_sexp, SEXP budget_sexp, SEXP seed_sexp, SEXP options_sexp);
 SEXP horvitzThompsonSpecificEdges(SEXP nVertices_sexp, SEXP nEdges_sexp, SEXP budget_sexp, SEXP seed_sexp, SEXP options_sexp);
+SEXP customMCMC(SEXP nVertices, SEXP approximateCounts, SEXP seed, SEXP burnIn, SEXP runSize);
+SEXP armstrongMCMC(SEXP nVertices, SEXP approximateCounts, SEXP seed, SEXP burnIn, SEXP runSize);
 R_CallMethodDef callMethods[] = 
 {
 	{"isChordalIterative_igraph", (DL_FUNC)&isChordalIterative_igraph, 1},
@@ -25,6 +27,8 @@ R_CallMethodDef callMethods[] =
 	{"horvitzThompson", (DL_FUNC)&horvitzThompson, 4},
 	{"horvitzThompson2", (DL_FUNC)&horvitzThompson2, 4},
 	{"horvitzThompsonSpecificEdges", (DL_FUNC)&horvitzThompsonSpecificEdges, 5},
+	{"customMCMC", (DL_FUNC)&customMCMC, 5}, 
+	{"armstrongMCMC", (DL_FUNC)&armstrongMCMC, 5}, 
 	{NULL, NULL, 0}
 };
 RcppExport void R_init_chordalGraph(DllInfo *info)
