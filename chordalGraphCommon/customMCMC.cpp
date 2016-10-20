@@ -4,6 +4,7 @@
 #include <boost/random/bernoulli_distribution.hpp>
 #include <boost/range/algorithm/random_shuffle.hpp>
 #include <boost/random/random_number_generator.hpp>
+#include <boost/random/discrete_distribution.hpp>
 #include <iostream>
 namespace chordalGraph
 {
@@ -48,9 +49,20 @@ tryRemoveAnotherEdge:
 						goto tryRemoveAnotherEdge;
 					}
 				}
-				boost::random::uniform_int_distribution<> extraNumberToRemoveDist(0, totalOtherRemovableEdges);
-				int extraToRemove = extraNumberToRemoveDist(randomSource);
-				mpfr_class acceptanceValue = (exactValues[original_edges] / exactValues[original_edges - 1 - extraToRemove]) * (totalOtherRemovableEdges + 1);
+				int extraToRemove = 0;
+				temp.probabilities.clear();
+				double sum = 0;
+				for(int i = 0; i < totalOtherRemovableEdges + 1; i++)
+				{
+					temp.probabilities.push_back(mpfr_class(exactValues[original_edges] / exactValues[original_edges - i - 1]).convert_to<double>());
+					sum += temp.probabilities.back();
+				}
+				if(totalOtherRemovableEdges > 0)
+				{
+					boost::random::discrete_distribution<> extraNumberToRemoveDist(temp.probabilities.begin(), temp.probabilities.end());
+					extraToRemove = extraNumberToRemoveDist(randomSource);
+				}
+				mpfr_class acceptanceValue = sum;
 				if(acceptanceValue >= 1 || standardUniform(randomSource) <= acceptanceValue.convert_to<double>())
 				{
 					while((int)vertexList.size() != extraToRemove)
@@ -104,7 +116,12 @@ tryRemoveAnotherEdge2:
 						goto tryRemoveAnotherEdge2;
 					}
 				}
-				mpfr_class acceptanceValue = (exactValues[original_edges] / exactValues[original_edges + increaseInEdges]) / (increaseInEdges + extraCanRemove);
+				double sum = 0;
+				for(int i = 0; i < increaseInEdges + extraCanRemove; i++)
+				{
+					sum += mpfr_class(exactValues[original_edges + increaseInEdges] / exactValues[original_edges + increaseInEdges - i - 1]).convert_to<double>();
+				}
+				mpfr_class acceptanceValue = 1/sum;
 				if(acceptanceValue >= 1 || standardUniform(randomSource) <= acceptanceValue.convert_to<double>())
 				{
 					currentTree.swap(copied);

@@ -24,6 +24,7 @@ namespace chordalGraph
 		std::vector<int> counts1, counts2;
 		std::vector<boost::default_color_type> colourVector;
 		std::vector<int> vertexList;
+		std::vector<double> probabilities;
 	};
 	struct mcmcArgs
 	{
