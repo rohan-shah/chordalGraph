@@ -1237,7 +1237,7 @@ namespace chordalGraph
 						stateCounts[newSubset.count() - 1]++;
 						uniqueSubsets.insert(newSubset);
 						current.currentSearchStart = currentVertex+1;
-						stack.push_back(stackEntry(newSubset, current.countsToBitset | current.excluded, bitsetType(), currentVertex, 0));
+						stack.push_back(stackEntry(newSubset, current.excluded, bitsetType(), currentVertex, 0));
 						copied.tryRemoveEdge(u, currentVertex, temporaries.colourVector, temporaries.counts2);
 						goto continueWhileLoop;
 					}
