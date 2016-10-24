@@ -23,59 +23,94 @@ namespace chordalGraph
 		std::pair<graphType::edge_descriptor, bool> existingEdge = boost::edge(randomVertex1, randomVertex2, graph);
 
 		cliqueTreeAdjacencyMatrix& copied = temp.copied;
-		cliqueTreeAdjacencyMatrix& copied2 = temp.copied2;
 		//Here we remove edges
 		if(existingEdge.second)
 		{
 			int cliqueVertex = -1;
+			//Can we remove this edge?
 			if(currentTree.canRemoveEdge(randomVertex1, randomVertex2, temp.counts1, cliqueVertex))
 			{
-				copied.makeCopy(currentTree);
-				copied.removeEdgeKnownCliqueVertex(randomVertex1, randomVertex2, temp.colourVector, temp.counts2, cliqueVertex);
-				std::vector<int>& vertexList = temp.vertexList;
-				vertexList.clear();
-				int totalOtherRemovableEdges = 0;
-tryRemoveAnotherEdge:
-				for(int i = 0; i < nVertices; i++)
+				//Form tree of removable edge subsets and work out the counts. 
+				currentTree.formRemovalTree(temp.stateCounts, copied, randomVertex1, randomVertex2, temp.uniqueSubsets, temp.removalTemporaries);
+				//The maximum number of other removable edges, in addition to edge (u, v).  
+				int maximumOtherRemovableEdges = 0;
+				for(int i = 0; i < nVertices; i++) 
 				{
-					if(temp.counts2[i] == 1 && temp.counts1[i] != 1 && i != randomVertex1)
-					{
-						if(!copied.tryRemoveEdge(randomVertex1, i, temp.colourVector, temp.counts1, temp.counts2))
-						{
-							throw std::runtime_error("Internal error");
-						}
-						totalOtherRemovableEdges++;
-						vertexList.push_back(i);
-						goto tryRemoveAnotherEdge;
-					}
+					if(temp.stateCounts[i] == 0) break;
+					maximumOtherRemovableEdges = i;
 				}
+				//The number of edges to actually remove for the proposal. 
 				int extraToRemove = 0;
+				//Compute probabilities and normalizing constant. 
 				temp.probabilities.clear();
-				double sum = 0;
-				for(int i = 0; i < totalOtherRemovableEdges + 1; i++)
+				double sum1 = 0;
+				for(int i = 0; i < maximumOtherRemovableEdges + 1; i++)
 				{
 					temp.probabilities.push_back(mpfr_class(exactValues[original_edges] / exactValues[original_edges - i - 1]).convert_to<double>());
-					sum += temp.probabilities.back();
+					sum1 += temp.probabilities.back();
 				}
-				if(totalOtherRemovableEdges > 0)
+				if(maximumOtherRemovableEdges > 0)
 				{
 					boost::random::discrete_distribution<> extraNumberToRemoveDist(temp.probabilities.begin(), temp.probabilities.end());
 					extraToRemove = extraNumberToRemoveDist(randomSource);
 				}
-				mpfr_class acceptanceValue = sum;
-				if(acceptanceValue >= 1 || standardUniform(randomSource) <= acceptanceValue.convert_to<double>())
+				//The acceptance probability for the Metropolis-Hasting proposal. 
+				mpfr_class acceptanceProbability = 0;
+				//If we actually only remove a single edge then things are more complicated - There are two ways this can happen, the second way corresponds to swapping randomVertex1 and randomVertex2
+				if(extraToRemove == 0)
 				{
-					while((int)vertexList.size() != extraToRemove)
+					//Form tree of removable edge subsets and work out the counts. 
+					currentTree.formRemovalTree(temp.stateCounts, copied, randomVertex2, randomVertex1, temp.uniqueSubsets, temp.removalTemporaries);
+					
+					int maximumOtherRemovableEdges2 = 0;
+					for(int i = 0; i < nVertices; i++)
 					{
-						bitsetType newEdges;
-						copied.addEdge(randomVertex1, vertexList.back(), newEdges, temp.vertexSequence, temp.edgeSequence, temp.addEdges, temp.removeEdges, temp.unionMinimalSepTemp, false);
-						vertexList.pop_back();
+						if(temp.stateCounts[i] == 0) break;
+						maximumOtherRemovableEdges2 = i;
 					}
-					currentTree.swap(copied);
-					boost::remove_edge(randomVertex1, randomVertex2, graph);
-					for(int i = 0; i < extraToRemove; i++)
+					double sum2 = 0;
+					for(int i = 0; i < maximumOtherRemovableEdges2 + 1; i++)
 					{
-						boost::remove_edge(randomVertex1, vertexList[i], graph);
+						sum2 += mpfr_class(exactValues[original_edges] / exactValues[original_edges - i - 1]).convert_to<double>();
+					}
+					acceptanceProbability = 1/(0.5 * (1/sum1 + 1/sum2));
+				}
+				else acceptanceProbability = sum1 * temp.stateCounts[extraToRemove];
+				if(acceptanceProbability >= 1 || standardUniform(randomSource) <= acceptanceProbability.convert_to<double>())
+				{
+					currentTree.removeEdgeKnownCliqueVertex(randomVertex1, randomVertex2, temp.colourVector, temp.counts2, cliqueVertex);
+					boost::remove_edge(randomVertex1, randomVertex2, graph);
+					if(extraToRemove != 0)
+					{
+						boost::random::uniform_int_distribution<> randomSubset(0, temp.stateCounts[extraToRemove] - 1);
+						int index = randomSubset(randomSource);
+						bitsetType chosenSubset;
+						for(std::unordered_set<bitsetType>::iterator i = temp.uniqueSubsets.begin(); i != temp.uniqueSubsets.end(); i++)
+						{
+							if((int)i->count() == extraToRemove+1)
+							{
+								if(index == 0)
+								{
+									chosenSubset = *i;
+									break;
+								}
+								index--;
+							}
+						}
+						//This is 1 rather than 0, because the edge randomVertex1, randomVertex2 is already deleted. 
+						while(chosenSubset.count() > 1)
+						{
+							currentTree.canRemoveEdge(randomVertex1, randomVertex2, temp.counts1, cliqueVertex);
+							for(int i = 0; i < nVertices; i++)
+							{
+								if(chosenSubset[i] && temp.counts1[i] == 1)
+								{
+									chosenSubset[i] = false;
+									currentTree.tryRemoveEdge(randomVertex1, i, temp.colourVector, temp.counts2);
+									boost::remove_edge(randomVertex1, i, graph);
+								}
+							}
+						}
 					}
 				}
 			}
@@ -83,6 +118,7 @@ tryRemoveAnotherEdge:
 		//Here we add edges
 		else
 		{
+			cliqueTreeAdjacencyMatrix& copied2 = temp.copied2;
 			bitsetType newEdgesVertex1;
 			currentTree.unionMinimalSeparators(randomVertex1, randomVertex2, newEdgesVertex1, temp.vertexSequence, temp.edgeSequence, temp.addEdges, temp.removeEdges, temp.unionMinimalSepTemp);
 			int increaseInEdges = 1;
@@ -92,37 +128,66 @@ tryRemoveAnotherEdge:
 			}
 			if((int)original_edges + increaseInEdges <= edgeLimit)
 			{
-				copied.makeCopy(currentTree);
-				copied2.makeCopy(currentTree);
-				//Run this just to fill temp.counts2
-				int cliqueVertex = -1;
-				currentTree.canRemoveEdge(randomVertex1, randomVertex2, temp.counts2, cliqueVertex);
-				//Actually add the edges to the copy
-				copied.addEdge(randomVertex1, randomVertex2, newEdgesVertex1, temp.vertexSequence, temp.edgeSequence, temp.addEdges, temp.removeEdges, temp.unionMinimalSepTemp, true);
-				//Run this just to fill temp.counts1
-				copied.canRemoveEdge(randomVertex1, randomVertex2, temp.counts1, cliqueVertex);
-				//Work out how many more edges can be removed from the original
-				int extraCanRemove = 0;
-tryRemoveAnotherEdge2:
-				for(int i = 0; i < nVertices; i++)
+				mpfr_class acceptanceProbability;
+				if(increaseInEdges != 1)
 				{
-					if(temp.counts2[i] == 1 && temp.counts1[i] != 1 && i != randomVertex1)
+					copied.makeCopy(currentTree);
+					//Actually add the edges to the copy
+					copied.addEdge(randomVertex1, randomVertex2, newEdgesVertex1, temp.vertexSequence, temp.edgeSequence, temp.addEdges, temp.removeEdges, temp.unionMinimalSepTemp, true);
+					copied.formRemovalTree(temp.stateCounts, copied2, randomVertex1, randomVertex2, temp.uniqueSubsets, temp.removalTemporaries);
+					//Work out how many more edges can be removed from the original
+					int otherBackwardsCanRemove = 0;
+					for(int i = 0; i < nVertices; i++) 
 					{
-						if(!copied2.tryRemoveEdge(randomVertex1, i, temp.colourVector, temp.counts1, temp.counts2))
-						{
-							throw std::runtime_error("Internal error");
-						}
-						extraCanRemove++;
-						goto tryRemoveAnotherEdge2;
+						if(temp.stateCounts[i] == 0) break;
+						otherBackwardsCanRemove = i;
 					}
+
+					double sum = 0;
+					for(int i = 0; i < otherBackwardsCanRemove + 1; i++)
+					{
+						sum += mpfr_class(exactValues[original_edges + increaseInEdges] / exactValues[original_edges + increaseInEdges - i - 1]).convert_to<double>();
+					}
+					acceptanceProbability = 1/(sum * temp.stateCounts[increaseInEdges - 1]);
 				}
-				double sum = 0;
-				for(int i = 0; i < increaseInEdges + extraCanRemove; i++)
+				else
 				{
-					sum += mpfr_class(exactValues[original_edges + increaseInEdges] / exactValues[original_edges + increaseInEdges - i - 1]).convert_to<double>();
+					copied.makeCopy(currentTree);
+					//Actually add the edges to the copy
+					copied.addEdge(randomVertex1, randomVertex2, newEdgesVertex1, temp.vertexSequence, temp.edgeSequence, temp.addEdges, temp.removeEdges, temp.unionMinimalSepTemp, true);
+					//Form removal tree with the vertices the same way round
+					copied.formRemovalTree(temp.stateCounts, copied2, randomVertex1, randomVertex2, temp.uniqueSubsets, temp.removalTemporaries);
+					//Work out how many more edges can be removed from the original
+					int otherBackwardsCanRemove = 0;
+					for(int i = 0; i < nVertices; i++) 
+					{
+						if(temp.stateCounts[i] == 0) break;
+						otherBackwardsCanRemove = i;
+					}
+
+					double sum1 = 0;
+					for(int i = 0; i < otherBackwardsCanRemove + 1; i++)
+					{
+						sum1 += mpfr_class(exactValues[original_edges + increaseInEdges] / exactValues[original_edges + increaseInEdges - i - 1]).convert_to<double>();
+					}
+					//Form removal tree with the vertices reversed
+					copied.formRemovalTree(temp.stateCounts, copied2, randomVertex2, randomVertex1, temp.uniqueSubsets, temp.removalTemporaries);
+					//Work out how many more edges can be removed from the original
+					int otherBackwardsCanRemove2 = 0;
+					for(int i = 0; i < nVertices; i++) 
+					{
+						if(temp.stateCounts[i] == 0) break;
+						otherBackwardsCanRemove2 = i;
+					}
+
+					double sum2 = 0;
+					for(int i = 0; i < otherBackwardsCanRemove2 + 1; i++)
+					{
+						sum2 += mpfr_class(exactValues[original_edges + increaseInEdges] / exactValues[original_edges + increaseInEdges - i - 1]).convert_to<double>();
+					}
+					acceptanceProbability = 0.5 * (1/sum1 + 1/sum2);
 				}
-				mpfr_class acceptanceValue = 1/sum;
-				if(acceptanceValue >= 1 || standardUniform(randomSource) <= acceptanceValue.convert_to<double>())
+				if (acceptanceProbability >= 1 || standardUniform(randomSource) <= acceptanceProbability.convert_to<double>())
 				{
 					currentTree.swap(copied);
 					newEdgesVertex1[randomVertex2] = true;

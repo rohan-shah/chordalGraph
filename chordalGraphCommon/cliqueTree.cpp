@@ -73,19 +73,19 @@ namespace chordalGraph
 		std::list<externalEdge> edgeSequence;
 		std::vector<externalEdge> addEdges;
 		std::vector<externalEdge> removeEdges;
-		for (int i = 0; i < nVertices; i++)
+		for (int i = 0; i < nVertices-1; i++)
 		{
 			if (copiedInvolvedEdges[i])
 			{
 				unionMinimalSeparatorBitset.reset();
-				unionMinimalSeparators(nVertices, i, unionMinimalSeparatorBitset, vertexSequence, edgeSequence, addEdges, removeEdges, temp);
+				unionMinimalSeparators(nVertices-1, i, unionMinimalSeparatorBitset, vertexSequence, edgeSequence, addEdges, removeEdges, temp);
 				//If we need to add something that we weren't going to, then we don't
 				//have a chordal graph. So throw an error. 
 				if ((unionMinimalSeparatorBitset & (~involvedEdges)).any())
 				{
 					return false;
 				}
-				addEdge(nVertices, i, unionMinimalSeparatorBitset, vertexSequence, edgeSequence, addEdges, removeEdges, temp, true);
+				addEdge(nVertices-1, i, unionMinimalSeparatorBitset, vertexSequence, edgeSequence, addEdges, removeEdges, temp, true);
 				//We can now safely ignore the edges in unionMinimalSeparatorBitset
 				//That is, they've been added so don't try and add them again
 				copiedInvolvedEdges = copiedInvolvedEdges & (~unionMinimalSeparatorBitset);

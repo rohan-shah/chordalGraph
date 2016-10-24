@@ -19,12 +19,10 @@ namespace chordalGraph
 	{
 	public:
 		typedef moveable_adjacency_matrix<boost::property<boost::vertex_name_t, cliqueVertex>, boost::no_property> cliqueTreeGraphType;
-#ifdef TRACK_GRAPH
 #ifdef USE_ADJACENCY_MATRIX_FOR_GRAPH
 		typedef moveable_adjacency_matrix<> graphType;
 #else
 		typedef moveable_adjacency_list<> graphType;
-#endif
 #endif
 		struct unionMinimalSeparatorsTemporaries
 		{
@@ -62,7 +60,7 @@ namespace chordalGraph
 		void makeCopy(const cliqueTreeAdjacencyMatrix& other);
 		const cliqueTreeGraphType& getCliqueGraph() const;
 		bool canRemoveEdge(int u, int v, std::vector<int>& counts, int& cliqueVertex);
-		bool tryRemoveEdge(int u, int v, std::vector<boost::default_color_type>& colourVector, std::vector<int>& counts1, std::vector<int>& counts2);
+		bool tryRemoveEdge(int u, int v, std::vector<boost::default_color_type>& colourVector, std::vector<int>& countsAfter);
 		bool removeEdgeKnownCliqueVertex(int u, int v, std::vector<boost::default_color_type>& colourVector, std::vector<int>& counts2, int cliqueVertex);
 #ifdef TRACK_GRAPH
 		const graphType& getGraph() const;
@@ -85,6 +83,27 @@ namespace chordalGraph
 		int getNVertices() const;
 		int maxVertices() const;
 		void reset();
+		struct stackEntry
+		{
+		public:
+			stackEntry(bitsetType currentSet, bitsetType excluded, bitsetType countsToBitset, int lastVertex, int currentSearchStart)
+				: currentSet(currentSet), excluded(excluded), countsToBitset(countsToBitset), lastVertex(lastVertex), currentSearchStart(currentSearchStart)
+			{}
+			bitsetType currentSet, excluded, countsToBitset;
+			int lastVertex, currentSearchStart;
+		};
+		struct formRemovalTreeTemporaries
+		{
+			std::vector<stackEntry> stack;
+			std::vector<int> counts1, counts2;
+			std::vector<boost::default_color_type> colourVector;
+			std::list<cliqueTreeGraphType::vertex_descriptor> vertexSequence;
+			std::list<externalEdge> edgeSequence;
+			std::vector<externalEdge> addEdges;
+			std::vector<externalEdge> removeEdges;
+			unionMinimalSeparatorsTemporaries unionTemporaries;
+		};
+		void formRemovalTree(std::vector<int>& outputCounts, cliqueTreeAdjacencyMatrix& copied, int u, int v, std::unordered_set<bitsetType>& uniqueSubsets, formRemovalTreeTemporaries& temporaries);
 	private:
 		cliqueTreeGraphType cliqueGraph;
 #ifdef TRACK_GRAPH

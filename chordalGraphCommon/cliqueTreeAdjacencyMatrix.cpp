@@ -47,17 +47,15 @@ namespace chordalGraph
 	bool cliqueTreeAdjacencyMatrix::canRemoveEdge(int u, int v, std::vector<int>& counts, int& cliqueVertex)
 	{
 		cliqueVertex = -1;
-		cliqueTreeGraphType::vertex_iterator current, end;
-		boost::tie(current, end) = boost::vertices(cliqueGraph);
 		std::fill(counts.begin(), counts.end(), 0);
-		for(; current != end; current++)
+		for(int current = 0; current < nVertices; current++)
 		{
-			bitsetType contents = boost::get(boost::vertex_name, cliqueGraph, *current).contents;
+			bitsetType contents = boost::get(boost::vertex_name, cliqueGraph, current).contents;
 			if(contents[u])
 			{
 				if(contents[v])
 				{
-					cliqueVertex = (int)*current;
+					cliqueVertex = current;
 				}
 				for(int other = 0; other < nVertices; other++)
 				{
@@ -69,12 +67,12 @@ namespace chordalGraph
 		if(counts[v] != 1) return false;
 		return true;
 	}
-	bool cliqueTreeAdjacencyMatrix::tryRemoveEdge(int u, int v, std::vector<boost::default_color_type>& colourVector, std::vector<int>& counts1, std::vector<int>& counts2)
+	bool cliqueTreeAdjacencyMatrix::tryRemoveEdge(int u, int v, std::vector<boost::default_color_type>& colourVector, std::vector<int>& countsAfter)
 	{
 		if(u == v) return false;
 		int cliqueVertex = -1;
-		if(!canRemoveEdge(u, v, counts1, cliqueVertex)) return false;
-		removeEdgeKnownCliqueVertex(u, v, colourVector, counts2, cliqueVertex);
+		if(!canRemoveEdge(u, v, countsAfter, cliqueVertex)) return false;
+		removeEdgeKnownCliqueVertex(u, v, colourVector, countsAfter, cliqueVertex);
 		return true;
 	}
 	bool cliqueTreeAdjacencyMatrix::removeEdgeKnownCliqueVertex(int u, int v, std::vector<boost::default_color_type>& colourVector, std::vector<int>& counts2, int cliqueVertex)
@@ -439,19 +437,19 @@ namespace chordalGraph
 		std::list<externalEdge> edgeSequence;
 		std::vector<externalEdge> addEdges;
 		std::vector<externalEdge> removeEdges;
-		for (int i = 0; i < nVertices; i++)
+		for (int i = 0; i < nVertices-1; i++)
 		{
 			if (copiedInvolvedEdges[i])
 			{
 				unionMinimalSeparatorBitset.reset();
-				unionMinimalSeparators(nVertices, i, unionMinimalSeparatorBitset, vertexSequence, edgeSequence, addEdges, removeEdges, temp);
+				unionMinimalSeparators(nVertices-1, i, unionMinimalSeparatorBitset, vertexSequence, edgeSequence, addEdges, removeEdges, temp);
 				//If we need to add something that we weren't going to, then we don't
 				//have a chordal graph. So throw an error. 
 				if ((unionMinimalSeparatorBitset & (~involvedEdges)).any())
 				{
 					return false;
 				}
-				addEdge(nVertices, i, unionMinimalSeparatorBitset, vertexSequence, edgeSequence, addEdges, removeEdges, temp, true);
+				addEdge(nVertices-1, i, unionMinimalSeparatorBitset, vertexSequence, edgeSequence, addEdges, removeEdges, temp, true);
 				//We can now safely ignore the edges in unionMinimalSeparatorBitset
 				//That is, they've been added so don't try and add them again
 				copiedInvolvedEdges = copiedInvolvedEdges & (~unionMinimalSeparatorBitset);
@@ -1179,48 +1177,76 @@ namespace chordalGraph
 		ADDONEEDGE(&(nautyGraph[0]), v1, v2, m);
 		densenauty(&(nautyGraph[0]), &(lab[0]), &(ptn[0]), &(orbits[0]), &options, &stats, m, n, cannonicalNautyGraph);
 	}
-/*	void cliqueTreeAdjacencyMatrix::userlevelproc(int* lab, int* ptn, int level, int* orbits, statsblk* stats, int tv, int index, int tcellsize, int numcells, int childcount, int n)
-	{
-		*(mpz_class*)&(lab[-4]) *= index;
-	}
-	void cliqueTreeAdjacencyMatrix::convertToNautyAndCountAutomorphisms(std::vector<int>& lab, std::vector<int>& ptn, std::vector<int>& orbits, std::vector<graph>& nautyGraph, std::vector<graph>& cannonicalNautyGraph, mpz_class& automorphismCount)
-	{
-#ifdef TRACK_GRAPH
-		std::size_t nVertices = boost::num_vertices(graph);
 #endif
-		static DEFAULTOPTIONS_GRAPH(options);
-		statsblk stats;
-		options.getcanon = true;
-		options.userlevelproc = &cliqueTreeAdjacencyMatrix::userlevelproc;
+	void cliqueTreeAdjacencyMatrix::formRemovalTree(std::vector<int>& stateCounts, cliqueTreeAdjacencyMatrix& copied, int u, int v, std::unordered_set<bitsetType>& uniqueSubsets, formRemovalTreeTemporaries& temporaries)
+	{
+		stateCounts.resize(nVertices);
 
-		int n = nVertices;
-		int m = SETWORDSNEEDED(n);
-		nauty_check(WORDSIZE, m, n, NAUTYVERSIONID);
-		lab.resize(n+4);
-		ptn.resize(n);
-		orbits.resize(n);
-		nautyGraph.resize(n * m);
-		EMPTYGRAPH(&(nautyGraph[0]), m, n);
-		cliqueTreeAdjacencyMatrix::cliqueTreeGraphType::vertex_iterator current, end;
-		boost::tie(current, end) = boost::vertices(cliqueGraph);
-		for(; current != end; current++)
+		std::vector<stackEntry>& stack = temporaries.stack;
+		stack.clear();
+		
+		uniqueSubsets.clear();
+
+		std::vector<int>& counts1 = temporaries.counts1;
+		std::vector<int>& counts2 = temporaries.counts2;
+		counts1.resize(nVertices);
+		counts2.resize(nVertices);
+
+		std::vector<boost::default_color_type>& colourVector = temporaries.colourVector;
+		colourVector.resize(nVertices);
+
+		std::fill(stateCounts.begin(), stateCounts.end(), 0);
+		copied.makeCopy(*this);
+
+		bitsetType startSet;
+		startSet[v] = true;
+
+		bitsetType excluded;
+		excluded[u] = excluded[v] = true;
+
+		stack.push_back(stackEntry(startSet, excluded, bitsetType(), v, 0));
+		int cliqueVertex;
+		copied.canRemoveEdge(u, v, counts1, cliqueVertex);
+		copied.removeEdgeKnownCliqueVertex(u, v, colourVector, counts2, cliqueVertex);
+		stateCounts[0] = 1;
+		while(stack.size() > 0)
 		{
-			bitsetType bitset = boost::get(boost::vertex_name, cliqueGraph, *current).contents;
-			for(int i = 0; i < n; i++)
+			bitsetType unionMinimalSeparatorBitset;
+			stackEntry& current = stack.back();
+			if(current.currentSearchStart == 0)
 			{
-				for(int j = 0; j < n; j++)
+				copied.canRemoveEdge(u, v, counts2, cliqueVertex);
+				bitsetType& countsToBitset = current.countsToBitset;
+				countsToBitset.reset();
+				for(int currentVertex = 0; currentVertex != nVertices; currentVertex++)
 				{
-					if(bitset[i] && bitset[j])
+					if(counts2[currentVertex] == 1 && counts1[currentVertex] != 1 && !current.excluded[currentVertex])
 					{
-						ADDONEEDGE(&(nautyGraph[0]), i, j, m);
+						countsToBitset[currentVertex] = true;
 					}
 				}
 			}
+			for(int currentVertex = current.currentSearchStart; currentVertex != nVertices; currentVertex++)
+			{
+				if(current.countsToBitset[currentVertex])
+				{
+					bitsetType newSubset = current.currentSet;
+					newSubset[currentVertex] = true;
+					if(uniqueSubsets.find(newSubset) == uniqueSubsets.end())
+					{
+						stateCounts[newSubset.count() - 1]++;
+						uniqueSubsets.insert(newSubset);
+						current.currentSearchStart = currentVertex+1;
+						stack.push_back(stackEntry(newSubset, current.countsToBitset | current.excluded, bitsetType(), currentVertex, 0));
+						copied.tryRemoveEdge(u, currentVertex, temporaries.colourVector, temporaries.counts2);
+						goto continueWhileLoop;
+					}
+				}
+			}
+			copied.addEdge(u, current.lastVertex, unionMinimalSeparatorBitset, temporaries.vertexSequence, temporaries.edgeSequence, temporaries.addEdges, temporaries.removeEdges, temporaries.unionTemporaries, false);
+			stack.pop_back();
+continueWhileLoop:
+			;
 		}
-		cannonicalNautyGraph.resize(n * m);
-		automorphismCount = 1;
-		*(mpz_class**)&(lab[0]) = &automorphismCount;
-		densenauty(&(nautyGraph[0]), &(lab[4]), &(ptn[0]), &(orbits[0]), &options, &stats, m, n, &(cannonicalNautyGraph[0]));
-	}*/
-#endif
+	}
 }
