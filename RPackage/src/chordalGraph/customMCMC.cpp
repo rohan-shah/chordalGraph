@@ -62,11 +62,12 @@ BEGIN_RCPP
 	args.approximateCounts.swap(approximateCounts);
 	args.burnIn = burnIn;
 	args.runSize = runSize;
+	args.trackEdgeCounts = true;
 	chordalGraph::customMCMC(args);
 
 	std::vector<std::string> returnValues;
 	std::transform(args.estimates.begin(), args.estimates.end(), std::back_inserter(returnValues), [](mpfr_class x){return x.str(10, std::ios_base::dec); });
 
-	return Rcpp::wrap(returnValues);
+	return Rcpp::List::create(Rcpp::Named("estimates") = Rcpp::wrap(returnValues), Rcpp::Named("edgeCounts") = Rcpp::wrap(args.edgeCounts));
 END_RCPP
 }

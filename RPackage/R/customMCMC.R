@@ -18,5 +18,6 @@ customMCMC <- function(nVertices, approximateCounts, seed, burnIn, runSize)
 		approximateCountsCharacter <- as.character(approximateCounts)
 	}
 	result <- .Call("customMCMC", nVertices, approximateCountsCharacter, seed, burnIn, runSize, PACKAGE="chordalGraph")
-	return(mpfr(result))
+	result$estimates <- mpfr(result$estimates)
+	return(result)
 }

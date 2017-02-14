@@ -233,10 +233,13 @@ namespace chordalGraph
 			stepCustom(currentTree, graph, args.approximateCounts, nVertices, args.randomSource, temp, edgeLimit);
 		}
 		std::vector<std::size_t> counters(args.approximateCounts.size(), 0);
+		if(args.trackEdgeCounts) args.edgeCounts.clear();
 		for(std::size_t i = 0; i < args.runSize; i++)
 		{
 			stepCustom(currentTree, graph, args.approximateCounts, nVertices, args.randomSource, temp, edgeLimit);
-			counters[boost::num_edges(graph)]++;
+			std::size_t nEdges = boost::num_edges(graph);
+			counters[nEdges]++;
+			if(args.trackEdgeCounts) args.edgeCounts.push_back((int)nEdges);
 		}
 		mpfr_class sumFirstSix = 0;
 		for(int i = 0; i < 6; i++) sumFirstSix += mpfr_class(counters[i]) / args.runSize;

@@ -44,7 +44,7 @@ namespace chordalGraph
 	{
 	public:
 		mcmcArgs(boost::mt19937& randomSource)
-			: randomSource(randomSource)
+			: randomSource(randomSource), trackEdgeCounts(false)
 		{}
 		//These are the inputs
 		std::vector<mpfr_class> approximateCounts;
@@ -55,6 +55,8 @@ namespace chordalGraph
 
 		std::size_t burnIn;
 		std::size_t runSize;
+		bool trackEdgeCounts;
+		std::vector<int> edgeCounts;
 	};
 	void customMCMC(mcmcArgs& args);
 }
