@@ -9,7 +9,7 @@
 #include <iostream>
 namespace chordalGraph
 {
-	void stepArmstrong(cliqueTreeType& currentTree, graphType& graph, std::vector<mpfr_class>& exactValues, int nVertices, boost::mt19937& randomSource, working& temp, int edgeLimit)
+	void stepArmstrong(cliqueTreeType& currentTree, graphType& graph, std::vector<mpfr_class>& exactValues, int nVertices, boost::mt19937& randomSource, workingArmstrong& temp, int edgeLimit)
 	{
 		boost::random::uniform_int_distribution<> randomVertexDist(0, nVertices-1);
 		boost::random::bernoulli_distribution<> standardBernoulli;
@@ -78,7 +78,7 @@ proposeAnother:
 		graphType graph(nVertices);
 		for(int i = 0; i < nVertices; i++) currentTree.addVertex();
 
-		working temp(nVertices);
+		workingArmstrong temp(nVertices);
 
 		std::size_t burnIn = args.burnIn;
 		//burn-in
