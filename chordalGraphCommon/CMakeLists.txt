@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.1)
-set(CppFiles cliqueTree.cpp stochasticEnumeration.cpp stochasticEnumerationReduceChains.cpp samplingType.cpp cliqueTreeAdjacencyMatrix.cpp horvitzThompson2.cpp customMCMC.cpp armstrongMCMC.cpp)
-set(HeaderFiles cliqueTree.h stochasticEnumeration.h numericType.h  samplingType.h cliqueTreeAdjacencyMatrix.h childNode.h horvitzThompson2.h customMCMC.h armstrongMCMC.h)
+set(CppFiles cliqueTree.cpp stochasticEnumeration.cpp stochasticEnumerationReduceChains.cpp samplingType.cpp cliqueTreeAdjacencyMatrix.cpp horvitzThompson2.cpp customMCMC.cpp armstrongMCMC.cpp customMCMCSymmetric.cpp)
+set(HeaderFiles cliqueTree.h stochasticEnumeration.h numericType.h  samplingType.h cliqueTreeAdjacencyMatrix.h childNode.h horvitzThompson2.h customMCMC.h armstrongMCMC.h customMCMCSymmetric.h)
 if(USE_NAUTY)
 	list(APPEND CppFiles stochasticEnumerationNauty.cpp stochasticEnumerationNautyReduceChains.cpp horvitzThompson.cpp horvitzThompsonReduceChains.cpp)
 	list(APPEND HeaderFiles stochasticEnumerationNauty.h horvitzThompson.h)
