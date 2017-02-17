@@ -96,7 +96,6 @@ namespace chordalGraph
 						acceptanceProbability = ((double)original_edges/(double)(maxEdges - (int)(original_edges - 1 - extraToRemove))) * sum1 * temp.stateCounts[extraToRemove];
 					}
 				}
-				double debug = acceptanceProbability.convert_to<double>();
 				if(acceptanceProbability >= 1 || standardUniform(randomSource) <= acceptanceProbability.convert_to<double>())
 				{
 					currentTree.removeEdgeKnownCliqueVertex(randomVertex1, randomVertex2, temp.colourVector, temp.counts2, cliqueVertex);
@@ -237,7 +236,6 @@ namespace chordalGraph
 						acceptanceProbability = ((double)(maxEdges - (int)original_edges)/(original_edges+1.0)) * 0.5 * (1/sum1 + 1/sum2);
 					}
 				}
-				double debug = acceptanceProbability.convert_to<double>();
 				if (acceptanceProbability >= 1 || standardUniform(randomSource) <= acceptanceProbability.convert_to<double>())
 				{
 					currentTree.swap(copied);

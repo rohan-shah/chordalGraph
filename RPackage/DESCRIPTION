@@ -20,3 +20,4 @@ Collate:
    'horvitzThompson.R'
    'armstrongMCMC.R'
    'customMCMC.R'
+   'customMCMCSymmetric.R'

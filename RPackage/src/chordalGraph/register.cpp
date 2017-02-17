@@ -14,6 +14,7 @@ SEXP horvitzThompson(SEXP nVertices_sexp, SEXP budget_sexp, SEXP seed_sexp, SEXP
 SEXP horvitzThompson2(SEXP nVertices_sexp, SEXP budget_sexp, SEXP seed_sexp, SEXP options_sexp);
 SEXP horvitzThompsonSpecificEdges(SEXP nVertices_sexp, SEXP nEdges_sexp, SEXP budget_sexp, SEXP seed_sexp, SEXP options_sexp);
 SEXP customMCMC(SEXP nVertices, SEXP approximateCounts, SEXP seed, SEXP burnIn, SEXP runSize);
+SEXP customMCMCSymmetric(SEXP nVertices, SEXP approximateCounts, SEXP seed, SEXP burnIn, SEXP runSize);
 SEXP armstrongMCMC(SEXP nVertices, SEXP approximateCounts, SEXP seed, SEXP burnIn, SEXP runSize);
 R_CallMethodDef callMethods[] = 
 {
@@ -28,6 +29,7 @@ R_CallMethodDef callMethods[] =
 	{"horvitzThompson2", (DL_FUNC)&horvitzThompson2, 4},
 	{"horvitzThompsonSpecificEdges", (DL_FUNC)&horvitzThompsonSpecificEdges, 5},
 	{"customMCMC", (DL_FUNC)&customMCMC, 5}, 
+	{"customMCMCSymmetric", (DL_FUNC)&customMCMCSymmetric, 5}, 
 	{"armstrongMCMC", (DL_FUNC)&armstrongMCMC, 5}, 
 	{NULL, NULL, 0}
 };

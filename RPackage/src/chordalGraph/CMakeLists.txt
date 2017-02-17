@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1)
-set(CppFiles register.cpp isChordalIterative.cpp convertGraph.cpp convertGraphAM.cpp convertGraphNEL.cpp convertGraphIGraph.cpp stochasticEnumeration.cpp stochasticEnumerationNauty.cpp horvitzThompson.cpp graphRepresentation.cpp horvitzThompson2.cpp armstrongMCMC.cpp customMCMC.cpp)
+set(CppFiles register.cpp isChordalIterative.cpp convertGraph.cpp convertGraphAM.cpp convertGraphNEL.cpp convertGraphIGraph.cpp stochasticEnumeration.cpp stochasticEnumerationNauty.cpp horvitzThompson.cpp graphRepresentation.cpp horvitzThompson2.cpp armstrongMCMC.cpp customMCMC.cpp customMCMCSymmetric.cpp)
 set(HeaderFiles isChordalIterative.h convertGraph.h graphRepresentation.h)
 add_library(chordalGraphRPackage SHARED ${CppFiles} ${HeaderFiles})
 target_link_libraries(chordalGraphRPackage PUBLIC chordalGraphCommon Rcpp)
