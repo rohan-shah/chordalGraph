@@ -17,7 +17,7 @@ namespace chordalGraph
 		cliqueTreeAdjacencyMatrix& copied = temp.copied;
 		int maxEdges = (nVertices * (nVertices - 1)) / 2;
 		//Here we remove edges
-		if((int)original_edges == maxEdges || ((int)original_edges > 0 && standardBernoulli(randomSource)))
+		if((int)original_edges == edgeLimit || ((int)original_edges > 0 && standardBernoulli(randomSource)))
 		{
 			boost::random::uniform_int_distribution<> randomEdgeDist(0, (int)temp.presentEdges.size()-1);
 			int edgeIndex = randomEdgeDist(randomSource);
@@ -75,21 +75,20 @@ namespace chordalGraph
 					{
 						acceptanceProbability = (2.0 / maxEdges) * (exactValues[1] / exactValues[0]);
 					}
-					else if((int)original_edges == maxEdges)
+					else if((int)original_edges == edgeLimit)
 					{
-						acceptanceProbability = (maxEdges / 2.0) * (exactValues[maxEdges] / exactValues[maxEdges - 1]);
+						acceptanceProbability = (double)original_edges/(double)((maxEdges - (int)(original_edges - 1)) * (1/sum1 + 1/sum2));
 					}
 					else
 					{
-						acceptanceProbability = (double)original_edges/(double)((maxEdges - (int)(original_edges - 1)) * 0.5 * (1/sum1 + 1/sum2));
+						acceptanceProbability = 2 * (double)original_edges/(double)((maxEdges - (int)(original_edges - 1)) * (1/sum1 + 1/sum2));
 					}
 				}
 				else 
 				{
-					if((int)original_edges == maxEdges)
+					if((int)original_edges == edgeLimit)
 					{
-						//It's not possible to remove multiple edges from the complete graph. 
-						throw std::runtime_error("Internal error");
+						acceptanceProbability = 0.5*((double)original_edges/(double)(maxEdges - (int)(original_edges - 1 - extraToRemove))) * sum1 * temp.stateCounts[extraToRemove];
 					}
 					else
 					{
@@ -186,7 +185,14 @@ namespace chordalGraph
 					{
 						sum += mpfr_class(exactValues[original_edges + increaseInEdges] / exactValues[original_edges + increaseInEdges - i - 1]).convert_to<double>();
 					}
-					acceptanceProbability = 1.0/(((double)(original_edges+increaseInEdges)/(double)(maxEdges - (int)original_edges)) * sum * temp.stateCounts[increaseInEdges - 1]);
+					if(increaseInEdges + original_edges == edgeLimit)
+					{
+						acceptanceProbability = 2.0/(((double)(original_edges+increaseInEdges)/(double)(maxEdges - (int)original_edges)) * sum * temp.stateCounts[increaseInEdges - 1]);
+					}
+					else
+					{
+						acceptanceProbability = 1.0/(((double)(original_edges+increaseInEdges)/(double)(maxEdges - (int)original_edges)) * sum * temp.stateCounts[increaseInEdges - 1]);
+					}
 				}
 				else
 				{
@@ -227,13 +233,13 @@ namespace chordalGraph
 					{
 						acceptanceProbability = (maxEdges / 2.0) * (exactValues[0] / exactValues[1]);
 					}
-					else if((int)original_edges == maxEdges - 1)
+					else if((int)original_edges == edgeLimit - 1)
 					{
-						acceptanceProbability = (2.0 / maxEdges) * (exactValues[maxEdges - 1] / exactValues[maxEdges]);
+						acceptanceProbability = ((double)(maxEdges - (int)original_edges)/(original_edges+1.0)) * (1/sum1 + 1/sum2);
 					}
 					else
 					{
-						acceptanceProbability = ((double)(maxEdges - (int)original_edges)/(original_edges+1.0)) * 0.5 * (1/sum1 + 1/sum2);
+						acceptanceProbability = 0.5*((double)(maxEdges - (int)original_edges)/(original_edges+1.0)) * (1/sum1 + 1/sum2);
 					}
 				}
 				if (acceptanceProbability >= 1 || standardUniform(randomSource) <= acceptanceProbability.convert_to<double>())
