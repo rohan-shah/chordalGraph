@@ -9,18 +9,22 @@ maxEdges <- 561
 
 #Run iterative MCMC
 currentCounts <- exactCounts
-customSymmetricCounts <- list()
+armstrongCounts <- list()
 for(edgeCounter in 6:maxEdges)
 {
 	last <- tail(currentCounts, 1)
 	secondLast <- tail(currentCounts, 2)[1]
 	estimatedCounts <- c(currentCounts, 0.5 * (last^2 / secondLast))
 	estimatedCounts[1:6] <- exactCounts
-	customSymmetricResults <- customMCMCSymmetric(vertices, estimatedCounts, seed = edgeCounter, burnin, sampleSize)
-	customSymmetricCounts[[edgeCounter]] <- customSymmetricResults$estimates
-	currentCounts <- customSymmetricResults$estimates#c(currentCounts, tail(customResults$estimates, 1))
-	if(any(currentCounts == 0)) stop("Estimated a value of 0")
+	armstrongResults <- armstrongMCMC(vertices, estimatedCounts, seed = edgeCounter, burnin, sampleSize)
+	armstrongCounts[[edgeCounter]] <- armstrongResults$estimates
+	currentCounts <- armstrongResults$estimates
+	if(any(currentCounts == 0))
+	{
+		save(armstrongCounts, file = "results.RData")
+		stop("Estimated a value of 0")
+	}
 	cat(edgeCounter, " / ", maxEdges, "\n", sep="")
 }
 
-save(customSymmetricCounts, file = "results.RData")
+save(armstrongCounts, file = "results.RData")

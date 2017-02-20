@@ -1,7 +1,7 @@
 #!/bin/bash -l
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --time=12:00:00
+#SBATCH --time=30:00:00
 #SBATCH --mem=10GB
 #SBATCH --job-name=chordalGraph
 trap "echo recieved SIGUSR1;" SIGUSR1;
