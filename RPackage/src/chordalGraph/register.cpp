@@ -1,6 +1,7 @@
 #include <Rcpp.h>
 #include <internal.h>
 #include "isChordalIterative.h"
+#include "posteriorInferenceRPackage.h"
 #ifdef _MSC_VER
 	#undef RcppExport
 	#define RcppExport extern "C" __declspec(dllexport)
@@ -31,6 +32,7 @@ R_CallMethodDef callMethods[] =
 	{"customMCMC", (DL_FUNC)&customMCMC, 5}, 
 	{"customMCMCSymmetric", (DL_FUNC)&customMCMCSymmetric, 5}, 
 	{"armstrongMCMC", (DL_FUNC)&armstrongMCMC, 5}, 
+	{"posteriorInference", (DL_FUNC)&posteriorInference, 8}, 
 	{NULL, NULL, 0}
 };
 RcppExport void R_init_chordalGraph(DllInfo *info)

@@ -21,3 +21,4 @@ Collate:
    'armstrongMCMC.R'
    'customMCMC.R'
    'customMCMCSymmetric.R'
+   'posteriorInference.R'

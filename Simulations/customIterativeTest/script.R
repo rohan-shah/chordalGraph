@@ -3,7 +3,7 @@ vertices <- 34
 maxEdges <- vertices * (vertices - 1)/2
 exactCounts <- mpfr(c(1, choose(maxEdges, 1), choose(maxEdges, 2), choose(maxEdges, 3), choose(maxEdges, 4) - choose(vertices, 4)*3, choose(maxEdges, 5) - choose(vertices, 5) * 12 - choose(vertices, 4)*3*(maxEdges - 6)), precBits = 64)
 currentCounts <- exactCounts
-sampleSize <- 1000000
+sampleSize <- 2000000
 burnin <- 10000
 maxEdges <- 561
 
@@ -19,12 +19,13 @@ for(edgeCounter in 6:maxEdges)
 	customSymmetricResults <- customMCMCSymmetric(vertices, estimatedCounts, seed = edgeCounter, burnin, sampleSize)
 	customSymmetricCounts[[edgeCounter]] <- customSymmetricResults$estimates
 	currentCounts <- customSymmetricResults$estimates#c(currentCounts, tail(customResults$estimates, 1))
-	if(any(currentCounts == 0))
+	if(any(is.na(currentCounts)) || any(currentCounts == 0))
 	{
 		save(customSymmetricCounts, file = "results.RData")
 		stop("Estimated a value of 0")
 	}
 	cat(edgeCounter, " / ", maxEdges, "\n", sep="")
+	if(edgeCounter %% 20 == 0) save(customSymmetricCounts, file = "results.RData")
 }
 
 save(customSymmetricCounts, file = "results.RData")

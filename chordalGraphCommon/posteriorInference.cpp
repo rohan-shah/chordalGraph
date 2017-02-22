@@ -60,15 +60,28 @@ namespace chordalGraph
 	}
 	struct computeHHelper
 	{
-		computeHHelper(boost::numeric::ublas::matrix<mpfr_class>& multivariateGamma, boost::numeric::ublas::matrix<double>& psi, int delta, boost::numeric::ublas::matrix<double>& temp, int dimension, mpfr_class& numerator, mpfr_class& denominator)
-			: multivariateGamma(multivariateGamma), psi(psi), delta(delta), temp(temp), dimension(dimension), numerator(numerator), denominator(denominator)
+		computeHHelper(std::vector<mpfr_class>& multivariateGamma, boost::numeric::ublas::matrix<double>& psi, int delta, boost::numeric::ublas::matrix<double>& psiPart, int dimension, mpfr_class& numerator, mpfr_class& denominator)
+			: multivariateGamma(multivariateGamma), psi(psi), delta(delta), psiPart(psiPart), dimension(dimension), numerator(numerator), denominator(denominator)
 		{}
 		void initialize_vertex(cliqueTreeAdjacencyMatrix::cliqueTreeGraphType::vertex_descriptor v, const cliqueTreeAdjacencyMatrix::cliqueTreeGraphType& g)
 		{}
 		void finish_vertex(cliqueTreeAdjacencyMatrix::cliqueTreeGraphType::vertex_descriptor v, const cliqueTreeAdjacencyMatrix::cliqueTreeGraphType& g)
 		{}
 		void start_vertex(cliqueTreeAdjacencyMatrix::cliqueTreeGraphType::vertex_descriptor v, const cliqueTreeAdjacencyMatrix::cliqueTreeGraphType& g)
-		{}
+		{
+			//Vertex zero hasn't been handled yet.
+			bitsetType vertexContents = boost::get(boost::vertex_name, g, v).contents;
+			int vertexCount = vertexContents.count();
+			mpfr_class& vertexGamma = multivariateGamma[vertexCount];
+			if(vertexGamma == 0)
+			{
+				vertexGamma = multivariateGammaFunction(vertexCount, (delta + vertexCount - 1.0) / 2.0);
+			}
+			psiPart.resize(vertexCount, vertexCount, false);
+			extractSubmatrix(psi, psiPart, vertexContents, dimension);
+			double determinant = getDeterminant(psiPart);
+			numerator *= (boost::multiprecision::pow(mpfr_class(determinant / (1ULL << vertexCount)), (delta + vertexCount - 1.0) / 2.0) / vertexGamma);
+		}
 		void examine_edge(cliqueTreeAdjacencyMatrix::cliqueTreeGraphType::edge_descriptor v, const cliqueTreeAdjacencyMatrix::cliqueTreeGraphType& g)
 		{}
 		void tree_edge(cliqueTreeAdjacencyMatrix::cliqueTreeGraphType::edge_descriptor v, const cliqueTreeAdjacencyMatrix::cliqueTreeGraphType& g)
@@ -79,27 +92,27 @@ namespace chordalGraph
 			bitsetType intersectionContents = sourceContents & targetContents;
 			//Target goes into numerator
 			int targetCount = targetContents.count();
-			mpfr_class& targetGamma = multivariateGamma(targetCount, (delta + targetCount - 1.0) / 2.0);
+			mpfr_class& targetGamma = multivariateGamma[targetCount];
 			if(targetGamma == 0)
 			{
 				targetGamma = multivariateGammaFunction(targetCount, (delta + targetCount - 1.0) / 2.0);
 			}
-			temp.resize(targetCount, targetCount, false);
-			extractSubmatrix(psi, temp, targetContents, dimension);
-			double determinant = getDeterminant(temp);
-			numerator *= (boost::multiprecision::pow(mpfr_class(determinant), (delta + targetCount - 1.0) / 2.0) / targetGamma);
+			psiPart.resize(targetCount, targetCount, false);
+			extractSubmatrix(psi, psiPart, targetContents, dimension);
+			double determinant = getDeterminant(psiPart);
+			numerator *= (boost::multiprecision::pow(mpfr_class(determinant / (1ULL << targetCount)), (delta + targetCount - 1.0) / 2.0) / targetGamma);
 
 			//Intersection goes into denominator
 			int intersectionCount = intersectionContents.count();
-			mpfr_class& intersectionGamma = multivariateGamma(intersectionCount, (delta + intersectionCount - 1.0) / 2.0);
+			mpfr_class& intersectionGamma = multivariateGamma[intersectionCount];
 			if(intersectionGamma == 0)
 			{
 				intersectionGamma = multivariateGammaFunction(intersectionCount, (delta + intersectionCount - 1.0) / 2.0);
 			}
-			temp.resize(intersectionCount, intersectionCount, false);
-			extractSubmatrix(psi, temp, intersectionContents, dimension);
-			determinant = getDeterminant(temp);
-			denominator *= (boost::multiprecision::pow(mpfr_class(determinant), (delta + intersectionCount - 1.0) / 2.0) / intersectionGamma);
+			psiPart.resize(intersectionCount, intersectionCount, false);
+			extractSubmatrix(psi, psiPart, intersectionContents, dimension);
+			determinant = getDeterminant(psiPart);
+			denominator *= (boost::multiprecision::pow(mpfr_class(determinant / (1ULL << intersectionCount)), (delta + intersectionCount - 1.0) / 2.0) / intersectionGamma);
 		}
 		void back_edge(cliqueTreeAdjacencyMatrix::cliqueTreeGraphType::edge_descriptor v, const cliqueTreeAdjacencyMatrix::cliqueTreeGraphType& g)
 		{}
@@ -107,78 +120,69 @@ namespace chordalGraph
 		{}
 		void discover_vertex(cliqueTreeAdjacencyMatrix::cliqueTreeGraphType::vertex_descriptor v, const cliqueTreeAdjacencyMatrix::cliqueTreeGraphType& g)
 		{}
-		boost::numeric::ublas::matrix<mpfr_class>& multivariateGamma;
+		std::vector<mpfr_class>& multivariateGamma;
 		boost::numeric::ublas::matrix<double>& psi;
 		int delta;
-		boost::numeric::ublas::matrix<double>& temp;
+		boost::numeric::ublas::matrix<double>& psiPart;
 		int dimension;
 		mpfr_class& numerator;
 		mpfr_class& denominator;
 	};
-	mpfr_class h(cliqueTreeType& tree, int delta, boost::numeric::ublas::matrix<double>& psi, boost::numeric::ublas::matrix<mpfr_class>& multivariateGamma, boost::numeric::ublas::matrix<double>& temp, int dimension, std::vector<boost::default_color_type>& colourVector)
+	mpfr_class h(cliqueTreeType& tree, int delta, boost::numeric::ublas::matrix<double>& psi, std::vector<mpfr_class>& multivariateGamma, boost::numeric::ublas::matrix<double>& psiPart, int dimension, std::vector<boost::default_color_type>& colourVector)
 	{
 		mpfr_class numerator = 1, denominator = 1;
-		computeHHelper helper(multivariateGamma, psi, delta, temp, dimension, numerator, denominator);
+		computeHHelper helper(multivariateGamma, psi, delta, psiPart, dimension, numerator, denominator);
 		boost::iterator_property_map<std::vector<boost::default_color_type>::iterator, boost::identity_property_map> colourMap(colourVector.begin());
 		std::fill(colourVector.begin(), colourVector.end(), boost::default_color_type::white_color);
-		boost::depth_first_visit(tree.getCliqueGraph(), 0, helper, colourMap);
+		boost::depth_first_search(tree.getCliqueGraph(), helper, colourMap);
 		
-		//Vertex zero hasn't been handled yet.
-		bitsetType vertexZeroContents = boost::get(boost::vertex_name, tree.getCliqueGraph(), 0).contents;
-		int vertexZeroCount = vertexZeroContents.count();
-		mpfr_class& vertexZeroGamma = multivariateGamma(vertexZeroCount, (delta + vertexZeroCount - 1.0) / 2.0);
-		if(vertexZeroGamma == 0)
-		{
-			vertexZeroGamma = multivariateGammaFunction(vertexZeroCount, (delta + vertexZeroCount - 1.0) / 2.0);
-		}
-		temp.resize(vertexZeroCount, vertexZeroCount, false);
-		extractSubmatrix(psi, temp, vertexZeroContents, dimension);
-		double determinant = getDeterminant(temp);
-		numerator *= (boost::multiprecision::pow(mpfr_class(determinant), (delta + vertexZeroCount - 1.0) / 2.0) / vertexZeroGamma);
 		return numerator / denominator;
 	}
-	void posteriorInferenceStep(boost::numeric::ublas::matrix<mpfr_class>& multivariateGamma, boost::numeric::ublas::matrix<double>& psiStar, int deltaStar, cliqueTreeType& currentTree, posteriorInferenceArgs::graphType& graph, std::vector<mpfr_class>& exactValues, int nVertices, boost::mt19937& randomSource, workingCustomSymmetric& temp)
+	void posteriorInferenceStep(cliqueTreeType& currentTree, posteriorInferenceArgs::graphType& graph, std::vector<mpfr_class>& exactValues, boost::mt19937& randomSource, workingPosteriorInference& working)
 	{
 		boost::random::bernoulli_distribution<> standardBernoulli;
 		boost::random::uniform_real_distribution<> standardUniform;
 		int original_edges = (int)boost::num_edges(graph);
 
-		cliqueTreeAdjacencyMatrix& copiedTree = temp.copiedTree;
+		cliqueTreeAdjacencyMatrix& copiedTree = working.copiedTree;
+		int nVertices = working.nVertices;
 		int maxEdges = (nVertices * (nVertices - 1)) / 2;
+		int delta = working.delta;
+		int deltaStar = working.deltaStar;
 		//Here we remove edges
 		if(original_edges == maxEdges || (original_edges > 0 && standardBernoulli(randomSource)))
 		{
-			boost::random::uniform_int_distribution<> randomEdgeDist(0, (int)temp.presentEdges.size()-1);
+			boost::random::uniform_int_distribution<> randomEdgeDist(0, (int)working.presentEdges.size()-1);
 			int edgeIndex = randomEdgeDist(randomSource);
-			int randomVertex1 = temp.presentEdges[edgeIndex].first, randomVertex2 = temp.presentEdges[edgeIndex].second;
+			int randomVertex1 = working.presentEdges[edgeIndex].first, randomVertex2 = working.presentEdges[edgeIndex].second;
 			if(standardBernoulli(randomSource)) std::swap(randomVertex1, randomVertex2);
 
 			int cliqueVertex = -1;
 			//Can we remove this edge?
-			if(currentTree.canRemoveEdge(randomVertex1, randomVertex2, temp.counts1, cliqueVertex))
+			if(currentTree.canRemoveEdge(randomVertex1, randomVertex2, working.counts1, cliqueVertex))
 			{
 				//Form tree of removable edge subsets and work out the counts. 
-				currentTree.formRemovalTree(temp.stateCounts, copiedTree, randomVertex1, randomVertex2, temp.uniqueSubsets, temp.removalTemporaries);
+				currentTree.formRemovalTree(working.stateCounts, copiedTree, randomVertex1, randomVertex2, working.uniqueSubsets, working.removalTemporaries);
 				//The maximum number of other removable edges, in addition to edge (u, v).  
 				int maximumOtherRemovableEdges = 0;
 				for(int i = 0; i < nVertices; i++) 
 				{
-					if(temp.stateCounts[i] == 0) break;
+					if(working.stateCounts[i] == 0) break;
 					maximumOtherRemovableEdges = i;
 				}
 				//The number of edges to actually remove for the proposal. 
 				int extraToRemove = 0;
 				//Compute probabilities and normalizing constant. 
-				temp.probabilities.clear();
+				working.probabilities.clear();
 				double sum1 = 0;
 				for(int i = 0; i < maximumOtherRemovableEdges + 1; i++)
 				{
-					temp.probabilities.push_back(mpfr_class(exactValues[original_edges] / exactValues[original_edges - i - 1]).convert_to<double>());
-					sum1 += temp.probabilities.back();
+					working.probabilities.push_back(mpfr_class(exactValues[original_edges] / exactValues[original_edges - i - 1]).convert_to<double>());
+					sum1 += working.probabilities.back();
 				}
 				if(maximumOtherRemovableEdges > 0)
 				{
-					boost::random::discrete_distribution<> extraNumberToRemoveDist(temp.probabilities.begin(), temp.probabilities.end());
+					boost::random::discrete_distribution<> extraNumberToRemoveDist(working.probabilities.begin(), working.probabilities.end());
 					extraToRemove = extraNumberToRemoveDist(randomSource);
 				}
 				//The acceptance probability for the Metropolis-Hasting proposal. 
@@ -187,12 +191,12 @@ namespace chordalGraph
 				if(extraToRemove == 0)
 				{
 					//Form tree of removable edge subsets and work out the counts. 
-					currentTree.formRemovalTree(temp.stateCounts, copiedTree, randomVertex2, randomVertex1, temp.uniqueSubsets, temp.removalTemporaries);
+					currentTree.formRemovalTree(working.stateCounts, copiedTree, randomVertex2, randomVertex1, working.uniqueSubsets, working.removalTemporaries);
 					
 					int maximumOtherRemovableEdges2 = 0;
 					for(int i = 0; i < nVertices; i++)
 					{
-						if(temp.stateCounts[i] == 0) break;
+						if(working.stateCounts[i] == 0) break;
 						maximumOtherRemovableEdges2 = i;
 					}
 					double sum2 = 0;
@@ -217,81 +221,101 @@ namespace chordalGraph
 				{
 					if(original_edges == maxEdges)
 					{
-						acceptanceProbability = 0.5*((double)original_edges/(double)(maxEdges - (int)(original_edges - 1 - extraToRemove))) * sum1 * temp.stateCounts[extraToRemove];
+						acceptanceProbability = 0.5*((double)original_edges/(double)(maxEdges - (int)(original_edges - 1 - extraToRemove))) * sum1 * working.stateCounts[extraToRemove];
 					}
 					else
 					{
-						acceptanceProbability = ((double)original_edges/(double)(maxEdges - (int)(original_edges - 1 - extraToRemove))) * sum1 * temp.stateCounts[extraToRemove];
+						acceptanceProbability = ((double)original_edges/(double)(maxEdges - (int)(original_edges - 1 - extraToRemove))) * sum1 * working.stateCounts[extraToRemove];
 					}
 				}
-				//To add the bit relating to h(...), we need to create an update clique tree. 
-				posteriorInferenceArgs::graphType& copiedGraph = temp.copiedGraph;
-				copiedTree.makeCopy(currentTree);
-				copiedTree.removeEdgeKnownCliqueVertex(randomVertex1, randomVertex2, temp.colourVector, temp.counts2, cliqueVertex);
-				boost::remove_edge(randomVertex1, randomVertex2, copiedGraph);
-				{
-					std::swap(temp.presentEdges[edgeIndex], temp.presentEdges.back());
-					temp.presentEdges.pop_back();
-					int minVertex = std::min(randomVertex1, randomVertex2), maxVertex = std::max(randomVertex1, randomVertex2);
-					temp.absentEdges.push_back(std::make_pair(minVertex, maxVertex));
-				}
+				//If we're removing more than one, edge, work out which edges we're actually erasing. 
+				bitsetType chosenSubset;
 				if(extraToRemove != 0)
 				{
-					boost::random::uniform_int_distribution<> randomSubset(0, temp.stateCounts[extraToRemove] - 1);
-					int index = randomSubset(randomSource);
-					bitsetType chosenSubset;
-					for(std::unordered_set<bitsetType>::iterator i = temp.uniqueSubsets.begin(); i != temp.uniqueSubsets.end(); i++)
+					boost::random::uniform_int_distribution<> randomSubset(0, working.stateCounts[extraToRemove] - 1);
+					int indexWithinThatEdgeCount = randomSubset(randomSource);
+					for(std::unordered_set<bitsetType>::iterator i = working.uniqueSubsets.begin(); i != working.uniqueSubsets.end(); i++)
 					{
 						if((int)i->count() == extraToRemove+1)
 						{
-							if(index == 0)
+							if(indexWithinThatEdgeCount == 0)
 							{
 								chosenSubset = *i;
 								break;
 							}
-							index--;
+							indexWithinThatEdgeCount--;
 						}
 					}
-					//This is 1 rather than 0, because the edge randomVertex1, randomVertex2 is already deleted. 
-					while(chosenSubset.count() > 1)
+				}
+				//To add the bit relating to h(...), we need to create an update clique tree. 
+				{
+					copiedTree.makeCopy(currentTree);
+					copiedTree.removeEdgeKnownCliqueVertex(randomVertex1, randomVertex2, working.colourVector, working.counts2, cliqueVertex);
+					if(extraToRemove != 0)
 					{
-						copiedTree.canRemoveEdge(randomVertex1, randomVertex2, temp.counts1, cliqueVertex);
-						for(int i = 0; i < nVertices; i++)
+						//This is 1 rather than 0, because the edge randomVertex1, randomVertex2 is already deleted. 
+						bitsetType copiedChosenSubset = chosenSubset;
+						while(copiedChosenSubset.count() > 1)
 						{
-							if(chosenSubset[i] && temp.counts1[i] == 1)
+							copiedTree.canRemoveEdge(randomVertex1, randomVertex2, working.counts1, cliqueVertex);
+							for(int i = 0; i < nVertices; i++)
 							{
-								chosenSubset[i] = false;
-								currentTree.tryRemoveEdge(randomVertex1, i, temp.colourVector, temp.counts2);
-								boost::remove_edge(randomVertex1, i, copiedGraph);
+								if(copiedChosenSubset[i] && working.counts1[i] == 1)
 								{
-									int minVertex = std::min(randomVertex1, i), maxVertex = std::max(randomVertex1, i);
-									int edgeCounter = (int)std::distance(temp.presentEdges.begin(), std::find(temp.presentEdges.begin(), temp.presentEdges.end(), std::make_pair(minVertex, maxVertex)));
-									std::swap(temp.presentEdges[edgeCounter], temp.presentEdges.back());
-									temp.presentEdges.pop_back();
-									temp.absentEdges.push_back(std::make_pair(minVertex, maxVertex));
+									copiedChosenSubset[i] = false;
+									currentTree.tryRemoveEdge(randomVertex1, i, working.colourVector, working.counts2);
 								}
 							}
 						}
 					}
 				}
+				mpfr_class extraFactor = (h(copiedTree, working.delta, working.psi, working.multivariateGammaDelta, working.psiPart, nVertices, working.colourVector) * h(currentTree, deltaStar, working.psiStar, working.multivariateGammaDeltaStar, working.psiPart, nVertices, working.colourVector)) / (h(currentTree, delta, working.psi, working.multivariateGammaDelta, working.psiPart, nVertices, working.colourVector) * h(copiedTree, deltaStar, working.psiStar, working.multivariateGammaDeltaStar, working.psiPart, nVertices, working.colourVector));
+				acceptanceProbability *= extraFactor;
 				if(acceptanceProbability >= 1 || standardUniform(randomSource) <= acceptanceProbability.convert_to<double>())
 				{
-					graph.swap(copiedGraph);
 					currentTree.swap(copiedTree);
+					boost::remove_edge(randomVertex1, randomVertex2, graph);
+					{
+						std::swap(working.presentEdges[edgeIndex], working.presentEdges.back());
+						working.presentEdges.pop_back();
+						int minVertex = std::min(randomVertex1, randomVertex2), maxVertex = std::max(randomVertex1, randomVertex2);
+						working.absentEdges.push_back(std::make_pair(minVertex, maxVertex));
+					}
+					if(extraToRemove != 0)
+					{
+						while(chosenSubset.count() > 1)
+						{
+							for(int i = 0; i < nVertices; i++)
+							{
+								if(chosenSubset[i] && working.counts1[i] == 1)
+								{
+									chosenSubset[i] = false;
+									boost::remove_edge(randomVertex1, i, graph);
+									{
+										int minVertex = std::min(randomVertex1, i), maxVertex = std::max(randomVertex1, i);
+										int edgeCounter = (int)std::distance(working.presentEdges.begin(), std::find(working.presentEdges.begin(), working.presentEdges.end(), std::make_pair(minVertex, maxVertex)));
+										std::swap(working.presentEdges[edgeCounter], working.presentEdges.back());
+										working.presentEdges.pop_back();
+										working.absentEdges.push_back(std::make_pair(minVertex, maxVertex));
+									}
+								}
+							}
+						}
+					}
 				}
 			}
 		}
 		//Here we add edges
 		else
 		{
-			boost::random::uniform_int_distribution<> randomEdgeDist(0, (int)temp.absentEdges.size()-1);
+			boost::random::uniform_int_distribution<> randomEdgeDist(0, (int)working.absentEdges.size()-1);
 			int edgeIndex = randomEdgeDist(randomSource);
-			int randomVertex1 = temp.absentEdges[edgeIndex].first, randomVertex2 = temp.absentEdges[edgeIndex].second;
+			int randomVertex1 = working.absentEdges[edgeIndex].first, randomVertex2 = working.absentEdges[edgeIndex].second;
 			if(standardBernoulli(randomSource)) std::swap(randomVertex1, randomVertex2);
 
-			cliqueTreeAdjacencyMatrix& copied2 = temp.copied2;
+			cliqueTreeAdjacencyMatrix& copied2 = working.copied2;
 			bitsetType newEdgesVertex1;
-			currentTree.unionMinimalSeparators(randomVertex1, randomVertex2, newEdgesVertex1, temp.vertexSequence, temp.edgeSequence, temp.addEdges, temp.removeEdges, temp.unionMinimalSepTemp);
+			currentTree.unionMinimalSeparators(randomVertex1, randomVertex2, newEdgesVertex1, working.vertexSequence, working.edgeSequence, working.addEdges, working.removeEdges, working.unionMinimalSepTemp);
 			int increaseInEdges = 1;
 			for(int i = 0; i < nVertices; i++)
 			{
@@ -302,15 +326,15 @@ namespace chordalGraph
 				mpfr_class acceptanceProbability;
 				if(increaseInEdges != 1)
 				{
-					copied.makeCopy(currentTree);
+					copiedTree.makeCopy(currentTree);
 					//Actually add the edges to the copy
-					copied.addEdge(randomVertex1, randomVertex2, newEdgesVertex1, temp.vertexSequence, temp.edgeSequence, temp.addEdges, temp.removeEdges, temp.unionMinimalSepTemp, true);
-					copied.formRemovalTree(temp.stateCounts, copied2, randomVertex1, randomVertex2, temp.uniqueSubsets, temp.removalTemporaries);
+					copiedTree.addEdge(randomVertex1, randomVertex2, newEdgesVertex1, working.vertexSequence, working.edgeSequence, working.addEdges, working.removeEdges, working.unionMinimalSepTemp, true);
+					copiedTree.formRemovalTree(working.stateCounts, copied2, randomVertex1, randomVertex2, working.uniqueSubsets, working.removalTemporaries);
 					//Work out how many more edges can be removed from the original
 					int otherBackwardsCanRemove = 0;
 					for(int i = 0; i < nVertices; i++) 
 					{
-						if(temp.stateCounts[i] == 0) break;
+						if(working.stateCounts[i] == 0) break;
 						otherBackwardsCanRemove = i;
 					}
 
@@ -321,25 +345,25 @@ namespace chordalGraph
 					}
 					if(increaseInEdges + original_edges == maxEdges)
 					{
-						acceptanceProbability = 2.0/(((double)(original_edges+increaseInEdges)/(double)(maxEdges - (int)original_edges)) * sum * temp.stateCounts[increaseInEdges - 1]);
+						acceptanceProbability = 2.0/(((double)(original_edges+increaseInEdges)/(double)(maxEdges - (int)original_edges)) * sum * working.stateCounts[increaseInEdges - 1]);
 					}
 					else
 					{
-						acceptanceProbability = 1.0/(((double)(original_edges+increaseInEdges)/(double)(maxEdges - (int)original_edges)) * sum * temp.stateCounts[increaseInEdges - 1]);
+						acceptanceProbability = 1.0/(((double)(original_edges+increaseInEdges)/(double)(maxEdges - (int)original_edges)) * sum * working.stateCounts[increaseInEdges - 1]);
 					}
 				}
 				else
 				{
-					copied.makeCopy(currentTree);
+					copiedTree.makeCopy(currentTree);
 					//Actually add the edges to the copy
-					copied.addEdge(randomVertex1, randomVertex2, newEdgesVertex1, temp.vertexSequence, temp.edgeSequence, temp.addEdges, temp.removeEdges, temp.unionMinimalSepTemp, true);
+					copiedTree.addEdge(randomVertex1, randomVertex2, newEdgesVertex1, working.vertexSequence, working.edgeSequence, working.addEdges, working.removeEdges, working.unionMinimalSepTemp, true);
 					//Form removal tree with the vertices the same way round
-					copied.formRemovalTree(temp.stateCounts, copied2, randomVertex1, randomVertex2, temp.uniqueSubsets, temp.removalTemporaries);
+					copiedTree.formRemovalTree(working.stateCounts, copied2, randomVertex1, randomVertex2, working.uniqueSubsets, working.removalTemporaries);
 					//Work out how many more edges can be removed from the original
 					int otherBackwardsCanRemove = 0;
 					for(int i = 0; i < nVertices; i++) 
 					{
-						if(temp.stateCounts[i] == 0) break;
+						if(working.stateCounts[i] == 0) break;
 						otherBackwardsCanRemove = i;
 					}
 
@@ -349,12 +373,12 @@ namespace chordalGraph
 						sum1 += mpfr_class(exactValues[original_edges + increaseInEdges] / exactValues[original_edges + increaseInEdges - i - 1]).convert_to<double>();
 					}
 					//Form removal tree with the vertices reversed
-					copied.formRemovalTree(temp.stateCounts, copied2, randomVertex2, randomVertex1, temp.uniqueSubsets, temp.removalTemporaries);
+					copiedTree.formRemovalTree(working.stateCounts, copied2, randomVertex2, randomVertex1, working.uniqueSubsets, working.removalTemporaries);
 					//Work out how many more edges can be removed from the original
 					int otherBackwardsCanRemove2 = 0;
 					for(int i = 0; i < nVertices; i++) 
 					{
-						if(temp.stateCounts[i] == 0) break;
+						if(working.stateCounts[i] == 0) break;
 						otherBackwardsCanRemove2 = i;
 					}
 
@@ -376,9 +400,11 @@ namespace chordalGraph
 						acceptanceProbability = 0.5*((double)(maxEdges - original_edges)/(original_edges+1.0)) * (1/sum1 + 1/sum2);
 					}
 				}
+				mpfr_class extraFactor = (h(copiedTree, working.delta, working.psi, working.multivariateGammaDelta, working.psiPart, nVertices, working.colourVector) * h(currentTree, deltaStar, working.psiStar, working.multivariateGammaDeltaStar, working.psiPart, nVertices, working.colourVector)) / (h(currentTree, delta, working.psi, working.multivariateGammaDelta, working.psiPart, nVertices, working.colourVector) * h(copiedTree, deltaStar, working.psiStar, working.multivariateGammaDeltaStar, working.psiPart, nVertices, working.colourVector));
+				acceptanceProbability *= extraFactor;
 				if (acceptanceProbability >= 1 || standardUniform(randomSource) <= acceptanceProbability.convert_to<double>())
 				{
-					currentTree.swap(copied);
+					currentTree.swap(copiedTree);
 					newEdgesVertex1[randomVertex2] = true;
 					for(int i = 0; i < nVertices; i++)
 					{
@@ -388,10 +414,10 @@ namespace chordalGraph
 							if(addedNewEdge)
 							{
 								int minVertex = std::min(randomVertex1, i), maxVertex = std::max(randomVertex1, i);
-								int edgeCounter = (int)std::distance(temp.absentEdges.begin(), std::find(temp.absentEdges.begin(), temp.absentEdges.end(), std::make_pair(minVertex, maxVertex)));
-								std::swap(temp.absentEdges[edgeCounter], temp.absentEdges.back());
-								temp.absentEdges.pop_back();
-								temp.presentEdges.push_back(std::make_pair(minVertex, maxVertex));
+								int edgeCounter = (int)std::distance(working.absentEdges.begin(), std::find(working.absentEdges.begin(), working.absentEdges.end(), std::make_pair(minVertex, maxVertex)));
+								std::swap(working.absentEdges[edgeCounter], working.absentEdges.back());
+								working.absentEdges.pop_back();
+								working.presentEdges.push_back(std::make_pair(minVertex, maxVertex));
 							}
 						}
 					}
@@ -400,29 +426,34 @@ namespace chordalGraph
 		}
 #ifndef NDEBUG
 		currentTree.check();
-		assert(temp.presentEdges.size() == boost::num_edges(graph));
-		assert((int)temp.presentEdges.size() + (int)temp.absentEdges.size() == maxEdges);
+		assert(working.presentEdges.size() == boost::num_edges(graph));
+		assert((int)working.presentEdges.size() + (int)working.absentEdges.size() == maxEdges);
 #endif
 	}
 	void posteriorInference(posteriorInferenceArgs& args)
 	{
-		boost::numeric::ublas::matrix<mpfr_class> multivariateGamma(args.dimension, (args.delta + args.dimension)/2, 0);
-		boost::numeric::ublas::matrix<double> psiStar = args.psi + args.sampleCovariance;
-		int deltaStar = args.delta + args.dataPoints - 1;
 
 		cliqueTreeType currentTree(args.dimension);
 		posteriorInferenceArgs::graphType graph(args.dimension);
 		for(std::size_t i = 0; i < args.dimension; i++) currentTree.addVertex();
 
-		workingCustomSymmetric temp(args.dimension);
+		workingPosteriorInference working(args.dimension);
 		for(int i = 0; i < (int)args.dimension; i++)
 		{
-			for(int j = i + 1; j < (int)args.dimension; j++) temp.absentEdges.push_back(std::make_pair(i, j));
+			for(int j = i + 1; j < (int)args.dimension; j++) working.absentEdges.push_back(std::make_pair(i, j));
 		}
+		working.nVertices = args.dimension;
+		working.delta = args.delta;
+		working.deltaStar = args.delta + args.dataPoints - 1;
+		working.psi = args.psi;
+		working.psiStar = args.psi + args.sampleCovariance;
+		working.psiPart.resize(args.dimension, args.dimension, false);
+		working.multivariateGammaDelta.resize(args.dimension);
+		working.multivariateGammaDeltaStar.resize(args.dimension);
 		
 		for(std::size_t i = 0; i < args.burnIn; i++)
 		{
-			posteriorInferenceStep(multivariateGamma, psiStar, deltaStar, currentTree, graph, args.exactValues, args.dimension, args.randomSource, temp);
+			posteriorInferenceStep(currentTree, graph, args.exactValues, args.randomSource, working);
 		}
 		for(std::size_t i = 0; i < args.sampleSize; i++)
 		{
