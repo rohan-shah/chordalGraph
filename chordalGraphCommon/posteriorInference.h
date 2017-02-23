@@ -7,6 +7,7 @@
 #include "numericType.h"
 #include <boost/random/mersenne_twister.hpp>
 #include "customMCMCSymmetric.h"
+#include <unordered_map>
 namespace chordalGraph
 {
 	struct workingPosteriorInference
@@ -50,13 +51,22 @@ namespace chordalGraph
 	struct posteriorInferenceArgs
 	{
 		typedef moveable_adjacency_matrix<> graphType;
+		struct hashGraph
+		{
+			std::size_t operator()(const graphType& graph) const 
+			{
+				boost::hash<graphType::Matrix> hashObj;
+				return hashObj(graph.m_matrix);
+			}
+		};
 		posteriorInferenceArgs()
 			: delta(0), dataPoints(0), sampleSize(0), burnIn(0)
 		{}
 		std::size_t delta, dataPoints, dimension;
 		boost::numeric::ublas::matrix<double> sampleCovariance;
 		boost::numeric::ublas::matrix<double> psi;
-		std::vector<std::pair<graphType, double> > results;
+		typedef std::unordered_map<graphType, int, hashGraph> resultsType;
+		resultsType results;
 		std::vector<mpfr_class> exactValues;
 		std::size_t sampleSize, burnIn;
 		boost::mt19937 randomSource;

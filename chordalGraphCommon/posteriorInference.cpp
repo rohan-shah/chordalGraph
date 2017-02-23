@@ -18,7 +18,7 @@ namespace chordalGraph
 		mpfr_class result = boost::multiprecision::pow(boost::math::constants::pi<mpfr_class>(), m* (m-1.0)/4.0);
 		for(int i = 1; i < m+1; i++)
 		{
-			result *= boost::math::tgamma(alpha - (i - 1.0)/2.0);
+			result *= boost::math::tgamma<mpfr_class>(alpha - (i - 1.0)/2.0);
 		}
 		return result;
 	}
@@ -263,7 +263,7 @@ namespace chordalGraph
 								if(copiedChosenSubset[i] && working.counts1[i] == 1)
 								{
 									copiedChosenSubset[i] = false;
-									currentTree.tryRemoveEdge(randomVertex1, i, working.colourVector, working.counts2);
+									copiedTree.tryRemoveEdge(randomVertex1, i, working.colourVector, working.counts2);
 								}
 							}
 						}
@@ -283,21 +283,17 @@ namespace chordalGraph
 					}
 					if(extraToRemove != 0)
 					{
-						while(chosenSubset.count() > 1)
+						for(int i = 0; i < nVertices; i++)
 						{
-							for(int i = 0; i < nVertices; i++)
+							if(chosenSubset[i] && i != randomVertex1 && i != randomVertex2)
 							{
-								if(chosenSubset[i] && working.counts1[i] == 1)
+								boost::remove_edge(randomVertex1, i, graph);
 								{
-									chosenSubset[i] = false;
-									boost::remove_edge(randomVertex1, i, graph);
-									{
-										int minVertex = std::min(randomVertex1, i), maxVertex = std::max(randomVertex1, i);
-										int edgeCounter = (int)std::distance(working.presentEdges.begin(), std::find(working.presentEdges.begin(), working.presentEdges.end(), std::make_pair(minVertex, maxVertex)));
-										std::swap(working.presentEdges[edgeCounter], working.presentEdges.back());
-										working.presentEdges.pop_back();
-										working.absentEdges.push_back(std::make_pair(minVertex, maxVertex));
-									}
+									int minVertex = std::min(randomVertex1, i), maxVertex = std::max(randomVertex1, i);
+									int edgeCounter = (int)std::distance(working.presentEdges.begin(), std::find(working.presentEdges.begin(), working.presentEdges.end(), std::make_pair(minVertex, maxVertex)));
+									std::swap(working.presentEdges[edgeCounter], working.presentEdges.back());
+									working.presentEdges.pop_back();
+									working.absentEdges.push_back(std::make_pair(minVertex, maxVertex));
 								}
 							}
 						}
@@ -430,6 +426,10 @@ namespace chordalGraph
 		assert((int)working.presentEdges.size() + (int)working.absentEdges.size() == maxEdges);
 #endif
 	}
+	bool operator==(const graphType& first, const graphType& second)
+	{
+		return std::equal(first.m_matrix.begin(), first.m_matrix.end(), second.m_matrix.begin());
+	}
 	void posteriorInference(posteriorInferenceArgs& args)
 	{
 
@@ -448,16 +448,24 @@ namespace chordalGraph
 		working.psi = args.psi;
 		working.psiStar = args.psi + args.sampleCovariance;
 		working.psiPart.resize(args.dimension, args.dimension, false);
-		working.multivariateGammaDelta.resize(args.dimension);
-		working.multivariateGammaDeltaStar.resize(args.dimension);
+		working.multivariateGammaDelta.resize(args.dimension + 1);
+		working.multivariateGammaDeltaStar.resize(args.dimension + 1);
 		
 		for(std::size_t i = 0; i < args.burnIn; i++)
 		{
 			posteriorInferenceStep(currentTree, graph, args.exactValues, args.randomSource, working);
 		}
+		args.results.clear();
 		for(std::size_t i = 0; i < args.sampleSize; i++)
 		{
-//			posteriorInferenceStep();
+			posteriorInferenceStep(currentTree, graph, args.exactValues, args.randomSource, working);
+			posteriorInferenceArgs::resultsType::iterator existingGraph = args.results.find(graph);
+			if(existingGraph == args.results.end())
+			{
+				args.results[graph] = 1;
+			}
+			else existingGraph->second++;
 		}
 	}
+
 }

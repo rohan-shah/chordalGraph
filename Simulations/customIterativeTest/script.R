@@ -8,9 +8,19 @@ burnin <- 10000
 maxEdges <- 561
 
 #Run iterative MCMC
-currentCounts <- exactCounts
-customSymmetricCounts <- list()
-for(edgeCounter in 6:maxEdges)
+if(!file.exists("./results.RData"))
+{
+	currentCounts <- exactCounts
+	customSymmetricCounts <- list()
+	start <- 6
+} else
+{
+	load("./results.RData")
+	start <- length(customSymmetricCounts)+1
+	currentCounts <- customSymmetricCounts[[length(customSymmetricCounts)]]
+	if(start == maxEdges+1) stop("Already finished")
+}
+for(edgeCounter in start:maxEdges)
 {
 	last <- tail(currentCounts, 1)
 	secondLast <- tail(currentCounts, 2)[1]
