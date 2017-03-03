@@ -1,9 +1,9 @@
 #include "posteriorInferenceRPackage.h"
-#include "posteriorInference.h"
+#include "customSymmetricPosteriorInference.h"
 SEXP posteriorInference(SEXP outerProductsSum_sexp, SEXP delta_sexp, SEXP dimension_sexp, SEXP dataPoints_sexp, SEXP psi_sexp, SEXP exactCounts_sexp, SEXP burnIn_sexp, SEXP runSize_sexp)
 {
 BEGIN_RCPP
-	chordalGraph::posteriorInferenceArgs args;
+	chordalGraph::customSymmetricPosteriorInferenceArgs args;
 
 	args.dimension = Rcpp::as<int>(dimension_sexp);
 	args.dataPoints = Rcpp::as<int>(dataPoints_sexp);
@@ -35,16 +35,16 @@ BEGIN_RCPP
 	}
 	args.burnIn = Rcpp::as<int>(burnIn_sexp);
 	args.sampleSize = Rcpp::as<int>(runSize_sexp);
-	posteriorInference(args);
+	customSymmetricPosteriorInference(args);
 
 	Rcpp::List graphs(args.results.size());
 	Rcpp::NumericVector probabilities(args.results.size());
-	for(chordalGraph::posteriorInferenceArgs::resultsType::iterator i = args.results.begin(); i != args.results.end(); i++)
+	for(chordalGraph::customSymmetricPosteriorInferenceArgs::resultsType::iterator i = args.results.begin(); i != args.results.end(); i++)
 	{
 		Rcpp::IntegerMatrix currentGraphR(args.dimension, args.dimension);
 		std::fill(currentGraphR.begin(), currentGraphR.end(), 0);
-		const chordalGraph::posteriorInferenceArgs::graphType& currentGraph = i->first;
-		chordalGraph::posteriorInferenceArgs::graphType::edge_iterator current, end;
+		const chordalGraph::customSymmetricPosteriorInferenceArgs::graphType& currentGraph = i->first;
+		chordalGraph::customSymmetricPosteriorInferenceArgs::graphType::edge_iterator current, end;
 		boost::tie(current, end) = boost::edges(currentGraph);
 		for(; current != end; current++)
 		{

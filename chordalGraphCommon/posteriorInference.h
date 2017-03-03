@@ -8,69 +8,41 @@
 #include <boost/random/mersenne_twister.hpp>
 #include "customMCMCSymmetric.h"
 #include <unordered_map>
+#include <boost/numeric/ublas/lu.hpp>
 namespace chordalGraph
 {
-	struct workingPosteriorInference
+	mpfr_class multivariateGammaFunction(int m, double alpha);
+	void extractSubmatrix(boost::numeric::ublas::matrix<double>& psi, boost::numeric::ublas::matrix<double>& submatrix, bitsetType contents, int dimension);
+	double getDeterminantSign(boost::numeric::ublas::permutation_matrix<std::size_t>& pm);
+	double getDeterminant(boost::numeric::ublas::matrix<double>& square);
+	struct computeHHelper
 	{
-	public:
-		workingPosteriorInference(int nVertices)
-			: nVertices(nVertices), copied(nVertices), copied2(nVertices), copiedTree(nVertices), counts1(nVertices), counts2(nVertices), colourVector(nVertices)
-		{
-			for(int i = 0; i < nVertices; i++) copiedTree.addVertex();
-		}
-		int nVertices, delta, deltaStar;
-		//Working memory for the addition of edges to the clique tree
-		std::list<cliqueTreeType::cliqueTreeGraphType::vertex_descriptor> vertexSequence;
-		std::list<cliqueTreeType::externalEdge> edgeSequence;
-		std::vector<cliqueTreeType::externalEdge> addEdges;
-		std::vector<cliqueTreeType::externalEdge> removeEdges;
-		cliqueTreeType::unionMinimalSeparatorsTemporaries unionMinimalSepTemp;
-		//Two copies of the current clique tree.
-		cliqueTreeAdjacencyMatrix copied, copied2;
-		cliqueTreeType copiedTree;
-		//Count vectors used when removing edges 
-		std::vector<int> counts1, counts2;
-		//Colour vector for a depth first search
-		std::vector<boost::default_color_type> colourVector;
-		//Vector of edges to be removed from the graph and clique tree. 
-		std::vector<int> edgesToRemove;
-		//Probability distribution of the number of edges to remove
-		std::vector<double> probabilities;
-		//The number of different graphs with that number of extra edges removed. 
-		std::vector<int> stateCounts;
-		//Stack used to form the removal tree. 
-		std::vector<cliqueTreeAdjacencyMatrix::stackEntry> stack;
-		//Collection of unique subsets
-		std::unordered_set<bitsetType> uniqueSubsets;
-		//
-		cliqueTreeAdjacencyMatrix::formRemovalTreeTemporaries removalTemporaries;
-		std::vector<std::pair<int, int> > presentEdges, absentEdges;
-		boost::numeric::ublas::matrix<double> psi, psiStar, psiPart;
-		std::vector<mpfr_class> multivariateGammaDelta, multivariateGammaDeltaStar;
-	};
-	struct posteriorInferenceArgs
-	{
-		typedef moveable_adjacency_matrix<> graphType;
-		struct hashGraph
-		{
-			std::size_t operator()(const graphType& graph) const 
-			{
-				boost::hash<graphType::Matrix> hashObj;
-				return hashObj(graph.m_matrix);
-			}
-		};
-		posteriorInferenceArgs()
-			: delta(0), dataPoints(0), sampleSize(0), burnIn(0)
+		computeHHelper(std::vector<mpfr_class>& multivariateGamma, boost::numeric::ublas::matrix<double>& psi, int delta, boost::numeric::ublas::matrix<double>& psiPart, int dimension, mpfr_class& numerator, mpfr_class& denominator)
+			: multivariateGamma(multivariateGamma), psi(psi), delta(delta), psiPart(psiPart), dimension(dimension), numerator(numerator), denominator(denominator)
 		{}
-		std::size_t delta, dataPoints, dimension;
-		boost::numeric::ublas::matrix<double> sampleCovariance;
-		boost::numeric::ublas::matrix<double> psi;
-		typedef std::unordered_map<graphType, int, hashGraph> resultsType;
-		resultsType results;
-		std::vector<mpfr_class> exactValues;
-		std::size_t sampleSize, burnIn;
-		boost::mt19937 randomSource;
+		void initialize_vertex(cliqueTreeAdjacencyMatrix::cliqueTreeGraphType::vertex_descriptor v, const cliqueTreeAdjacencyMatrix::cliqueTreeGraphType& g)
+		{}
+		void finish_vertex(cliqueTreeAdjacencyMatrix::cliqueTreeGraphType::vertex_descriptor v, const cliqueTreeAdjacencyMatrix::cliqueTreeGraphType& g)
+		{}
+		void start_vertex(cliqueTreeAdjacencyMatrix::cliqueTreeGraphType::vertex_descriptor v, const cliqueTreeAdjacencyMatrix::cliqueTreeGraphType& g);
+		void examine_edge(cliqueTreeAdjacencyMatrix::cliqueTreeGraphType::edge_descriptor v, const cliqueTreeAdjacencyMatrix::cliqueTreeGraphType& g)
+		{}
+		void tree_edge(cliqueTreeAdjacencyMatrix::cliqueTreeGraphType::edge_descriptor v, const cliqueTreeAdjacencyMatrix::cliqueTreeGraphType& g);
+		void back_edge(cliqueTreeAdjacencyMatrix::cliqueTreeGraphType::edge_descriptor v, const cliqueTreeAdjacencyMatrix::cliqueTreeGraphType& g)
+		{}
+		void forward_or_cross_edge(cliqueTreeAdjacencyMatrix::cliqueTreeGraphType::edge_descriptor v, const cliqueTreeAdjacencyMatrix::cliqueTreeGraphType& g)
+		{}
+		void discover_vertex(cliqueTreeAdjacencyMatrix::cliqueTreeGraphType::vertex_descriptor v, const cliqueTreeAdjacencyMatrix::cliqueTreeGraphType& g)
+		{}
+		std::vector<mpfr_class>& multivariateGamma;
+		boost::numeric::ublas::matrix<double>& psi;
+		int delta;
+		boost::numeric::ublas::matrix<double>& psiPart;
+		int dimension;
+		mpfr_class& numerator;
+		mpfr_class& denominator;
 	};
-	void posteriorInference(posteriorInferenceArgs& args);
+	mpfr_class h(cliqueTreeType& tree, int delta, boost::numeric::ublas::matrix<double>& psi, std::vector<mpfr_class>& multivariateGamma, boost::numeric::ublas::matrix<double>& psiPart, int dimension, std::vector<boost::default_color_type>& colourVector);
+	bool operator==(const graphType& first, const graphType& second);
 }
 #endif
