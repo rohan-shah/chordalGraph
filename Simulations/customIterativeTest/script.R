@@ -35,7 +35,7 @@ for(edgeCounter in start:maxEdges)
 		stop("Estimated a value of 0")
 	}
 	cat(edgeCounter, " / ", maxEdges, "\n", sep="")
-	if(edgeCounter %% 20 == 0) save(customSymmetricCounts, file = "results.RData")
+	if(edgeCounter %% 2 == 0) save(customSymmetricCounts, file = "results.RData")
 }
 
 save(customSymmetricCounts, file = "results.RData")

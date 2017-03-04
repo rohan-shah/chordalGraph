@@ -7,7 +7,7 @@ exactCounts <- c(1, 15, 105, 455, 1320, 2526, 3085, 3255, 3000, 2235, 1206, 615,
 burnin <- 1000
 runSize <- 1000000
 
-result <- .Call("posteriorInference", outerProductsSum, delta, 6, 276, diag(6), as.character(exactCounts), burnin, runSize, PACKAGE = "chordalGraph")
+result <- .Call("customSymmetricPosteriorInference", outerProductsSum, delta, 6, 276, diag(6), as.character(exactCounts), burnin, runSize, PACKAGE = "chordalGraph")
 sum <- matrix(0, 6, 6)
 for(i in 1:length(result$graphs))
 {

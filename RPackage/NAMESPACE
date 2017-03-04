@@ -5,4 +5,6 @@ export(horvitzThompson)
 export(armstrongMCMC)
 export(customMCMC)
 export(customMCMCSymmetric)
-export(posteriorInference)
+export(customSymmetricPosteriorInference)
+export(armstrongPosteriorInference)
+

@@ -1,6 +1,6 @@
-#include "posteriorInferenceRPackage.h"
+#include "customSymmetricPosteriorInferenceRPackage.h"
 #include "customSymmetricPosteriorInference.h"
-SEXP posteriorInference(SEXP outerProductsSum_sexp, SEXP delta_sexp, SEXP dimension_sexp, SEXP dataPoints_sexp, SEXP psi_sexp, SEXP exactCounts_sexp, SEXP burnIn_sexp, SEXP runSize_sexp)
+SEXP customSymmetricPosteriorInference(SEXP outerProductsSum_sexp, SEXP delta_sexp, SEXP dimension_sexp, SEXP dataPoints_sexp, SEXP psi_sexp, SEXP exactCounts_sexp, SEXP burnIn_sexp, SEXP runSize_sexp)
 {
 BEGIN_RCPP
 	chordalGraph::customSymmetricPosteriorInferenceArgs args;

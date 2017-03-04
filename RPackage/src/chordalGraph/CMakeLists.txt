@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.1)
-set(CppFiles register.cpp isChordalIterative.cpp convertGraph.cpp convertGraphAM.cpp convertGraphNEL.cpp convertGraphIGraph.cpp stochasticEnumeration.cpp stochasticEnumerationNauty.cpp horvitzThompson.cpp graphRepresentation.cpp armstrongMCMC.cpp customMCMC.cpp customMCMCSymmetric.cpp posteriorInferenceRPackage.cpp)
-set(HeaderFiles isChordalIterative.h convertGraph.h graphRepresentation.h posteriorInferenceRPackage.h)
+set(CppFiles register.cpp isChordalIterative.cpp convertGraph.cpp convertGraphAM.cpp convertGraphNEL.cpp convertGraphIGraph.cpp stochasticEnumeration.cpp stochasticEnumerationNauty.cpp horvitzThompson.cpp graphRepresentation.cpp armstrongMCMC.cpp customMCMC.cpp customMCMCSymmetric.cpp customSymmetricPosteriorInferenceRPackage.cpp armstrongPosteriorInferenceRPackage.cpp)
+set(HeaderFiles isChordalIterative.h convertGraph.h graphRepresentation.h customSymmetricPosteriorInferenceRPackage.h armstrongPosteriorInferenceRPackage.h)
 add_library(chordalGraphRPackage SHARED ${CppFiles} ${HeaderFiles})
 target_link_libraries(chordalGraphRPackage PUBLIC chordalGraphCommon Rcpp)
 set_target_properties(chordalGraphRPackage PROPERTIES OUTPUT_NAME "chordalGraph")
