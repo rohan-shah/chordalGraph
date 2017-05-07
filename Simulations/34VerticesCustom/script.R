@@ -8,18 +8,24 @@ burnin <- 10000
 maxEdges <- 150
 
 #Run iterative MCMC, using custom MCMC algorithm
-currentCounts <- exactCounts
-customSymmetricCounts <- list()
-for(edgeCounter in 6:maxEdges)
+if(file.exists("results.RData"))
 {
-	last <- tail(currentCounts, 1)
-	secondLast <- tail(currentCounts, 2)[1]
-	estimatedCounts <- c(currentCounts, 0.5 * (last^2 / secondLast))
-	estimatedCounts[1:6] <- exactCounts
-	customSymmetricResults <- customMCMCSymmetric(vertices, estimatedCounts, seed = edgeCounter, burnin, sampleSize)
-	customSymmetricCounts[[edgeCounter]] <- customSymmetricResults$estimates
-	currentCounts <- customSymmetricResults$estimates#c(currentCounts, tail(customResults$estimates, 1))
-	cat(edgeCounter, " / ", maxEdges, "\n", sep="")
+	load("results.RData")
+} else
+{
+	currentCounts <- exactCounts
+	customSymmetricCounts <- list()
+	for(edgeCounter in 6:maxEdges)
+	{
+		last <- tail(currentCounts, 1)
+		secondLast <- tail(currentCounts, 2)[1]
+		estimatedCounts <- c(currentCounts, 0.5 * (last^2 / secondLast))
+		estimatedCounts[1:6] <- exactCounts
+		customSymmetricResults <- customMCMCSymmetric(vertices, estimatedCounts, seed = edgeCounter, burnin, sampleSize)
+		customSymmetricCounts[[edgeCounter]] <- customSymmetricResults$estimates
+		currentCounts <- customSymmetricResults$estimates#c(currentCounts, tail(customResults$estimates, 1))
+		cat(edgeCounter, " / ", maxEdges, "\n", sep="")
+	}
 }
 
 #Run more iterations to stabilise bad count data.
@@ -30,6 +36,7 @@ for(i in 1:6)
 	customSymmetricResults <- customMCMCSymmetric(vertices, approximateCounts = approximateCounts, seed = 1000+i, burnin, sampleSize)
 	approximateCounts <- customSymmetricResults$estimates
 	approximateCounts[1:6] <- exactCounts
+	cat(i, " / ", 6, "\n", sep="")
 }
 approximateCounts <- customSymmetricResults$estimates
 approximateCounts[1:6] <- exactCounts
@@ -40,16 +47,16 @@ pdf("./customSymmetric34.pdf")
 plot(1:sampleSize, customSymmetricResults$edgeCounts, type="l", main = "Sample path", xlab = "Step", ylab = "Edges")
 dev.off()
 pdf("./customSymmetricHist34.pdf")
-hist(customSymmetricResults$edgeCounts, breaks = -1:maxEdges, main = "MCMC results", xlab = "Edges")
+hist(customSymmetricResults$edgeCounts, breaks = -1:maxEdges, main = "MCMC results", xlab = "Edges", ylim = c(0, 7000))
 dev.off()
 
 #Do a run of the armstrong MCMC algorithm, with ten times as many samples. 
-armstrongResults <- armstrongMCMC(vertices, approximateCounts = approximateCounts, seed = edgeCounter, burnin, 10*sampleSize)
+armstrongResults <- armstrongMCMC(vertices, approximateCounts = approximateCounts, seed = maxEdges, burnin, sampleSize)
 pdf("./armstrong34.pdf")
-plot(1:(10*sampleSize), armstrongResults$edgeCounts, type="l", main = "Sample path", xlab = "Step", ylab = "Edges")
+plot(1:sampleSize, armstrongResults$edgeCounts[1:sampleSize], type="l", main = "Sample path", xlab = "Step", ylab = "Edges")
 dev.off()
 pdf("./armstrongHist34.pdf")
-hist(armstrongResults$edgeCounts, breaks = -1:maxEdges, main = "MCMC results", xlab = "Edges")
+hist(armstrongResults$edgeCounts, breaks = -1:maxEdges, main = "MCMC results", xlab = "Edges", ylim = c(0, 7000))
 dev.off()
 
 #There are numbers of edges for which only one graph is generated!!
@@ -68,6 +75,7 @@ for(i in 1:6)
 	customSymmetricResults <- customMCMCSymmetric(vertices, approximateCounts = approximateCounts, seed = 2000+i, burnin, sampleSize)
 	approximateCounts <- customSymmetricResults$estimates
 	approximateCounts[1:6] <- exactCounts
+	cat(i, " / ", 6, "\n", sep="")
 }
 approximateCounts <- customSymmetricResults$estimates
 approximateCounts[1:6] <- exactCounts
@@ -83,9 +91,9 @@ hist(customSymmetricResults$edgeCounts, breaks = -1:20, main = "MCMC results", x
 dev.off()
 
 #Do a final run of armstrong MCMC, with ten times the number of samples. 
-armstrongResults <- armstrongMCMC(vertices, approximateCounts = approximateCounts, seed = edgeCounter, burnin, sampleSize*10)
+armstrongResults <- armstrongMCMC(vertices, approximateCounts = approximateCounts, seed = maxEdges, burnin, sampleSize*10)
 pdf("./armstrong34_20.pdf")
-plot(1:(sampleSize*10), armstrongResults$edgeCounts, type="l", main = "Sample path", xlab = "Step", ylab = "Edges")
+plot(1:sampleSize, armstrongResults$edgeCounts[1:sampleSize], type="l", main = "Sample path", xlab = "Step", ylab = "Edges")
 dev.off()
 pdf("./armstrongHist34_20.pdf")
 hist(armstrongResults$edgeCounts, breaks = -1:20, main = "MCMC results", xlab = "Edges")
