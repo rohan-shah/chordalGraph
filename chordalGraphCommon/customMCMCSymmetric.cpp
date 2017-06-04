@@ -280,7 +280,7 @@ namespace chordalGraph
 		}
 		//The case where the edgeLimit is 5 or smaller is not interesting. 
 		int edgeLimit = args.approximateCounts.size()-1;
-		if(edgeLimit > ((nVertices + 1) * nVertices) /2 || edgeLimit <= 5)
+		if(edgeLimit > ((nVertices - 1) * nVertices) /2 || edgeLimit <= 5)
 		{
 			throw std::runtime_error("Input edgeLimit out of the valid range or smaller than 6");
 		}
@@ -310,13 +310,26 @@ namespace chordalGraph
 			counters[nEdges]++;
 			if(args.trackEdgeCounts) args.edgeCounts.push_back((int)nEdges);
 		}
-		mpfr_class sumFirstSix = 0;
-		for(int i = 0; i < 6; i++) sumFirstSix += mpfr_class(counters[i]) / args.runSize;
-
-		args.estimates.resize(args.approximateCounts.size());
-		for(std::size_t i = 0; i < args.approximateCounts.size(); i++)
+		if(edgeLimit == ((nVertices - 1) * nVertices) /2)
 		{
-			args.estimates[i] = 6 * args.approximateCounts[i] * (mpfr_class(counters[i]) / args.runSize) / sumFirstSix;
+			mpfr_class sumFirstSixLastThree = 0;
+			for(int i = 0; i < 6; i++) sumFirstSixLastThree += mpfr_class(counters[i]) / args.runSize;
+			for(int i = edgeLimit - 1; i < edgeLimit+1; i++) sumFirstSixLastThree += mpfr_class(counters[i]) / args.runSize;
+			args.estimates.resize(args.approximateCounts.size());
+			for(std::size_t i = 0; i < args.approximateCounts.size(); i++)
+			{
+				args.estimates[i] = 9 * args.approximateCounts[i] * (mpfr_class(counters[i]) / args.runSize) / sumFirstSixLastThree;
+			}
+		}
+		else
+		{
+			mpfr_class sumFirstSix = 0;
+			for(int i = 0; i < 6; i++) sumFirstSix += mpfr_class(counters[i]) / args.runSize;
+			args.estimates.resize(args.approximateCounts.size());
+			for(std::size_t i = 0; i < args.approximateCounts.size(); i++)
+			{
+				args.estimates[i] = 6 * args.approximateCounts[i] * (mpfr_class(counters[i]) / args.runSize) / sumFirstSix;
+			}
 		}
 	}
 }
