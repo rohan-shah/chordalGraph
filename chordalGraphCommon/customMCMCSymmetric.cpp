@@ -97,7 +97,8 @@ namespace chordalGraph
 				}
 				if(acceptanceProbability >= 1 || standardUniform(randomSource) <= acceptanceProbability.convert_to<double>())
 				{
-					currentTree.removeEdgeKnownCliqueVertex(randomVertex1, randomVertex2, temp.colourVector, temp.counts2, cliqueVertex);
+					cliqueTreeAdjacencyMatrix::removeReversal reverse;
+					currentTree.removeEdgeKnownCliqueVertex(randomVertex1, randomVertex2, temp.colourVector, temp.counts2, cliqueVertex, reverse);
 					boost::remove_edge(randomVertex1, randomVertex2, graph);
 					{
 						std::swap(temp.presentEdges[edgeIndex], temp.presentEdges.back());
@@ -131,7 +132,8 @@ namespace chordalGraph
 								if(chosenSubset[i] && temp.counts1[i] == 1)
 								{
 									chosenSubset[i] = false;
-									currentTree.tryRemoveEdge(randomVertex1, i, temp.colourVector, temp.counts2);
+									cliqueTreeAdjacencyMatrix::removeReversal reverse;
+									currentTree.tryRemoveEdge(randomVertex1, i, temp.colourVector, temp.counts2, reverse);
 									boost::remove_edge(randomVertex1, i, graph);
 									{
 										int minVertex = std::min(randomVertex1, i), maxVertex = std::max(randomVertex1, i);
@@ -185,7 +187,7 @@ namespace chordalGraph
 					{
 						sum += mpfr_class(exactValues[original_edges + increaseInEdges] / exactValues[original_edges + increaseInEdges - i - 1]).convert_to<double>();
 					}
-					if(increaseInEdges + original_edges == edgeLimit)
+					if(increaseInEdges + (int)original_edges == edgeLimit)
 					{
 						acceptanceProbability = 2.0/(((double)(original_edges+increaseInEdges)/(double)(maxEdges - (int)original_edges)) * sum * temp.stateCounts[increaseInEdges - 1]);
 					}

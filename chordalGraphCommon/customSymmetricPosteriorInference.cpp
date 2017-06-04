@@ -123,7 +123,8 @@ namespace chordalGraph
 				//To add the bit relating to h(...), we need to create an update clique tree. 
 				{
 					copiedTree.makeCopy(currentTree);
-					copiedTree.removeEdgeKnownCliqueVertex(randomVertex1, randomVertex2, working.colourVector, working.counts2, cliqueVertex);
+					cliqueTreeAdjacencyMatrix::removeReversal reverse;
+					copiedTree.removeEdgeKnownCliqueVertex(randomVertex1, randomVertex2, working.colourVector, working.counts2, cliqueVertex, reverse);
 					if(extraToRemove != 0)
 					{
 						//This is 1 rather than 0, because the edge randomVertex1, randomVertex2 is already deleted. 
@@ -136,7 +137,8 @@ namespace chordalGraph
 								if(copiedChosenSubset[i] && working.counts1[i] == 1)
 								{
 									copiedChosenSubset[i] = false;
-									copiedTree.tryRemoveEdge(randomVertex1, i, working.colourVector, working.counts2);
+									cliqueTreeAdjacencyMatrix::removeReversal reverse;
+									copiedTree.tryRemoveEdge(randomVertex1, i, working.colourVector, working.counts2, reverse);
 								}
 							}
 						}
