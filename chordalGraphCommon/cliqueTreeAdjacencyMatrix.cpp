@@ -2,6 +2,7 @@
 #include <boost/graph/depth_first_search.hpp>
 #include <boost/graph/connected_components.hpp>
 #include <boost/graph/filtered_graph.hpp>
+#include <iostream>
 namespace chordalGraph
 {
 #ifdef TRACK_GRAPH
@@ -67,16 +68,18 @@ namespace chordalGraph
 		if(counts[v] != 1) return false;
 		return true;
 	}
-	bool cliqueTreeAdjacencyMatrix::tryRemoveEdge(int u, int v, std::vector<boost::default_color_type>& colourVector, std::vector<int>& countsAfter)
+	bool cliqueTreeAdjacencyMatrix::tryRemoveEdge(int u, int v, std::vector<boost::default_color_type>& colourVector, std::vector<int>& countsAfter, removeReversal& reverse)
 	{
+		//Data in reverse is useful in case we want to re-add this edge again. 
 		if(u == v) return false;
 		int cliqueVertex = -1;
 		if(!canRemoveEdge(u, v, countsAfter, cliqueVertex)) return false;
-		removeEdgeKnownCliqueVertex(u, v, colourVector, countsAfter, cliqueVertex);
+		removeEdgeKnownCliqueVertex(u, v, colourVector, countsAfter, cliqueVertex, reverse);
 		return true;
 	}
-	bool cliqueTreeAdjacencyMatrix::removeEdgeKnownCliqueVertex(int u, int v, std::vector<boost::default_color_type>& colourVector, std::vector<int>& counts2, int cliqueVertex)
+	bool cliqueTreeAdjacencyMatrix::removeEdgeKnownCliqueVertex(int u, int v, std::vector<boost::default_color_type>& colourVector, std::vector<int>& counts2, int cliqueVertex, removeReversal& reverse)
 	{
+		//cliqueVertexU and cliqueVertexV are useful in case we want to re-add this edge again. 
 		bitsetType foundVertexContents = boost::get(boost::vertex_name, cliqueGraph, cliqueVertex).contents;
 		bitsetType foundVertexContentsMinusU = foundVertexContents, foundVertexContentsMinusV = foundVertexContents;
 		foundVertexContentsMinusU[u] = false;
@@ -142,6 +145,8 @@ namespace chordalGraph
 				std::fill(colourVector.begin(), colourVector.end(), boost::default_color_type::white_color);
 				boost::depth_first_visit(cliqueGraph, largerVertexMinusU, visitor, colorMap);
 
+				reverse.cliqueVertexUContents = boost::get(boost::vertex_name, cliqueGraph, largerVertexMinusV).contents;
+				reverse.cliqueVertexVContents = boost::get(boost::vertex_name, cliqueGraph, largerVertexMinusU).contents;
 			}
 			//Here only v is connected to other stuff, so u ends up by itself. 
 			else if(removeVertexMinusU)
@@ -170,6 +175,9 @@ namespace chordalGraph
 					}
 				}
 				boost::clear_vertex(cliqueVertex, cliqueGraph);
+
+				reverse.cliqueVertexUContents = boost::get(boost::vertex_name, cliqueGraph, cliqueVertex).contents;
+				reverse.cliqueVertexVContents = boost::get(boost::vertex_name, cliqueGraph, largerVertexMinusU).contents;
 			}
 			//Here only u is connected to other stuff, so v ends up by itself. 
 			else if(removeVertexMinusV)
@@ -198,6 +206,9 @@ namespace chordalGraph
 					}
 				}
 				boost::clear_vertex(cliqueVertex, cliqueGraph);
+
+				reverse.cliqueVertexUContents = boost::get(boost::vertex_name, cliqueGraph, largerVertexMinusV).contents;
+				reverse.cliqueVertexVContents = boost::get(boost::vertex_name, cliqueGraph, cliqueVertex).contents;
 			}
 			//In this case we're breaking a single isolated link.
 			else
@@ -218,6 +229,9 @@ namespace chordalGraph
 				secondBitset[v] = true;
 				componentIDs[v] = newComponentSize+1;
 				verticesToCliqueVertices[v] = newCliqueVertex;
+
+				reverse.cliqueVertexUContents = boost::get(boost::vertex_name, cliqueGraph, cliqueVertex).contents;
+				reverse.cliqueVertexVContents = boost::get(boost::vertex_name, cliqueGraph, newCliqueVertex).contents;
 			}
 		}
 		else if(removeVertexMinusU && removeVertexMinusV)
@@ -258,6 +272,9 @@ namespace chordalGraph
 			boost::clear_vertex(cliqueVertex, cliqueGraph);
 			cliqueGraph.num_vertices--;
 			boost::get(boost::vertex_name, cliqueGraph, cliqueVertex).contents.reset();
+
+			reverse.cliqueVertexUContents = boost::get(boost::vertex_name, cliqueGraph, largerVertexMinusV).contents;
+			reverse.cliqueVertexVContents = boost::get(boost::vertex_name, cliqueGraph, largerVertexMinusU).contents;
 		}
 		else if(removeVertexMinusU)
 		{
@@ -278,6 +295,9 @@ namespace chordalGraph
 				}
 			}
 			boost::get(boost::vertex_name, cliqueGraph, cliqueVertex).contents[v] = false;
+
+			reverse.cliqueVertexUContents = boost::get(boost::vertex_name, cliqueGraph, cliqueVertex).contents;
+			reverse.cliqueVertexVContents = boost::get(boost::vertex_name, cliqueGraph, largerVertexMinusU).contents;
 		}
 		else if(removeVertexMinusV)
 		{
@@ -298,6 +318,9 @@ namespace chordalGraph
 				}
 			}
 			boost::get(boost::vertex_name, cliqueGraph, cliqueVertex).contents[u] = false;
+
+			reverse.cliqueVertexUContents = boost::get(boost::vertex_name, cliqueGraph, largerVertexMinusV).contents;
+			reverse.cliqueVertexVContents = boost::get(boost::vertex_name, cliqueGraph, cliqueVertex).contents;
 		}
 		else
 		{
@@ -323,6 +346,9 @@ namespace chordalGraph
 			boost::get(boost::vertex_name, cliqueGraph, cliqueVertex).contents = foundVertexContentsMinusV;
 			verticesToCliqueVertices[u] = cliqueVertex;
 			verticesToCliqueVertices[v] = newCliqueVertex;
+
+			reverse.cliqueVertexUContents = boost::get(boost::vertex_name, cliqueGraph, cliqueVertex).contents;
+			reverse.cliqueVertexVContents = boost::get(boost::vertex_name, cliqueGraph, newCliqueVertex).contents;
 		}
 #ifdef TRACK_GRAPH
 		boost::remove_edge(u, v, graph);
@@ -1178,13 +1204,29 @@ namespace chordalGraph
 		densenauty(&(nautyGraph[0]), &(lab[0]), &(ptn[0]), &(orbits[0]), &options, &stats, m, n, cannonicalNautyGraph);
 	}
 #endif
+	void cliqueTreeAdjacencyMatrix::debugPrint()
+	{
+		cliqueTreeGraphType::vertex_iterator current, end;
+		boost::tie(current, end) = boost::vertices(cliqueGraph);
+		for(; current != end; current++)
+		{
+			bitsetType currentContents = boost::get(boost::vertex_name, cliqueGraph, *current).contents;
+			std::cout << *current << ": ";
+			for(int i = 0; i < nVertices; i++) 
+			{
+				if(currentContents[i]) std::cout << i << ",";
+			}
+			std::cout << std::endl;
+		}
+		std::cout.flush();
+	}
 	void cliqueTreeAdjacencyMatrix::formRemovalTree(std::vector<int>& stateCounts, cliqueTreeAdjacencyMatrix& copied, int u, int v, std::unordered_set<bitsetType>& uniqueSubsets, formRemovalTreeTemporaries& temporaries)
 	{
 		stateCounts.resize(nVertices);
 
 		std::vector<stackEntry>& stack = temporaries.stack;
 		stack.clear();
-		
+
 		uniqueSubsets.clear();
 
 		std::vector<int>& counts1 = temporaries.counts1;
@@ -1204,10 +1246,11 @@ namespace chordalGraph
 		bitsetType excluded;
 		excluded[u] = excluded[v] = true;
 
-		stack.push_back(stackEntry(startSet, excluded, bitsetType(), v, 0));
 		int cliqueVertex;
+		removeReversal reverse;
 		copied.canRemoveEdge(u, v, counts1, cliqueVertex);
-		copied.removeEdgeKnownCliqueVertex(u, v, colourVector, counts2, cliqueVertex);
+		copied.removeEdgeKnownCliqueVertex(u, v, colourVector, counts2, cliqueVertex, reverse);
+		stack.push_back(stackEntry(startSet, excluded, bitsetType(), v, 0, reverse));
 		stateCounts[0] = 1;
 		while(stack.size() > 0)
 		{
@@ -1237,13 +1280,40 @@ namespace chordalGraph
 						stateCounts[newSubset.count() - 1]++;
 						uniqueSubsets.insert(newSubset);
 						current.currentSearchStart = currentVertex+1;
-						stack.push_back(stackEntry(newSubset, current.excluded, bitsetType(), currentVertex, 0));
-						copied.tryRemoveEdge(u, currentVertex, temporaries.colourVector, temporaries.counts2);
+						copied.tryRemoveEdge(u, currentVertex, temporaries.colourVector, temporaries.counts2, reverse);
+						stack.push_back(stackEntry(newSubset, current.excluded, bitsetType(), currentVertex, 0, reverse));
 						goto continueWhileLoop;
 					}
 				}
 			}
-			copied.addEdge(u, current.lastVertex, unionMinimalSeparatorBitset, temporaries.vertexSequence, temporaries.edgeSequence, temporaries.addEdges, temporaries.removeEdges, temporaries.unionTemporaries, false);
+			//copied.addEdge(u, current.lastVertex, unionMinimalSeparatorBitset, temporaries.vertexSequence, temporaries.edgeSequence, temporaries.addEdges, temporaries.removeEdges, temporaries.unionTemporaries, false);
+			int cliqueVertexU, cliqueVertexV;
+			{
+				cliqueTreeGraphType::vertex_iterator current, end;
+				boost::tie(current, end) = boost::vertices(copied.getCliqueGraph());
+				for(; current != end; current++)
+				{
+					if(boost::get(boost::vertex_name, copied.getCliqueGraph(), *current).contents == stack.back().reverse.cliqueVertexUContents)
+					{
+						cliqueVertexU = *current;
+					}
+					if(boost::get(boost::vertex_name, copied.getCliqueGraph(), *current).contents == stack.back().reverse.cliqueVertexVContents)
+					{
+						cliqueVertexV = *current;
+					}
+				}
+			}
+			temporaries.vertexSequence.clear();
+			temporaries.vertexSequence.push_back(cliqueVertexV);
+			temporaries.vertexSequence.push_back(cliqueVertexU);
+			temporaries.edgeSequence.clear();
+			temporaries.edgeSequence.push_back(externalEdge(cliqueVertexV, cliqueVertexU));
+			temporaries.addEdges.clear();
+			temporaries.removeEdges.clear();
+			{
+				bitsetType recreatedMinimalSeparator = stack.back().reverse.cliqueVertexUContents & stack.back().reverse.cliqueVertexVContents;
+				copied.addEdge(u, current.lastVertex, recreatedMinimalSeparator, temporaries.vertexSequence, temporaries.edgeSequence, temporaries.addEdges, temporaries.removeEdges, temporaries.unionTemporaries, true);
+			}
 			stack.pop_back();
 continueWhileLoop:
 			;

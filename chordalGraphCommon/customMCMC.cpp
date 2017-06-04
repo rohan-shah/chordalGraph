@@ -78,7 +78,8 @@ namespace chordalGraph
 				else acceptanceProbability = sum1 * temp.stateCounts[extraToRemove];
 				if(acceptanceProbability >= 1 || standardUniform(randomSource) <= acceptanceProbability.convert_to<double>())
 				{
-					currentTree.removeEdgeKnownCliqueVertex(randomVertex1, randomVertex2, temp.colourVector, temp.counts2, cliqueVertex);
+					cliqueTreeAdjacencyMatrix::removeReversal reverse;	
+					currentTree.removeEdgeKnownCliqueVertex(randomVertex1, randomVertex2, temp.colourVector, temp.counts2, cliqueVertex, reverse);
 					boost::remove_edge(randomVertex1, randomVertex2, graph);
 					if(extraToRemove != 0)
 					{
@@ -106,7 +107,8 @@ namespace chordalGraph
 								if(chosenSubset[i] && temp.counts1[i] == 1)
 								{
 									chosenSubset[i] = false;
-									currentTree.tryRemoveEdge(randomVertex1, i, temp.colourVector, temp.counts2);
+									cliqueTreeAdjacencyMatrix::removeReversal reverse;
+									currentTree.tryRemoveEdge(randomVertex1, i, temp.colourVector, temp.counts2, reverse);
 									boost::remove_edge(randomVertex1, i, graph);
 								}
 							}

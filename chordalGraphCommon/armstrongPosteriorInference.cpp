@@ -20,7 +20,6 @@ namespace chordalGraph
 		boost::random::uniform_int_distribution<> randomVertexDist(0, nVertices-1);
 		boost::random::bernoulli_distribution<> standardBernoulli;
 		boost::random::uniform_real_distribution<> standardUniform;
-proposeAnother:
 		int randomVertex1, randomVertex2;
 		do
 		{
@@ -37,7 +36,8 @@ proposeAnother:
 			if(currentTree.canRemoveEdge(randomVertex1, randomVertex2, working.counts1, cliqueVertex))
 			{
 				copiedTree.makeCopy(currentTree);
-				copiedTree.removeEdgeKnownCliqueVertex(randomVertex1, randomVertex2, working.colourVector, working.counts2, cliqueVertex);
+				cliqueTreeAdjacencyMatrix::removeReversal reverse;
+				copiedTree.removeEdgeKnownCliqueVertex(randomVertex1, randomVertex2, working.colourVector, working.counts2, cliqueVertex, reverse);
 				mpfr_class acceptanceValue = (exactValues[original_edges] / exactValues[original_edges - 1]);
 				mpfr_class extraFactor = (h(copiedTree, working.delta, working.psi, working.multivariateGammaDelta, working.psiPart, nVertices, working.colourVector) * h(currentTree, deltaStar, working.psiStar, working.multivariateGammaDeltaStar, working.psiPart, nVertices, working.colourVector)) / (h(currentTree, delta, working.psi, working.multivariateGammaDelta, working.psiPart, nVertices, working.colourVector) * h(copiedTree, deltaStar, working.psiStar, working.multivariateGammaDeltaStar, working.psiPart, nVertices, working.colourVector));
 				acceptanceValue *= extraFactor;

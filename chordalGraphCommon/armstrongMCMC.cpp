@@ -33,7 +33,8 @@ proposeAnother:
 				mpfr_class acceptanceValue = (exactValues[original_edges] / exactValues[original_edges - 1]);
 				if(acceptanceValue >= 1 || standardUniform(randomSource) <= acceptanceValue.convert_to<double>())
 				{
-					currentTree.removeEdgeKnownCliqueVertex(randomVertex1, randomVertex2, temp.colourVector, temp.counts2, cliqueVertex);
+					cliqueTreeAdjacencyMatrix::removeReversal reverse;
+					currentTree.removeEdgeKnownCliqueVertex(randomVertex1, randomVertex2, temp.colourVector, temp.counts2, cliqueVertex, reverse);
 					boost::remove_edge(randomVertex1, randomVertex2, graph);
 				}
 			}

@@ -21,7 +21,7 @@ if(USE_NAUTY)
 endif()
 
 #Find boost packages
-find_package(Boost 1.53.0 COMPONENTS graph program_options system serialization filesystem regex REQUIRED)
+find_package(Boost 1.53.0 COMPONENTS graph program_options system serialization filesystem regex timer chrono REQUIRED)
 
 if(WIN32)
 	find_package(mpfr REQUIRED)
