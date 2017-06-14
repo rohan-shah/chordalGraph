@@ -39,13 +39,17 @@ namespace chordalGraph
 				cliqueTreeAdjacencyMatrix::removeReversal reverse;
 				copiedTree.removeEdgeKnownCliqueVertex(randomVertex1, randomVertex2, working.colourVector, working.counts2, cliqueVertex, reverse);
 				mpfr_class acceptanceValue = (exactValues[original_edges] / exactValues[original_edges - 1]);
-				//mpfr_class extraFactor = (h(copiedTree, delta, working.psi, working.multivariateGammaDelta, working.psiPart, nVertices, working.colourVector) * h(currentTree, deltaStar, working.psiStar, working.multivariateGammaDeltaStar, working.psiPart, nVertices, working.colourVector)) / (h(currentTree, delta, working.psi, working.multivariateGammaDelta, working.psiPart, nVertices, working.colourVector) * h(copiedTree, deltaStar, working.psiStar, working.multivariateGammaDeltaStar, working.psiPart, nVertices, working.colourVector));
+				//Fast computation of the ratio of the h functions
 				mpfr_class extraFactor2 = getHRatio(currentTree, cliqueVertex, randomVertex1, randomVertex2, working.psi, working.psiPart, nVertices, delta) / getHRatio(currentTree, cliqueVertex, randomVertex1, randomVertex2, working.psiStar, working.psiPart, nVertices, deltaStar);
-				/*if(std::fabs(1 - (extraFactor * extraFactor2).convert_to<double>()) > 1e-5)
+#ifndef NDEBUG
+				//Slow computation of the ratio of the h functions
+				mpfr_class extraFactor = (h(copiedTree, delta, working.psi, working.multivariateGammaDelta, working.psiPart, nVertices, working.colourVector) * h(currentTree, deltaStar, working.psiStar, working.multivariateGammaDeltaStar, working.psiPart, nVertices, working.colourVector)) / (h(currentTree, delta, working.psi, working.multivariateGammaDelta, working.psiPart, nVertices, working.colourVector) * h(copiedTree, deltaStar, working.psiStar, working.multivariateGammaDeltaStar, working.psiPart, nVertices, working.colourVector));
+				//Check that optimised and unoptimised give the same results
+				if(std::fabs(1 - (extraFactor * extraFactor2).convert_to<double>()) > 1e-5)
 				{
 					throw std::runtime_error("Internal error");
 				}
-				acceptanceValue *= extraFactor;*/
+#endif
 				acceptanceValue /= extraFactor2;
 				if(acceptanceValue >= 1 || standardUniform(randomSource) <= acceptanceValue.convert_to<double>())
 				{
@@ -72,13 +76,17 @@ namespace chordalGraph
 				int cliqueVertex = -1;
 				copiedTree.canRemoveEdge(randomVertex1, randomVertex2, working.counts1, cliqueVertex);
 				mpfr_class acceptanceValue = exactValues[original_edges] / exactValues[original_edges + increaseInEdges];
-				//mpfr_class extraFactor = (h(copiedTree, delta, working.psi, working.multivariateGammaDelta, working.psiPart, nVertices, working.colourVector) * h(currentTree, deltaStar, working.psiStar, working.multivariateGammaDeltaStar, working.psiPart, nVertices, working.colourVector)) / (h(currentTree, delta, working.psi, working.multivariateGammaDelta, working.psiPart, nVertices, working.colourVector) * h(copiedTree, deltaStar, working.psiStar, working.multivariateGammaDeltaStar, working.psiPart, nVertices, working.colourVector));
+				//Fast computation of the ratio of the h functions
 				mpfr_class extraFactor2 = getHRatio(copiedTree, cliqueVertex, randomVertex1, randomVertex2, working.psi, working.psiPart, nVertices, delta) / getHRatio(copiedTree, cliqueVertex, randomVertex1, randomVertex2, working.psiStar, working.psiPart, nVertices, deltaStar);
-				/*if(std::fabs(1 - (extraFactor / extraFactor2).convert_to<double>()) > 1e-5)
+#ifndef NDEBUG
+				//Slow computation of the ratio of the h functions
+				mpfr_class extraFactor = (h(copiedTree, delta, working.psi, working.multivariateGammaDelta, working.psiPart, nVertices, working.colourVector) * h(currentTree, deltaStar, working.psiStar, working.multivariateGammaDeltaStar, working.psiPart, nVertices, working.colourVector)) / (h(currentTree, delta, working.psi, working.multivariateGammaDelta, working.psiPart, nVertices, working.colourVector) * h(copiedTree, deltaStar, working.psiStar, working.multivariateGammaDeltaStar, working.psiPart, nVertices, working.colourVector));
+				//Check that optimised and unoptimised give the same results
+				if(std::fabs(1 - (extraFactor / extraFactor2).convert_to<double>()) > 1e-5)
 				{
 					throw std::runtime_error("Internal error");
 				}
-				acceptanceValue *= extraFactor;*/
+#endif
 				acceptanceValue *= extraFactor2;
 				if(acceptanceValue >= 1 || standardUniform(randomSource) <= acceptanceValue.convert_to<double>())
 				{

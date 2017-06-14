@@ -121,8 +121,11 @@ namespace chordalGraph
 					}
 				}
 				//To add the bit relating to h(...), we need to create an update clique tree. 
+				//Fast computation of the ratio of the h functions
+				mpfr_class extraFactor2 = 1;
 				{
 					copiedTree.makeCopy(currentTree);
+					extraFactor2 = getHRatio(copiedTree, cliqueVertex, randomVertex1, randomVertex2, working.psi, working.psiPart, nVertices, delta) / getHRatio(copiedTree, cliqueVertex, randomVertex1, randomVertex2, working.psiStar, working.psiPart, nVertices, deltaStar);
 					cliqueTreeAdjacencyMatrix::removeReversal reverse;
 					copiedTree.removeEdgeKnownCliqueVertex(randomVertex1, randomVertex2, working.colourVector, working.counts2, cliqueVertex, reverse);
 					if(extraToRemove != 0)
@@ -138,14 +141,22 @@ namespace chordalGraph
 								{
 									copiedChosenSubset[i] = false;
 									cliqueTreeAdjacencyMatrix::removeReversal reverse;
+									extraFactor2 *= getHRatio(copiedTree, cliqueVertex, randomVertex1, randomVertex2, working.psi, working.psiPart, nVertices, delta) / getHRatio(currentTree, cliqueVertex, randomVertex1, randomVertex2, working.psiStar, working.psiPart, nVertices, deltaStar);
 									copiedTree.tryRemoveEdge(randomVertex1, i, working.colourVector, working.counts2, reverse);
 								}
 							}
 						}
 					}
 				}
+#ifndef NDEBUG
+				//Slow computation of the ratio of the h functions
 				mpfr_class extraFactor = (h(copiedTree, working.delta, working.psi, working.multivariateGammaDelta, working.psiPart, nVertices, working.colourVector) * h(currentTree, deltaStar, working.psiStar, working.multivariateGammaDeltaStar, working.psiPart, nVertices, working.colourVector)) / (h(currentTree, delta, working.psi, working.multivariateGammaDelta, working.psiPart, nVertices, working.colourVector) * h(copiedTree, deltaStar, working.psiStar, working.multivariateGammaDeltaStar, working.psiPart, nVertices, working.colourVector));
-				acceptanceProbability *= extraFactor;
+				if(std::fabs(1 - (extraFactor * extraFactor2).convert_to<double>()) > 1e-5)
+				{
+					throw std::runtime_error("Internal error");
+				}
+#endif
+				acceptanceProbability /= extraFactor2;
 				if(acceptanceProbability >= 1 || standardUniform(randomSource) <= acceptanceProbability.convert_to<double>())
 				{
 					currentTree.swap(copiedTree);
