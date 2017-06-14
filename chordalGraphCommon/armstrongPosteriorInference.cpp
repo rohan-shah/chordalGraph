@@ -39,8 +39,14 @@ namespace chordalGraph
 				cliqueTreeAdjacencyMatrix::removeReversal reverse;
 				copiedTree.removeEdgeKnownCliqueVertex(randomVertex1, randomVertex2, working.colourVector, working.counts2, cliqueVertex, reverse);
 				mpfr_class acceptanceValue = (exactValues[original_edges] / exactValues[original_edges - 1]);
-				mpfr_class extraFactor = (h(copiedTree, working.delta, working.psi, working.multivariateGammaDelta, working.psiPart, nVertices, working.colourVector) * h(currentTree, deltaStar, working.psiStar, working.multivariateGammaDeltaStar, working.psiPart, nVertices, working.colourVector)) / (h(currentTree, delta, working.psi, working.multivariateGammaDelta, working.psiPart, nVertices, working.colourVector) * h(copiedTree, deltaStar, working.psiStar, working.multivariateGammaDeltaStar, working.psiPart, nVertices, working.colourVector));
-				acceptanceValue *= extraFactor;
+				//mpfr_class extraFactor = (h(copiedTree, delta, working.psi, working.multivariateGammaDelta, working.psiPart, nVertices, working.colourVector) * h(currentTree, deltaStar, working.psiStar, working.multivariateGammaDeltaStar, working.psiPart, nVertices, working.colourVector)) / (h(currentTree, delta, working.psi, working.multivariateGammaDelta, working.psiPart, nVertices, working.colourVector) * h(copiedTree, deltaStar, working.psiStar, working.multivariateGammaDeltaStar, working.psiPart, nVertices, working.colourVector));
+				mpfr_class extraFactor2 = getHRatio(currentTree, cliqueVertex, randomVertex1, randomVertex2, working.psi, working.psiPart, nVertices, delta) / getHRatio(currentTree, cliqueVertex, randomVertex1, randomVertex2, working.psiStar, working.psiPart, nVertices, deltaStar);
+				/*if(std::fabs(1 - (extraFactor * extraFactor2).convert_to<double>()) > 1e-5)
+				{
+					throw std::runtime_error("Internal error");
+				}
+				acceptanceValue *= extraFactor;*/
+				acceptanceValue /= extraFactor2;
 				if(acceptanceValue >= 1 || standardUniform(randomSource) <= acceptanceValue.convert_to<double>())
 				{
 					currentTree.swap(copiedTree);
@@ -62,9 +68,18 @@ namespace chordalGraph
 			{
 				copiedTree.makeCopy(currentTree);
 				copiedTree.addEdge(randomVertex1, randomVertex2, newEdgesVertex1, working.vertexSequence, working.edgeSequence, working.addEdges, working.removeEdges, working.unionMinimalSepTemp, true);
+				//Lazy way of working out clique vertex. 
+				int cliqueVertex = -1;
+				copiedTree.canRemoveEdge(randomVertex1, randomVertex2, working.counts1, cliqueVertex);
 				mpfr_class acceptanceValue = exactValues[original_edges] / exactValues[original_edges + increaseInEdges];
-				mpfr_class extraFactor = (h(copiedTree, working.delta, working.psi, working.multivariateGammaDelta, working.psiPart, nVertices, working.colourVector) * h(currentTree, deltaStar, working.psiStar, working.multivariateGammaDeltaStar, working.psiPart, nVertices, working.colourVector)) / (h(currentTree, delta, working.psi, working.multivariateGammaDelta, working.psiPart, nVertices, working.colourVector) * h(copiedTree, deltaStar, working.psiStar, working.multivariateGammaDeltaStar, working.psiPart, nVertices, working.colourVector));
-				acceptanceValue *= extraFactor;
+				//mpfr_class extraFactor = (h(copiedTree, delta, working.psi, working.multivariateGammaDelta, working.psiPart, nVertices, working.colourVector) * h(currentTree, deltaStar, working.psiStar, working.multivariateGammaDeltaStar, working.psiPart, nVertices, working.colourVector)) / (h(currentTree, delta, working.psi, working.multivariateGammaDelta, working.psiPart, nVertices, working.colourVector) * h(copiedTree, deltaStar, working.psiStar, working.multivariateGammaDeltaStar, working.psiPart, nVertices, working.colourVector));
+				mpfr_class extraFactor2 = getHRatio(copiedTree, cliqueVertex, randomVertex1, randomVertex2, working.psi, working.psiPart, nVertices, delta) / getHRatio(copiedTree, cliqueVertex, randomVertex1, randomVertex2, working.psiStar, working.psiPart, nVertices, deltaStar);
+				/*if(std::fabs(1 - (extraFactor / extraFactor2).convert_to<double>()) > 1e-5)
+				{
+					throw std::runtime_error("Internal error");
+				}
+				acceptanceValue *= extraFactor;*/
+				acceptanceValue *= extraFactor2;
 				if(acceptanceValue >= 1 || standardUniform(randomSource) <= acceptanceValue.convert_to<double>())
 				{
 					currentTree.swap(copiedTree);

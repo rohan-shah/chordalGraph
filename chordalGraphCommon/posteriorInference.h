@@ -13,6 +13,8 @@ namespace chordalGraph
 {
 	mpfr_class multivariateGammaFunction(int m, double alpha);
 	void extractSubmatrix(boost::numeric::ublas::matrix<double>& psi, boost::numeric::ublas::matrix<double>& submatrix, bitsetType contents, int dimension);
+	void extractSubmatrixPair(boost::numeric::ublas::matrix<double>& psi, boost::numeric::ublas::matrix<double>& submatrix, bitsetType contents, int dimension, int first, int second);
+	mpfr_class getHRatio(cliqueTreeAdjacencyMatrix& tree, int cliqueVertex, int vertex1, int vertex2, boost::numeric::ublas::matrix<double>& psi, boost::numeric::ublas::matrix<double>& psiPart, int nVertices, int delta);
 	double getDeterminantSign(boost::numeric::ublas::permutation_matrix<std::size_t>& pm);
 	double getDeterminant(boost::numeric::ublas::matrix<double>& square);
 	struct computeHHelper

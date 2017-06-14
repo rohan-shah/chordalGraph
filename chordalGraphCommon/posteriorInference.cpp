@@ -9,8 +9,40 @@
 #include <boost/random/random_number_generator.hpp>
 #include <boost/random/discrete_distribution.hpp>
 #include <boost/math/special_functions/gamma.hpp>
+#include "cholesky.hpp"
 namespace chordalGraph
 {
+	mpfr_class getHRatio(cliqueTreeAdjacencyMatrix& tree, int cliqueVertex, int vertex1, int vertex2, boost::numeric::ublas::matrix<double>& psi, boost::numeric::ublas::matrix<double>& psiPart, int nVertices, int delta)
+	{
+		const double twoSqrtPi = 3.544907701811032054596334966682290365595098912244774256427;
+		bitsetType cliqueVertexContents = boost::get(boost::vertex_name, tree.getCliqueGraph(), cliqueVertex).contents;
+		int contentsCount = cliqueVertexContents.count();
+		psiPart.resize(contentsCount, contentsCount, false);
+		extractSubmatrixPair(psi, psiPart, cliqueVertexContents, nVertices, vertex1, vertex2);
+		if(contentsCount != 2)
+		{
+			boost::numeric::ublasx::cholesky_decompose(psiPart);
+			mpfr_class squareMatrixDet = psiPart(contentsCount - 1, contentsCount - 1) * psiPart(contentsCount - 1, contentsCount - 1) * psiPart(contentsCount - 2, contentsCount - 2)* psiPart(contentsCount - 2, contentsCount - 2);
+			mpfr_class squareMatrixDetPower = boost::multiprecision::pow(squareMatrixDet, (delta + cliqueVertexContents.count() - 1)/2.0);
+			mpfr_class otherDet1 = psiPart(contentsCount - 2, contentsCount - 2) * psiPart(contentsCount - 2, contentsCount - 2);
+			mpfr_class otherDet1Power = boost::multiprecision::pow(otherDet1, (delta + cliqueVertexContents.count() - 2)/2.0);
+			mpfr_class otherDet2 = psiPart(contentsCount-1, contentsCount - 2) * psiPart(contentsCount-1, contentsCount - 2) + psiPart(contentsCount-1, contentsCount-1) * psiPart(contentsCount-1, contentsCount-1);
+			mpfr_class otherDet2Power = boost::multiprecision::pow(otherDet2, (delta + cliqueVertexContents.count() - 2)/2.0);
+			mpfr_class ratio = (squareMatrixDetPower * boost::math::tgamma<mpfr_class>((delta + cliqueVertexContents.count() - 2)/2.0)) / (otherDet1Power * otherDet2Power * boost::math::tgamma<mpfr_class>((delta + cliqueVertexContents.count() - 1)/2.0) * twoSqrtPi);
+			return ratio;
+		}
+		else
+		{
+			const double sqrtPi = 1.772453850905516027298167483341145182797549456122387128213;
+			mpfr_class detSquare = psiPart(0, 0) * psiPart(1,1) - psiPart(1, 0) * psiPart(0, 1);
+			mpfr_class detSquarePower = boost::multiprecision::pow(detSquare/4, (delta + 1)/2.0);
+			mpfr_class detPowers = boost::multiprecision::pow(mpfr_class(psiPart(0,0) * psiPart(1, 1) / 4), delta/2.0);
+			mpfr_class gamma1 = boost::math::tgamma<mpfr_class>(delta/2.0);
+			mpfr_class gamma2 = sqrtPi * boost::math::tgamma<mpfr_class>((delta+1)/2.0) * boost::math::tgamma<mpfr_class>(delta/2.0);
+			mpfr_class ratio = detSquarePower * gamma1 * gamma1 / (detPowers * gamma2);
+			return ratio;
+		}
+	}
 	mpfr_class multivariateGammaFunction(int m, double alpha)
 	{
 		mpfr_class result = boost::multiprecision::pow(boost::math::constants::pi<mpfr_class>(), m* (m-1.0)/4.0);
@@ -27,6 +59,23 @@ namespace chordalGraph
 		{
 			if(contents[i]) indices.push_back(i);
 		}
+		for(std::vector<int>::iterator i = indices.begin(); i != indices.end(); i++)
+		{
+			for(std::vector<int>::iterator j = indices.begin(); j != indices.end(); j++)
+			{
+				submatrix(std::distance(indices.begin(), i), std::distance(indices.begin(), j)) = psi(*i, *j);
+			}
+		}
+	}
+	void extractSubmatrixPair(boost::numeric::ublas::matrix<double>& psi, boost::numeric::ublas::matrix<double>& submatrix, bitsetType contents, int dimension, int first, int second)
+	{
+		std::vector<int> indices;
+		for(int i = 0; i < dimension; i++)
+		{
+			if(contents[i] && i != first && i != second) indices.push_back(i);
+		}
+		indices.push_back(first);
+		indices.push_back(second);
 		for(std::vector<int>::iterator i = indices.begin(); i != indices.end(); i++)
 		{
 			for(std::vector<int>::iterator j = indices.begin(); j != indices.end(); j++)
