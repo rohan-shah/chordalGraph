@@ -15,20 +15,23 @@ namespace chordalGraph
 	{
 	public:
 		workingCustomSymmetricPosteriorInference(int nVertices)
-			: nVertices(nVertices), copied(nVertices), copied2(nVertices), copiedTree(nVertices), counts1(nVertices), counts2(nVertices), colourVector(nVertices)
+			: nVertices(nVertices), copiedTree(nVertices), copiedTree2(nVertices), counts1(nVertices), counts2(nVertices), colourVector(nVertices)
 		{
-			for(int i = 0; i < nVertices; i++) copiedTree.addVertex();
+			for(int i = 0; i < nVertices; i++)
+			{
+				copiedTree.addVertex();
+				copiedTree2.addVertex();
+			}
 		}
 		int nVertices, delta, deltaStar;
 		//Working memory for the addition of edges to the clique tree
-		std::list<cliqueTreeType::cliqueTreeGraphType::vertex_descriptor> vertexSequence;
+		std::list<cliqueTreeType::cliqueTreeGraphType::vertex_descriptor> vertexSequence, vertexSequence2;
 		std::list<cliqueTreeType::externalEdge> edgeSequence;
 		std::vector<cliqueTreeType::externalEdge> addEdges;
 		std::vector<cliqueTreeType::externalEdge> removeEdges;
 		cliqueTreeType::unionMinimalSeparatorsTemporaries unionMinimalSepTemp;
 		//Two copies of the current clique tree.
-		cliqueTreeAdjacencyMatrix copied, copied2;
-		cliqueTreeType copiedTree;
+		cliqueTreeType copiedTree, copiedTree2;
 		//Count vectors used when removing edges 
 		std::vector<int> counts1, counts2;
 		//Colour vector for a depth first search
