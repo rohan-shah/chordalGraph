@@ -132,15 +132,15 @@ namespace chordalGraph
 					bitsetType copiedChosenSubset = chosenSubset;
 					while(copiedChosenSubset.count() > 1)
 					{
-						int newCliqueVertex;
-						copiedTree.canRemoveEdge(randomVertex1, randomVertex2, working.counts1, newCliqueVertex);
 						for(int i = 0; i < nVertices; i++)
 						{
-							if(copiedChosenSubset[i] && working.counts1[i] == 1)
+							if(copiedChosenSubset[i] && working.counts2[i] == 1)
 							{
+								int newCliqueVertex;
+								copiedTree.canRemoveEdge(randomVertex1, i, working.counts2, newCliqueVertex);
 								copiedChosenSubset[i] = false;
+								extraFactor2 *= getHRatio(copiedTree, newCliqueVertex, randomVertex1, i, working.psi, working.psiPart, nVertices, delta) / getHRatio(copiedTree, newCliqueVertex, randomVertex1, i, working.psiStar, working.psiPart, nVertices, deltaStar);
 								cliqueTreeAdjacencyMatrix::removeReversal reverse;
-								extraFactor2 *= getHRatio(copiedTree, newCliqueVertex, randomVertex1, randomVertex2, working.psi, working.psiPart, nVertices, delta) / getHRatio(currentTree, newCliqueVertex, randomVertex1, randomVertex2, working.psiStar, working.psiPart, nVertices, deltaStar);
 								copiedTree.tryRemoveEdge(randomVertex1, i, working.colourVector, working.counts2, reverse);
 							}
 						}

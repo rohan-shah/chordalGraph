@@ -15,6 +15,12 @@ namespace chordalGraph
 	mpfr_class getHRatio(cliqueTreeAdjacencyMatrix& tree, int cliqueVertex, int vertex1, int vertex2, boost::numeric::ublas::matrix<double>& psi, boost::numeric::ublas::matrix<double>& psiPart, int nVertices, int delta)
 	{
 		const double twoSqrtPi = 3.544907701811032054596334966682290365595098912244774256427;
+#ifndef NDEBUG
+		if(cliqueVertex < 0)
+		{
+			throw std::runtime_error("Internal error");
+		}
+#endif
 		bitsetType cliqueVertexContents = boost::get(boost::vertex_name, tree.getCliqueGraph(), cliqueVertex).contents;
 		int contentsCount = cliqueVertexContents.count();
 		psiPart.resize(contentsCount, contentsCount, false);

@@ -1,6 +1,6 @@
 #include "armstrongPosteriorInferenceRPackage.h"
 #include "armstrongPosteriorInference.h"
-SEXP armstrongPosteriorInference(SEXP outerProductsSum_sexp, SEXP delta_sexp, SEXP dimension_sexp, SEXP dataPoints_sexp, SEXP psi_sexp, SEXP exactCounts_sexp, SEXP burnIn_sexp, SEXP runSize_sexp)
+SEXP armstrongPosteriorInference(SEXP outerProductsSum_sexp, SEXP delta_sexp, SEXP dimension_sexp, SEXP dataPoints_sexp, SEXP psi_sexp, SEXP exactCounts_sexp, SEXP burnIn_sexp, SEXP runSize_sexp, SEXP seed_sexp)
 {
 BEGIN_RCPP
 	chordalGraph::armstrongPosteriorInferenceArgs args;
@@ -12,6 +12,9 @@ BEGIN_RCPP
 	args.sampleCovariance.resize(args.dimension, args.dimension, false);
 	
 	Rcpp::NumericMatrix psi = Rcpp::as<Rcpp::NumericMatrix>(psi_sexp);
+	
+	int seed = Rcpp::as<int>(seed_sexp);
+
 	if(psi.nrow() != (int)args.dimension || psi.ncol() != (int)args.dimension)
 	{
 		throw std::runtime_error("Input psi had the wrong dimensions");
@@ -35,6 +38,7 @@ BEGIN_RCPP
 	}
 	args.burnIn = Rcpp::as<int>(burnIn_sexp);
 	args.sampleSize = Rcpp::as<int>(runSize_sexp);
+	args.randomSource.seed(seed);
 	armstrongPosteriorInference(args);
 
 	Rcpp::List graphs(args.results.size());
