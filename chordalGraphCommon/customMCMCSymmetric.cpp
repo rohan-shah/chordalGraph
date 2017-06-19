@@ -316,7 +316,7 @@ namespace chordalGraph
 		{
 			mpfr_class sumFirstSixLastThree = 0;
 			for(int i = 0; i < 6; i++) sumFirstSixLastThree += mpfr_class(counters[i]) / args.runSize;
-			for(int i = edgeLimit - 1; i < edgeLimit+1; i++) sumFirstSixLastThree += mpfr_class(counters[i]) / args.runSize;
+			for(int i = edgeLimit - 2; i < edgeLimit+1; i++) sumFirstSixLastThree += mpfr_class(counters[i]) / args.runSize;
 			args.estimates.resize(args.approximateCounts.size());
 			for(std::size_t i = 0; i < args.approximateCounts.size(); i++)
 			{
