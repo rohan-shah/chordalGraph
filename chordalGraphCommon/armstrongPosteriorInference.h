@@ -60,7 +60,7 @@ namespace chordalGraph
 			}
 		};
 		armstrongPosteriorInferenceArgs()
-			: delta(0), dataPoints(0), sampleSize(0), burnIn(0)
+			: delta(0), dataPoints(0), sampleSize(0), burnIn(0), uniqueGraphsLimit(0)
 		{}
 		std::size_t delta, dataPoints, dimension;
 		boost::numeric::ublas::matrix<double> sampleCovariance;
@@ -70,6 +70,7 @@ namespace chordalGraph
 		std::vector<mpfr_class> exactValues;
 		std::size_t sampleSize, burnIn;
 		boost::mt19937 randomSource;
+		std::size_t uniqueGraphsLimit;
 	};
 	void armstrongPosteriorInference(armstrongPosteriorInferenceArgs& args);
 }

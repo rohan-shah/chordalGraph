@@ -1,6 +1,6 @@
 #include "armstrongPosteriorInferenceRPackage.h"
 #include "armstrongPosteriorInference.h"
-SEXP armstrongPosteriorInference(SEXP outerProductsSum_sexp, SEXP delta_sexp, SEXP dimension_sexp, SEXP dataPoints_sexp, SEXP psi_sexp, SEXP exactCounts_sexp, SEXP burnIn_sexp, SEXP runSize_sexp, SEXP seed_sexp)
+SEXP armstrongPosteriorInference(SEXP outerProductsSum_sexp, SEXP delta_sexp, SEXP dimension_sexp, SEXP dataPoints_sexp, SEXP psi_sexp, SEXP exactCounts_sexp, SEXP burnIn_sexp, SEXP runSize_sexp, SEXP seed_sexp, SEXP uniqueGraphsLimit_sexp)
 {
 BEGIN_RCPP
 	chordalGraph::armstrongPosteriorInferenceArgs args;
@@ -38,6 +38,7 @@ BEGIN_RCPP
 	}
 	args.burnIn = Rcpp::as<int>(burnIn_sexp);
 	args.sampleSize = Rcpp::as<int>(runSize_sexp);
+	args.uniqueGraphsLimit = Rcpp::as<int>(uniqueGraphsLimit_sexp);
 	args.randomSource.seed(seed);
 	armstrongPosteriorInference(args);
 
@@ -58,7 +59,7 @@ BEGIN_RCPP
 		graphs(std::distance(args.results.begin(), i)) = currentGraphR;
 		probabilities(std::distance(args.results.begin(), i)) = (double)i->second / args.sampleSize;
 	}
-	Rcpp::List results = Rcpp::List::create(Rcpp::Named("graphs") = graphs, Rcpp::Named("probabilities") = probabilities);
+	Rcpp::List results = Rcpp::List::create(Rcpp::Named("graphs") = graphs, Rcpp::Named("probabilities") = probabilities, Rcpp::Named("sampleSize") = args.sampleSize);
 	return results;
 END_RCPP
 }

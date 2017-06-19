@@ -98,6 +98,10 @@ namespace chordalGraph
 	}
 	void armstrongPosteriorInference(armstrongPosteriorInferenceArgs& args)
 	{
+		if(!((args.sampleSize > 0) ^ (args.uniqueGraphsLimit > 0)))
+		{
+			throw std::runtime_error("Only one of sampleSize and uniqueGraphsLimit can be specified");
+		}
 
 		cliqueTreeType currentTree(args.dimension);
 		armstrongPosteriorInferenceArgs::graphType graph(args.dimension);
@@ -122,15 +126,33 @@ namespace chordalGraph
 			armstrongPosteriorInferenceStep(currentTree, graph, args.exactValues, args.randomSource, working);
 		}
 		args.results.clear();
-		for(std::size_t i = 0; i < args.sampleSize; i++)
+		if(args.sampleSize > 0)
 		{
-			armstrongPosteriorInferenceStep(currentTree, graph, args.exactValues, args.randomSource, working);
-			armstrongPosteriorInferenceArgs::resultsType::iterator existingGraph = args.results.find(graph);
-			if(existingGraph == args.results.end())
+			for(std::size_t i = 0; i < args.sampleSize; i++)
 			{
-				args.results[graph] = 1;
+				armstrongPosteriorInferenceStep(currentTree, graph, args.exactValues, args.randomSource, working);
+				armstrongPosteriorInferenceArgs::resultsType::iterator existingGraph = args.results.find(graph);
+				if(existingGraph == args.results.end())
+				{
+					args.results[graph] = 1;
+				}
+				else existingGraph->second++;
 			}
-			else existingGraph->second++;
+		}
+		else
+		{
+			args.sampleSize = 0;
+			while(args.results.size() != args.uniqueGraphsLimit)
+			{
+				armstrongPosteriorInferenceStep(currentTree, graph, args.exactValues, args.randomSource, working);
+				armstrongPosteriorInferenceArgs::resultsType::iterator existingGraph = args.results.find(graph);
+				if(existingGraph == args.results.end())
+				{
+					args.results[graph] = 1;
+				}
+				else existingGraph->second++;
+				args.sampleSize++;
+			}
 		}
 	}
 

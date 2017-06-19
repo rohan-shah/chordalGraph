@@ -31,8 +31,8 @@ R_CallMethodDef callMethods[] =
 	{"customMCMC", (DL_FUNC)&customMCMC, 5}, 
 	{"customMCMCSymmetric", (DL_FUNC)&customMCMCSymmetric, 5}, 
 	{"armstrongMCMC", (DL_FUNC)&armstrongMCMC, 5}, 
-	{"customSymmetricPosteriorInference", (DL_FUNC)&customSymmetricPosteriorInference, 9}, 
-	{"armstrongPosteriorInference", (DL_FUNC)&armstrongPosteriorInference, 9}, 
+	{"customSymmetricPosteriorInference", (DL_FUNC)&customSymmetricPosteriorInference, 10}, 
+	{"armstrongPosteriorInference", (DL_FUNC)&armstrongPosteriorInference, 10}, 
 	{NULL, NULL, 0}
 };
 RcppExport void R_init_chordalGraph(DllInfo *info)
